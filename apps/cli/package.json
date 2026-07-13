@@ -1,0 +1,17 @@
+{
+  "name": "@awf/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "awf": "./dist/index.js"
+  },
+  "dependencies": {
+    "@awf/compiler": "0.1.0",
+    "@awf/ir": "0.1.0",
+    "@awf/runtime-core": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  }
+}
