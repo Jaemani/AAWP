@@ -8,3 +8,4 @@ export {
   type WorkflowPort,
   type WorkflowSchema
 } from "./schema.js";
+export { CanonicalizationError, canonicalize, digestWorkflow, sha256Hex } from "./canonicalize.js";
