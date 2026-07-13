@@ -1,0 +1,5 @@
+{
+  "service": "artifact-api",
+  "timeoutSeconds": 15,
+  "retries": 2
+}

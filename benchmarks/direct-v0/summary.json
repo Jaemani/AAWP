@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "benchmark": "direct-v0",
+  "generatedAt": "2026-07-13T21:44:28.679Z",
+  "environment": {
+    "nodeVersion": "v24.18.0",
+    "codexVersion": "codex-cli 0.144.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "model": "gpt-5.5",
+    "reasoningEffort": "medium",
+    "manifestSha256": "ebc51112db5c52722b7f2fa4f497716c5e0358f444a15032897ebdd3c529c308",
+    "seedTreeSha256": "8956645c171106f907a7f31524621438e4395c8e6a12afcef69e34d6011baffe",
+    "verifierSha256": "a2971d564a3bbca8d7f7d59fb10fee86b4c957d5cafe0facc5796f80d5e18c22",
+    "cohortSha256": "cc7576144fc5641f37357075c559cf4b140632cdb8cde90cdaab8011dcd99b81"
+  },
+  "environmentDigest": "f06e18a77c0a805b047fd58dbad5fff5be786df8ad4062ce8f5b3bec38e93b79",
+  "totals": {
+    "cases": 10,
+    "passed": 10,
+    "failed": 0,
+    "usage": {
+      "inputTokens": 987478,
+      "cachedInputTokens": 823936,
+      "outputTokens": 14072,
+      "reasoningOutputTokens": 1995
+    },
+    "costUsd": null,
+    "costReason": "The authenticated Codex subscription does not expose a dated per-run USD price in exec events.",
+    "modelLatencyMs": {
+      "p50": 37421,
+      "p95": 80756
+    }
+  },
+  "results": [
+    {
+      "id": "coupled-order-total",
+      "category": "coupled-typescript",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 80756,
+      "verifierLatencyMs": 429,
+      "usage": {
+        "inputTokens": 185687,
+        "cachedInputTokens": 166016,
+        "outputTokens": 3042,
+        "reasoningOutputTokens": 639
+      },
+      "error": null
+    },
+    {
+      "id": "coupled-ticket-state",
+      "category": "coupled-typescript",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 70915,
+      "verifierLatencyMs": 430,
+      "usage": {
+        "inputTokens": 148127,
+        "cachedInputTokens": 123776,
+        "outputTokens": 2845,
+        "reasoningOutputTokens": 611
+      },
+      "error": null
+    },
+    {
+      "id": "coupled-user-display",
+      "category": "coupled-typescript",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 54143,
+      "verifierLatencyMs": 438,
+      "usage": {
+        "inputTokens": 111209,
+        "cachedInputTokens": 81536,
+        "outputTokens": 2019,
+        "reasoningOutputTokens": 118
+      },
+      "error": null
+    },
+    {
+      "id": "generate-access-policy",
+      "category": "closed-scope-generation",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 37421,
+      "verifierLatencyMs": 443,
+      "usage": {
+        "inputTokens": 89963,
+        "cachedInputTokens": 75008,
+        "outputTokens": 885,
+        "reasoningOutputTokens": 47
+      },
+      "error": null
+    },
+    {
+      "id": "generate-duration-parser",
+      "category": "closed-scope-generation",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 31631,
+      "verifierLatencyMs": 429,
+      "usage": {
+        "inputTokens": 74799,
+        "cachedInputTokens": 56192,
+        "outputTokens": 904,
+        "reasoningOutputTokens": 22
+      },
+      "error": null
+    },
+    {
+      "id": "small-edit-config",
+      "category": "small-edit",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 39623,
+      "verifierLatencyMs": 40,
+      "usage": {
+        "inputTokens": 74735,
+        "cachedInputTokens": 60288,
+        "outputTokens": 710,
+        "reasoningOutputTokens": 58
+      },
+      "error": null
+    },
+    {
+      "id": "small-edit-copy",
+      "category": "small-edit",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 35977,
+      "verifierLatencyMs": 41,
+      "usage": {
+        "inputTokens": 74954,
+        "cachedInputTokens": 60288,
+        "outputTokens": 976,
+        "reasoningOutputTokens": 246
+      },
+      "error": null
+    },
+    {
+      "id": "small-edit-slug",
+      "category": "small-edit",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 39431,
+      "verifierLatencyMs": 40,
+      "usage": {
+        "inputTokens": 91319,
+        "cachedInputTokens": 76544,
+        "outputTokens": 1046,
+        "reasoningOutputTokens": 93
+      },
+      "error": null
+    },
+    {
+      "id": "synthesize-incident-summary",
+      "category": "frozen-evidence-synthesis",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 30896,
+      "verifierLatencyMs": 43,
+      "usage": {
+        "inputTokens": 77168,
+        "cachedInputTokens": 70528,
+        "outputTokens": 1040,
+        "reasoningOutputTokens": 138
+      },
+      "error": null
+    },
+    {
+      "id": "synthesize-release-report",
+      "category": "frozen-evidence-synthesis",
+      "passed": true,
+      "modelExitCode": 0,
+      "verifierExitCode": 0,
+      "timedOut": false,
+      "modelLatencyMs": 21520,
+      "verifierLatencyMs": 41,
+      "usage": {
+        "inputTokens": 59517,
+        "cachedInputTokens": 53760,
+        "outputTokens": 605,
+        "reasoningOutputTokens": 23
+      },
+      "error": null
+    }
+  ],
+  "verificationUpdatedAt": "2026-07-13T21:49:17.512Z"
+}

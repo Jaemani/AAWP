@@ -1,0 +1,138 @@
+apiVersion: awf/v1
+id: spec-to-demo
+version: 0.1.0
+mode: CONTRACT
+artifactSchemas:
+  - type: artifact.brief
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+      required: [title]
+  - type: artifact.demo
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.verdict
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+inputs:
+  brief:
+    type: artifact.brief
+    schemaVersion: 1.0.0
+    visibility: public
+outputs:
+  demo:
+    type: artifact.verdict
+    schemaVersion: 1.0.0
+    visibility: public
+verifierDefinitions:
+  - id: release-check
+    owner:
+      id: verifier-team
+      role: verifier
+    visibility: public
+scopePolicy:
+  allowedSecrets: []
+  allowedNetworkHosts: []
+  maxWorkflowCostUsd: 1
+nodes:
+  - id: build-demo
+    kind: deterministic
+    version: 1.0.0
+    owner:
+      id: builder-team
+      role: builder
+    inputs:
+      input:
+        type: artifact.brief
+        schemaVersion: 1.0.0
+        visibility: public
+    outputs:
+      output:
+        type: artifact.demo
+        schemaVersion: 1.0.0
+        visibility: public
+    reads: [workspace/spec.md]
+    writes: [workspace/demo/index.html]
+    capabilities:
+      filesystemRead: [workspace/**]
+      filesystemWrite: [workspace/**]
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 300
+      maxCostUsd: 0.1
+    cache:
+      mode: exact
+      includeModelRevision: true
+      includeEnvironmentDigest: true
+    verifiers: []
+    retryPolicy:
+      retryableClasses: [capacity]
+      backoff: fixed
+  - id: verify-release
+    kind: judge
+    version: 1.0.0
+    owner:
+      id: verifier-team
+      role: verifier
+    inputs:
+      input:
+        type: artifact.demo
+        schemaVersion: 1.0.0
+        visibility: public
+    outputs:
+      output:
+        type: artifact.verdict
+        schemaVersion: 1.0.0
+        visibility: public
+    reads: []
+    writes: []
+    capabilities:
+      filesystemRead: []
+      filesystemWrite: []
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 120
+      maxCostUsd: 0.05
+    cache:
+      mode: verified
+      includeModelRevision: true
+      includeEnvironmentDigest: true
+    verifiers: []
+    retryPolicy:
+      retryableClasses: [capacity]
+      backoff: fixed
+edges:
+  - source:
+      kind: workflowInput
+      port: brief
+    target:
+      kind: nodeInput
+      nodeId: build-demo
+      port: input
+  - source:
+      kind: nodeOutput
+      nodeId: build-demo
+      port: output
+    target:
+      kind: nodeInput
+      nodeId: verify-release
+      port: input
+  - source:
+      kind: nodeOutput
+      nodeId: verify-release
+      port: output
+    target:
+      kind: workflowOutput
+      port: demo
+releasePolicy:
+  requiredVerifiers: [release-check]
+  maxBlockingFindings: 0
+  requireDirectBaseline: true

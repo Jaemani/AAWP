@@ -1,0 +1,1 @@
+The dependency scan found 1 unresolved critical vulnerability in the image parser.

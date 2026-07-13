@@ -1,4 +1,5 @@
 <!-- headroom:rtk-instructions -->
+
 # AAWP Agent Rules
 
 - All future shell commands must be prefixed with `rtk`.
@@ -6,4 +7,5 @@
 - "caveman" means the simplest sufficient implementation: no speculative abstraction, explicit types, and explicit errors.
 - Prose documentation and final reports are written in Korean.
 - Code identifiers are written in English.
+
 <!-- /headroom:rtk-instructions -->

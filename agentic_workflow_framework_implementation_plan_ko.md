@@ -1646,22 +1646,22 @@ tests/
 
 ## 23. 기존 프레임워크 재사용 매트릭스
 
-| 영역 | 기본 선택 | 재사용 방식 | 직접 만들 부분 |
-|---|---|---|---|
-| 내구 실행 | Temporal | workflow/activity, signal, timer, retry, visibility | RuntimePort, node mapping, artifact integration |
-| Postgres 중심 대안 | DBOS | 후속 backend adapter | 공통 semantics 테스트 |
-| 서비스 durable state 대안 | Restate | 특정 deployment adapter | 공통 artifact/policy 계층 |
-| 에이전트 서브그래프 | LangGraph / Microsoft Agent Framework / ADK / CrewAI | plugin runner | 플랫폼 진실원과 권한은 코어 |
-| SaaS 통합 | n8n | connector, import/export, external subworkflow | 독자 WIR와 Studio |
-| 모델 평가 | Inspect AI | eval dataset/solver/scorer | workflow promotion service |
-| 격리 task 검증 | Harbor | task container/verifier | artifact bridge, finding schema |
-| 도구 프로토콜 | MCP | tool adapter | capability gateway, trust policy |
-| 외부 agent 상호 운용 | A2A | 외부 task/artifact exchange | 내부 durable bus는 사용 안 함 |
-| 관측 | OpenTelemetry | trace/metric semantic conventions | redaction, lineage correlation |
-| 정책 | OPA 또는 Cedar | policy evaluation | capability model과 policy schema |
-| CAS/증분 개념 | Bazel/Nix 원리 | 설계 원칙 | artifact graph, impact engine |
-| 브라우저 검증 | Playwright | public/hidden E2E | acceptance compiler와 evidence |
-| 격리 | OCI container, gVisor/Firecracker | execution substrate | node capability launcher |
+| 영역                      | 기본 선택                                            | 재사용 방식                                         | 직접 만들 부분                                  |
+| ------------------------- | ---------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------- |
+| 내구 실행                 | Temporal                                             | workflow/activity, signal, timer, retry, visibility | RuntimePort, node mapping, artifact integration |
+| Postgres 중심 대안        | DBOS                                                 | 후속 backend adapter                                | 공통 semantics 테스트                           |
+| 서비스 durable state 대안 | Restate                                              | 특정 deployment adapter                             | 공통 artifact/policy 계층                       |
+| 에이전트 서브그래프       | LangGraph / Microsoft Agent Framework / ADK / CrewAI | plugin runner                                       | 플랫폼 진실원과 권한은 코어                     |
+| SaaS 통합                 | n8n                                                  | connector, import/export, external subworkflow      | 독자 WIR와 Studio                               |
+| 모델 평가                 | Inspect AI                                           | eval dataset/solver/scorer                          | workflow promotion service                      |
+| 격리 task 검증            | Harbor                                               | task container/verifier                             | artifact bridge, finding schema                 |
+| 도구 프로토콜             | MCP                                                  | tool adapter                                        | capability gateway, trust policy                |
+| 외부 agent 상호 운용      | A2A                                                  | 외부 task/artifact exchange                         | 내부 durable bus는 사용 안 함                   |
+| 관측                      | OpenTelemetry                                        | trace/metric semantic conventions                   | redaction, lineage correlation                  |
+| 정책                      | OPA 또는 Cedar                                       | policy evaluation                                   | capability model과 policy schema                |
+| CAS/증분 개념             | Bazel/Nix 원리                                       | 설계 원칙                                           | artifact graph, impact engine                   |
+| 브라우저 검증             | Playwright                                           | public/hidden E2E                                   | acceptance compiler와 evidence                  |
+| 격리                      | OCI container, gVisor/Firecracker                    | execution substrate                                 | node capability launcher                        |
 
 ---
 

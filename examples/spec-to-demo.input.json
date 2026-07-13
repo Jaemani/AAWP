@@ -1,0 +1,6 @@
+{
+  "brief": {
+    "title": "AAWP demo",
+    "requirements": ["render a deterministic static demo", "avoid network and secrets"]
+  }
+}

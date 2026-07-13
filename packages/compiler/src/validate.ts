@@ -9,8 +9,35 @@ function diagnostic(input: Diagnostic): Diagnostic {
   return input;
 }
 
+function patternMatches(pattern: string, path: string): boolean {
+  if (pattern === "*") return true;
+  if (pattern.endsWith("/**")) {
+    const prefix = pattern.slice(0, -3);
+    return path.startsWith(`${prefix}/`);
+  }
+  return path === pattern;
+}
+
 function pathMatches(path: string, grants: string[]): boolean {
-  return grants.some((grant) => path === grant || path.startsWith(`${grant}/`) || grant === "*");
+  return grants.some((grant) => patternMatches(grant, path));
+}
+
+function writePatternsOverlap(left: string, right: string): boolean {
+  return (
+    patternMatches(left, right) ||
+    patternMatches(right, left) ||
+    (left.endsWith("/**") && right.endsWith("/**") && recursivePatternsOverlap(left, right))
+  );
+}
+
+function recursivePatternsOverlap(left: string, right: string): boolean {
+  const leftPrefix = left.slice(0, -3);
+  const rightPrefix = right.slice(0, -3);
+  return (
+    leftPrefix === rightPrefix ||
+    leftPrefix.startsWith(`${rightPrefix}/`) ||
+    rightPrefix.startsWith(`${leftPrefix}/`)
+  );
 }
 
 function portKey(ref: { type: string; schemaVersion: string }): string {
@@ -71,14 +98,29 @@ export function validateWorkflow(input: unknown): ValidationResult {
       );
     }
     schemaRefs.add(key);
+    if (!ajv.validateSchema(schema.schema)) {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.INVALID_ARTIFACT_JSON_SCHEMA,
+          severity: "error",
+          path: `/artifactSchemas/${index}/schema`,
+          message: `invalid artifact JSON Schema ${key}`,
+          details: { errors: ajv.errors }
+        })
+      );
+    }
   }
 
   const declaredPorts: Array<[string, { type: string; schemaVersion: string }]> = [];
-  for (const [name, port] of Object.entries(workflow.inputs)) declaredPorts.push([`/inputs/${name}`, port]);
-  for (const [name, port] of Object.entries(workflow.outputs)) declaredPorts.push([`/outputs/${name}`, port]);
+  for (const [name, port] of Object.entries(workflow.inputs))
+    declaredPorts.push([`/inputs/${name}`, port]);
+  for (const [name, port] of Object.entries(workflow.outputs))
+    declaredPorts.push([`/outputs/${name}`, port]);
   for (const node of workflow.nodes) {
-    for (const [name, port] of Object.entries(node.inputs)) declaredPorts.push([`${nodePath(node.id)}/inputs/${name}`, port]);
-    for (const [name, port] of Object.entries(node.outputs)) declaredPorts.push([`${nodePath(node.id)}/outputs/${name}`, port]);
+    for (const [name, port] of Object.entries(node.inputs))
+      declaredPorts.push([`${nodePath(node.id)}/inputs/${name}`, port]);
+    for (const [name, port] of Object.entries(node.outputs))
+      declaredPorts.push([`${nodePath(node.id)}/outputs/${name}`, port]);
   }
   for (const [path, port] of declaredPorts) {
     if (!schemaRefs.has(portKey(port))) {
@@ -93,8 +135,8 @@ export function validateWorkflow(input: unknown): ValidationResult {
     }
   }
 
-  const producedInputs = new Set<string>();
-  const producedOutputs = new Set<string>();
+  const producedInputs = new Map<string, number[]>();
+  const producedOutputs = new Map<string, number[]>();
   const adjacency = new Map<string, Set<string>>();
   for (const node of workflow.nodes) adjacency.set(node.id, new Set<string>());
 
@@ -132,9 +174,13 @@ export function validateWorkflow(input: unknown): ValidationResult {
       );
     }
     if (edge.target.kind === "nodeInput") {
-      producedInputs.add(`${edge.target.nodeId}:${edge.target.port}`);
+      const key = `${edge.target.nodeId}:${edge.target.port}`;
+      producedInputs.set(key, [...(producedInputs.get(key) ?? []), edgeIndex]);
     } else {
-      producedOutputs.add(edge.target.port);
+      producedOutputs.set(edge.target.port, [
+        ...(producedOutputs.get(edge.target.port) ?? []),
+        edgeIndex
+      ]);
     }
     if (edge.source.kind === "nodeOutput" && edge.target.kind === "nodeInput") {
       adjacency.get(edge.source.nodeId)?.add(edge.target.nodeId);
@@ -143,7 +189,8 @@ export function validateWorkflow(input: unknown): ValidationResult {
 
   for (const node of workflow.nodes) {
     for (const inputName of Object.keys(node.inputs)) {
-      if (!producedInputs.has(`${node.id}:${inputName}`)) {
+      const producers = producedInputs.get(`${node.id}:${inputName}`) ?? [];
+      if (producers.length === 0) {
         diagnostics.push(
           diagnostic({
             code: ERROR_CODES.REQUIRED_INPUT_MISSING_PRODUCER,
@@ -153,11 +200,24 @@ export function validateWorkflow(input: unknown): ValidationResult {
             message: `node input ${inputName} has no producer`
           })
         );
+      } else if (producers.length > 1) {
+        diagnostics.push(
+          diagnostic({
+            code: ERROR_CODES.MULTIPLE_PRODUCERS,
+            severity: "error",
+            path: `${nodePath(node.id)}/inputs/${inputName}`,
+            nodeId: node.id,
+            edgeIndex: producers[1] ?? producers[0]!,
+            message: `node input ${inputName} has multiple producers`,
+            details: { edgeIndexes: producers }
+          })
+        );
       }
     }
   }
   for (const outputName of Object.keys(workflow.outputs)) {
-    if (!producedOutputs.has(outputName)) {
+    const producers = producedOutputs.get(outputName) ?? [];
+    if (producers.length === 0) {
       diagnostics.push(
         diagnostic({
           code: ERROR_CODES.WORKFLOW_OUTPUT_MISSING_PRODUCER,
@@ -166,18 +226,37 @@ export function validateWorkflow(input: unknown): ValidationResult {
           message: `workflow output ${outputName} has no producer`
         })
       );
+    } else if (producers.length > 1) {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.MULTIPLE_PRODUCERS,
+          severity: "error",
+          path: `/outputs/${outputName}`,
+          edgeIndex: producers[1] ?? producers[0]!,
+          message: `workflow output ${outputName} has multiple producers`,
+          details: { edgeIndexes: producers }
+        })
+      );
     }
   }
 
-  detectCycles(workflow.nodes.map((node) => node.id), adjacency, diagnostics);
-  analyzeNodes(workflow, diagnostics);
+  detectCycles(
+    workflow.nodes.map((node) => node.id),
+    adjacency,
+    diagnostics
+  );
+  analyzeNodes(workflow, adjacency, diagnostics);
   analyzeReachability(workflow, adjacency, diagnostics);
   analyzeBudget(workflow, diagnostics);
 
   return { ok: !diagnostics.some((item) => item.severity === "error"), diagnostics };
 }
 
-function detectCycles(nodeIds: string[], adjacency: Map<string, Set<string>>, diagnostics: Diagnostic[]): void {
+function detectCycles(
+  nodeIds: string[],
+  adjacency: Map<string, Set<string>>,
+  diagnostics: Diagnostic[]
+): void {
   const temporary = new Set<string>();
   const permanent = new Set<string>();
   const stack: string[] = [];
@@ -205,11 +284,113 @@ function detectCycles(nodeIds: string[], adjacency: Map<string, Set<string>>, di
   for (const nodeId of nodeIds) visit(nodeId);
 }
 
-function analyzeNodes(workflow: WorkflowDefinition, diagnostics: Diagnostic[]): void {
-  const writeOwners = new Map<string, string>();
-  const requiredVerifierIds = new Set(workflow.releasePolicy.requiredVerifiers);
-  const allowedSecrets = new Set(Array.isArray(workflow.scopePolicy.allowedSecrets) ? workflow.scopePolicy.allowedSecrets : []);
-  const allowedNetwork = new Set(Array.isArray(workflow.scopePolicy.allowedNetworkHosts) ? workflow.scopePolicy.allowedNetworkHosts : []);
+function canReach(start: string, target: string, adjacency: Map<string, Set<string>>): boolean {
+  const visited = new Set<string>();
+  const stack = [...(adjacency.get(start) ?? [])];
+  while (stack.length > 0) {
+    const nodeId = stack.pop();
+    if (nodeId === undefined || visited.has(nodeId)) continue;
+    if (nodeId === target) return true;
+    visited.add(nodeId);
+    stack.push(...(adjacency.get(nodeId) ?? []));
+  }
+  return false;
+}
+
+function analyzeNodes(
+  workflow: WorkflowDefinition,
+  adjacency: Map<string, Set<string>>,
+  diagnostics: Diagnostic[]
+): void {
+  const writeEntries: Array<{ nodeId: string; pattern: string }> = [];
+  const verifierById = new Map<string, WorkflowDefinition["verifierDefinitions"][number]>();
+  const seenVerifierIds = new Set<string>();
+  const productOrBuilderOwnerIds = new Set(
+    workflow.nodes
+      .filter((node) => node.owner.role === "product" || node.owner.role === "builder")
+      .map((node) => node.owner.id)
+  );
+  const allowedSecrets = new Set(
+    Array.isArray(workflow.scopePolicy.allowedSecrets) ? workflow.scopePolicy.allowedSecrets : []
+  );
+  const allowedNetwork = new Set(
+    Array.isArray(workflow.scopePolicy.allowedNetworkHosts)
+      ? workflow.scopePolicy.allowedNetworkHosts
+      : []
+  );
+
+  for (const [index, verifier] of workflow.verifierDefinitions.entries()) {
+    if (seenVerifierIds.has(verifier.id)) {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.DUPLICATE_VERIFIER_DEFINITION,
+          severity: "error",
+          path: `/verifierDefinitions/${index}/id`,
+          message: `duplicate verifier definition ${verifier.id}`
+        })
+      );
+    }
+    seenVerifierIds.add(verifier.id);
+    verifierById.set(verifier.id, verifier);
+    if (
+      verifier.visibility === "hidden" &&
+      (verifier.owner.role === "product" || verifier.owner.role === "builder")
+    ) {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.HIDDEN_VERIFIER_LEAKAGE,
+          severity: "error",
+          path: `/verifierDefinitions/${index}/owner`,
+          message: "hidden verifier cannot be owned by product or builder"
+        })
+      );
+    }
+    if (verifier.owner.role !== "verifier") {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.RELEASE_VERIFIER_RULE,
+          severity: "error",
+          path: `/verifierDefinitions/${index}/owner`,
+          message: "verifier definition must be owned by verifier role"
+        })
+      );
+    }
+  }
+
+  for (const [index, verifierId] of workflow.releasePolicy.requiredVerifiers.entries()) {
+    const verifier = verifierById.get(verifierId);
+    if (verifier === undefined) {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.UNKNOWN_VERIFIER_REFERENCE,
+          severity: "error",
+          path: `/releasePolicy/requiredVerifiers/${index}`,
+          message: `unknown release verifier ${verifierId}`
+        })
+      );
+      continue;
+    }
+    if (verifier.owner.role !== "verifier") {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.RELEASE_VERIFIER_RULE,
+          severity: "error",
+          path: `/releasePolicy/requiredVerifiers/${index}`,
+          message: "release verifier must be owned by verifier role"
+        })
+      );
+    }
+    if (productOrBuilderOwnerIds.has(verifier.owner.id)) {
+      diagnostics.push(
+        diagnostic({
+          code: ERROR_CODES.AUTHORITY_OVERLAP,
+          severity: "error",
+          path: `/releasePolicy/requiredVerifiers/${index}`,
+          message: "product or builder owner cannot also own release verifier"
+        })
+      );
+    }
+  }
 
   for (const node of workflow.nodes) {
     if (node.kind === "loop" && node.loop === undefined) {
@@ -245,7 +426,11 @@ function analyzeNodes(workflow: WorkflowDefinition, diagnostics: Diagnostic[]): 
         })
       );
     }
-    if (node.kind === "side_effect" && node.sideEffect?.idempotencyKeyTemplate === undefined && node.sideEffect?.compensationNodeId === undefined) {
+    if (
+      node.kind === "side_effect" &&
+      node.sideEffect?.idempotencyKeyTemplate === undefined &&
+      node.sideEffect?.compensationNodeId === undefined
+    ) {
       diagnostics.push(
         diagnostic({
           code: ERROR_CODES.SIDE_EFFECT_GUARD_MISSING,
@@ -281,19 +466,25 @@ function analyzeNodes(workflow: WorkflowDefinition, diagnostics: Diagnostic[]): 
           })
         );
       }
-      const prior = writeOwners.get(write);
-      if (prior !== undefined && prior !== node.id) {
+      for (const prior of writeEntries) {
+        if (prior.nodeId === node.id || !writePatternsOverlap(prior.pattern, write)) continue;
+        if (
+          canReach(prior.nodeId, node.id, adjacency) ||
+          canReach(node.id, prior.nodeId, adjacency)
+        )
+          continue;
         diagnostics.push(
           diagnostic({
             code: ERROR_CODES.WRITE_CONFLICT,
             severity: "error",
             path: nodePath(node.id),
             nodeId: node.id,
-            message: `write ${write} conflicts with ${prior}`
+            message: `write ${write} conflicts with ${prior.nodeId}`,
+            details: { write, conflictingNodeId: prior.nodeId, conflictingWrite: prior.pattern }
           })
         );
       }
-      writeOwners.set(write, node.id);
+      writeEntries.push({ nodeId: node.id, pattern: write });
     }
     for (const secret of node.capabilities.secretRefs) {
       if (!allowedSecrets.has(secret)) {
@@ -321,7 +512,10 @@ function analyzeNodes(workflow: WorkflowDefinition, diagnostics: Diagnostic[]): 
         );
       }
     }
-    if ((node.owner.role === "builder" || node.owner.role === "product") && Object.values(node.inputs).some((port) => port.visibility === "hidden")) {
+    if (
+      (node.owner.role === "builder" || node.owner.role === "product") &&
+      Object.values(node.inputs).some((port) => port.visibility === "hidden")
+    ) {
       diagnostics.push(
         diagnostic({
           code: ERROR_CODES.HIDDEN_VERIFIER_LEAKAGE,
@@ -332,50 +526,31 @@ function analyzeNodes(workflow: WorkflowDefinition, diagnostics: Diagnostic[]): 
         })
       );
     }
-    if (requiredVerifierIds.has(node.id)) {
-      if (node.owner.role !== "verifier") {
+    for (const [index, binding] of node.verifiers.entries()) {
+      if (!verifierById.has(binding.verifierId)) {
         diagnostics.push(
           diagnostic({
-            code: ERROR_CODES.RELEASE_VERIFIER_RULE,
+            code: ERROR_CODES.UNKNOWN_VERIFIER_REFERENCE,
             severity: "error",
-            path: nodePath(node.id),
+            path: `${nodePath(node.id)}/verifiers/${index}/verifierId`,
             nodeId: node.id,
-            message: "release verifier must be owned by verifier role"
+            message: `unknown verifier binding ${binding.verifierId}`
           })
         );
       }
-      const productOwnerIds = workflow.nodes.filter((candidate) => candidate.owner.role === "product" || candidate.owner.role === "builder").map((candidate) => candidate.owner.id);
-      if (productOwnerIds.includes(node.owner.id)) {
-        diagnostics.push(
-          diagnostic({
-            code: ERROR_CODES.AUTHORITY_OVERLAP,
-            severity: "error",
-            path: nodePath(node.id),
-            nodeId: node.id,
-            message: "product or builder owner cannot also own release verifier"
-          })
-        );
-      }
-    }
-  }
-  for (const verifierId of workflow.releasePolicy.requiredVerifiers) {
-    if (!workflow.nodes.some((node) => node.id === verifierId)) {
-      diagnostics.push(
-        diagnostic({
-          code: ERROR_CODES.RELEASE_VERIFIER_RULE,
-          severity: "error",
-          path: "/releasePolicy/requiredVerifiers",
-          message: `required verifier ${verifierId} is not a node`
-        })
-      );
     }
   }
 }
 
-function analyzeReachability(workflow: WorkflowDefinition, adjacency: Map<string, Set<string>>, diagnostics: Diagnostic[]): void {
+function analyzeReachability(
+  workflow: WorkflowDefinition,
+  adjacency: Map<string, Set<string>>,
+  diagnostics: Diagnostic[]
+): void {
   const reachable = new Set<string>();
   for (const edge of workflow.edges) {
-    if (edge.source.kind === "workflowInput" && edge.target.kind === "nodeInput") reachable.add(edge.target.nodeId);
+    if (edge.source.kind === "workflowInput" && edge.target.kind === "nodeInput")
+      reachable.add(edge.target.nodeId);
   }
   let changed = true;
   while (changed) {
@@ -391,7 +566,8 @@ function analyzeReachability(workflow: WorkflowDefinition, adjacency: Map<string
   }
   const outputProducer = new Set<string>();
   for (const edge of workflow.edges) {
-    if (edge.source.kind === "nodeOutput" && edge.target.kind === "workflowOutput") outputProducer.add(edge.source.nodeId);
+    if (edge.source.kind === "nodeOutput" && edge.target.kind === "workflowOutput")
+      outputProducer.add(edge.source.nodeId);
   }
   for (const node of workflow.nodes) {
     if (!reachable.has(node.id)) {
@@ -407,7 +583,9 @@ function analyzeReachability(workflow: WorkflowDefinition, adjacency: Map<string
     }
   }
   for (const [outputName] of Object.entries(workflow.outputs)) {
-    const producer = workflow.edges.find((edge) => edge.target.kind === "workflowOutput" && edge.target.port === outputName);
+    const producer = workflow.edges.find(
+      (edge) => edge.target.kind === "workflowOutput" && edge.target.port === outputName
+    );
     if (producer?.source.kind === "nodeOutput" && !reachable.has(producer.source.nodeId)) {
       diagnostics.push(
         diagnostic({
@@ -424,7 +602,10 @@ function analyzeReachability(workflow: WorkflowDefinition, adjacency: Map<string
 }
 
 function analyzeBudget(workflow: WorkflowDefinition, diagnostics: Diagnostic[]): void {
-  const limit = typeof workflow.scopePolicy.maxWorkflowCostUsd === "number" ? workflow.scopePolicy.maxWorkflowCostUsd : undefined;
+  const limit =
+    typeof workflow.scopePolicy.maxWorkflowCostUsd === "number"
+      ? workflow.scopePolicy.maxWorkflowCostUsd
+      : undefined;
   if (limit === undefined) return;
   let worstCase = 0;
   for (const node of workflow.nodes) {

@@ -4,8 +4,6 @@ coverage/
 .turbo/
 .tokensave/
 .DS_Store
-benchmarks/direct-v0/runs/**/*.jsonl
-benchmarks/direct-v0/runs/**/*.log
-benchmarks/direct-v0/runs/**/raw/
+benchmarks/direct-v0/runs/
 benchmarks/direct-v0/workspaces/
 *.tsbuildinfo

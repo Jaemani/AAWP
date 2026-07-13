@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "model": "gpt-5.5",
+  "reasoningEffort": "medium",
+  "concurrency": 3,
+  "cases": [
+    {
+      "id": "small-edit-copy",
+      "category": "small-edit",
+      "prompt": "message.txt의 내용을 정확히 `Release candidate ready.` 한 줄로 바꾸세요. 다른 파일은 만들거나 수정하지 마세요.",
+      "seedDir": "seeds/small-edit-copy",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["small-edit-copy"] },
+      "timeoutMs": 120000
+    },
+    {
+      "id": "small-edit-config",
+      "category": "small-edit",
+      "prompt": "config.json에서 timeoutSeconds 값만 45로 바꾸세요. 다른 값과 파일은 변경하지 마세요.",
+      "seedDir": "seeds/small-edit-config",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["small-edit-config"] },
+      "timeoutMs": 120000
+    },
+    {
+      "id": "small-edit-slug",
+      "category": "small-edit",
+      "prompt": "src/slug.js의 slugify가 입력 앞뒤 공백을 제거한 뒤 기존 변환을 수행하도록 수정하세요. 공개 API와 나머지 동작은 유지하세요.",
+      "seedDir": "seeds/small-edit-slug",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["small-edit-slug"] },
+      "timeoutMs": 120000
+    },
+    {
+      "id": "coupled-order-total",
+      "category": "coupled-typescript",
+      "prompt": "Order에 선택적 couponPercent를 추가하고 totalCents가 subtotal에서 해당 백분율을 내림 계산해 차감하도록 타입과 구현을 함께 수정하세요. couponPercent는 0~100의 정수만 허용하며 아니면 RangeError를 던져야 합니다. 기존 export 경로를 유지하세요.",
+      "seedDir": "seeds/coupled-order-total",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["coupled-order-total"] },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "coupled-user-display",
+      "category": "coupled-typescript",
+      "prompt": "User에 선택적 preferredName을 추가하고 displayName이 preferredName의 trim 결과가 비어 있지 않으면 그것을, 아니면 기존 이름을 반환하도록 타입과 포매터를 수정하세요. 기존 export 경로를 유지하세요.",
+      "seedDir": "seeds/coupled-user-display",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["coupled-user-display"] },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "coupled-ticket-state",
+      "category": "coupled-typescript",
+      "prompt": "TicketState에 in_progress를 추가하고 허용 전이를 open→in_progress, in_progress→closed로 제한하세요. 동일 상태 전이와 open→closed는 거부해야 합니다. 타입, 구현, 공개 export를 일관되게 수정하세요.",
+      "seedDir": "seeds/coupled-ticket-state",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["coupled-ticket-state"] },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "generate-duration-parser",
+      "category": "closed-scope-generation",
+      "prompt": "src/parse-duration.ts 하나만 생성하세요. `parseDurationMs(input: string): number`를 export하고, 양의 정수 뒤에 ms/s/m가 붙은 입력만 받아 밀리초로 변환하세요. 0, 음수, 소수, 공백 포함, 미지원 단위, Number.isSafeInteger를 넘는 결과는 RangeError로 거부하세요.",
+      "seedDir": "seeds/generate-duration-parser",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["generate-duration-parser"] },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "generate-access-policy",
+      "category": "closed-scope-generation",
+      "prompt": "src/policy.ts 하나만 생성하세요. Role은 admin/editor/viewer, Action은 read/write/delete 문자열 유니온입니다. `evaluate(role, action): boolean`을 export하고 admin은 모두, editor는 read/write, viewer는 read만 허용하세요. 타입도 export하세요.",
+      "seedDir": "seeds/generate-access-policy",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["generate-access-policy"] },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "synthesize-release-report",
+      "category": "frozen-evidence-synthesis",
+      "prompt": "evidence 디렉터리의 두 문서만 근거로 REPORT.md를 작성하세요. 제목은 `# Release readiness`여야 합니다. `Decision: HOLD` 한 줄, 확인된 blocker 2개를 각각 불릿으로 쓰고 각 불릿 끝에 정확한 출처 `(evidence/build.txt)` 또는 `(evidence/security.txt)`를 붙이세요. 근거에 없는 내용을 추가하지 마세요.",
+      "seedDir": "seeds/synthesize-release-report",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["synthesize-release-report"] },
+      "timeoutMs": 180000
+    },
+    {
+      "id": "synthesize-incident-summary",
+      "category": "frozen-evidence-synthesis",
+      "prompt": "evidence/events.json만 근거로 summary.json을 생성하세요. 스키마는 `{\"incidentId\": string, \"failedChecks\": string[], \"firstFailureAt\": string, \"decision\": \"rollback\"}`입니다. failedChecks는 실패 이벤트의 check를 중복 제거해 사전순으로 정렬하세요. 근거 파일은 수정하지 마세요.",
+      "seedDir": "seeds/synthesize-incident-summary",
+      "verifier": { "file": "verifiers/verify.mjs", "args": ["synthesize-incident-summary"] },
+      "timeoutMs": 180000
+    }
+  ]
+}

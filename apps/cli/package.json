@@ -8,7 +8,8 @@
   "dependencies": {
     "@awf/compiler": "0.1.0",
     "@awf/ir": "0.1.0",
-    "@awf/runtime-core": "0.1.0"
+    "@awf/runtime-core": "0.1.0",
+    "yaml": "2.9.0"
   },
   "scripts": {
     "build": "tsc -b",

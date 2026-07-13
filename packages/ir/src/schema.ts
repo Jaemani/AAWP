@@ -34,7 +34,7 @@ const artifactSchema = Type.Object(
   {
     type: Type.String({ minLength: 1 }),
     schemaVersion: Type.String({ minLength: 1 }),
-    schema: Type.Record(Type.String(), Type.Unknown())
+    schema: Type.Union([Type.Record(Type.String(), Type.Unknown()), Type.Boolean()])
   },
   { additionalProperties: false }
 );
@@ -84,6 +84,15 @@ const verifierBinding = Type.Object(
     verifierId: Type.String({ minLength: 1 }),
     required: Type.Boolean(),
     phase: Type.Union([Type.Literal("pre"), Type.Literal("post"), Type.Literal("release")])
+  },
+  { additionalProperties: false }
+);
+
+const verifierDefinition = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }),
+    owner: owner,
+    visibility: Type.Union([Type.Literal("public"), Type.Literal("hidden")])
   },
   { additionalProperties: false }
 );
@@ -186,6 +195,7 @@ export const WorkflowDefinitionSchema = Type.Object(
     artifactSchemas: Type.Array(artifactSchema, { minItems: 1 }),
     inputs: Type.Record(Type.String(), port),
     outputs: Type.Record(Type.String(), port),
+    verifierDefinitions: Type.Array(verifierDefinition),
     scopePolicy: Type.Record(Type.String(), Type.Unknown()),
     nodes: Type.Array(WorkflowNodeSchema),
     edges: Type.Array(

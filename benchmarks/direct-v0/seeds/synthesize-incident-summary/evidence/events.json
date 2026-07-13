@@ -1,0 +1,26 @@
+[
+  {
+    "incidentId": "INC-204",
+    "at": "2026-07-13T09:00:00Z",
+    "check": "deployment",
+    "status": "passed"
+  },
+  {
+    "incidentId": "INC-204",
+    "at": "2026-07-13T09:04:00Z",
+    "check": "payment-latency",
+    "status": "failed"
+  },
+  {
+    "incidentId": "INC-204",
+    "at": "2026-07-13T09:06:00Z",
+    "check": "checkout-e2e",
+    "status": "failed"
+  },
+  {
+    "incidentId": "INC-204",
+    "at": "2026-07-13T09:07:00Z",
+    "check": "payment-latency",
+    "status": "failed"
+  }
+]

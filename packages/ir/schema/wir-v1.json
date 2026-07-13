@@ -10,38 +10,21 @@
     "artifactSchemas",
     "inputs",
     "outputs",
+    "verifierDefinitions",
     "scopePolicy",
     "nodes",
     "edges",
     "releasePolicy"
   ],
   "properties": {
-    "apiVersion": {
-      "const": "awf/v1",
-      "type": "string"
-    },
-    "id": {
-      "minLength": 1,
-      "type": "string"
-    },
-    "version": {
-      "minLength": 1,
-      "type": "string"
-    },
+    "apiVersion": { "const": "awf/v1", "type": "string" },
+    "id": { "minLength": 1, "type": "string" },
+    "version": { "minLength": 1, "type": "string" },
     "mode": {
       "anyOf": [
-        {
-          "const": "DIRECT",
-          "type": "string"
-        },
-        {
-          "const": "CONTRACT",
-          "type": "string"
-        },
-        {
-          "const": "EXPLORER",
-          "type": "string"
-        }
+        { "const": "DIRECT", "type": "string" },
+        { "const": "CONTRACT", "type": "string" },
+        { "const": "EXPLORER", "type": "string" }
       ]
     },
     "artifactSchemas": {
@@ -50,25 +33,15 @@
       "items": {
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "type",
-          "schemaVersion",
-          "schema"
-        ],
+        "required": ["type", "schemaVersion", "schema"],
         "properties": {
-          "type": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "schemaVersion": {
-            "minLength": 1,
-            "type": "string"
-          },
+          "type": { "minLength": 1, "type": "string" },
+          "schemaVersion": { "minLength": 1, "type": "string" },
           "schema": {
-            "type": "object",
-            "patternProperties": {
-              "^(.*)$": {}
-            }
+            "anyOf": [
+              { "type": "object", "patternProperties": { "^(.*)$": {} } },
+              { "type": "boolean" }
+            ]
           }
         }
       }
@@ -79,30 +52,14 @@
         "^(.*)$": {
           "additionalProperties": false,
           "type": "object",
-          "required": [
-            "type",
-            "schemaVersion",
-            "visibility"
-          ],
+          "required": ["type", "schemaVersion", "visibility"],
           "properties": {
-            "type": {
-              "minLength": 1,
-              "type": "string"
-            },
-            "schemaVersion": {
-              "minLength": 1,
-              "type": "string"
-            },
+            "type": { "minLength": 1, "type": "string" },
+            "schemaVersion": { "minLength": 1, "type": "string" },
             "visibility": {
               "anyOf": [
-                {
-                  "const": "public",
-                  "type": "string"
-                },
-                {
-                  "const": "hidden",
-                  "type": "string"
-                }
+                { "const": "public", "type": "string" },
+                { "const": "hidden", "type": "string" }
               ]
             }
           }
@@ -115,42 +72,54 @@
         "^(.*)$": {
           "additionalProperties": false,
           "type": "object",
-          "required": [
-            "type",
-            "schemaVersion",
-            "visibility"
-          ],
+          "required": ["type", "schemaVersion", "visibility"],
           "properties": {
-            "type": {
-              "minLength": 1,
-              "type": "string"
-            },
-            "schemaVersion": {
-              "minLength": 1,
-              "type": "string"
-            },
+            "type": { "minLength": 1, "type": "string" },
+            "schemaVersion": { "minLength": 1, "type": "string" },
             "visibility": {
               "anyOf": [
-                {
-                  "const": "public",
-                  "type": "string"
-                },
-                {
-                  "const": "hidden",
-                  "type": "string"
-                }
+                { "const": "public", "type": "string" },
+                { "const": "hidden", "type": "string" }
               ]
             }
           }
         }
       }
     },
-    "scopePolicy": {
-      "type": "object",
-      "patternProperties": {
-        "^(.*)$": {}
+    "verifierDefinitions": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["id", "owner", "visibility"],
+        "properties": {
+          "id": { "minLength": 1, "type": "string" },
+          "owner": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": ["id", "role"],
+            "properties": {
+              "id": { "minLength": 1, "type": "string" },
+              "role": {
+                "anyOf": [
+                  { "const": "product", "type": "string" },
+                  { "const": "builder", "type": "string" },
+                  { "const": "verifier", "type": "string" },
+                  { "const": "operator", "type": "string" }
+                ]
+              }
+            }
+          },
+          "visibility": {
+            "anyOf": [
+              { "const": "public", "type": "string" },
+              { "const": "hidden", "type": "string" }
+            ]
+          }
+        }
       }
     },
+    "scopePolicy": { "type": "object", "patternProperties": { "^(.*)$": {} } },
     "nodes": {
       "type": "array",
       "items": {
@@ -172,92 +141,35 @@
           "retryPolicy"
         ],
         "properties": {
-          "id": {
-            "minLength": 1,
-            "type": "string"
-          },
+          "id": { "minLength": 1, "type": "string" },
           "kind": {
             "anyOf": [
-              {
-                "const": "deterministic",
-                "type": "string"
-              },
-              {
-                "const": "llm",
-                "type": "string"
-              },
-              {
-                "const": "tool",
-                "type": "string"
-              },
-              {
-                "const": "subworkflow",
-                "type": "string"
-              },
-              {
-                "const": "map",
-                "type": "string"
-              },
-              {
-                "const": "reduce",
-                "type": "string"
-              },
-              {
-                "const": "judge",
-                "type": "string"
-              },
-              {
-                "const": "approval",
-                "type": "string"
-              },
-              {
-                "const": "wait",
-                "type": "string"
-              },
-              {
-                "const": "side_effect",
-                "type": "string"
-              },
-              {
-                "const": "loop",
-                "type": "string"
-              }
+              { "const": "deterministic", "type": "string" },
+              { "const": "llm", "type": "string" },
+              { "const": "tool", "type": "string" },
+              { "const": "subworkflow", "type": "string" },
+              { "const": "map", "type": "string" },
+              { "const": "reduce", "type": "string" },
+              { "const": "judge", "type": "string" },
+              { "const": "approval", "type": "string" },
+              { "const": "wait", "type": "string" },
+              { "const": "side_effect", "type": "string" },
+              { "const": "loop", "type": "string" }
             ]
           },
-          "version": {
-            "minLength": 1,
-            "type": "string"
-          },
+          "version": { "minLength": 1, "type": "string" },
           "owner": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "id",
-              "role"
-            ],
+            "required": ["id", "role"],
             "properties": {
-              "id": {
-                "minLength": 1,
-                "type": "string"
-              },
+              "id": { "minLength": 1, "type": "string" },
               "role": {
                 "anyOf": [
-                  {
-                    "const": "product",
-                    "type": "string"
-                  },
-                  {
-                    "const": "builder",
-                    "type": "string"
-                  },
-                  {
-                    "const": "verifier",
-                    "type": "string"
-                  },
-                  {
-                    "const": "operator",
-                    "type": "string"
-                  }
+                  { "const": "product", "type": "string" },
+                  { "const": "builder", "type": "string" },
+                  { "const": "verifier", "type": "string" },
+                  { "const": "operator", "type": "string" }
                 ]
               }
             }
@@ -268,30 +180,14 @@
               "^(.*)$": {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "type",
-                  "schemaVersion",
-                  "visibility"
-                ],
+                "required": ["type", "schemaVersion", "visibility"],
                 "properties": {
-                  "type": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "schemaVersion": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
+                  "type": { "minLength": 1, "type": "string" },
+                  "schemaVersion": { "minLength": 1, "type": "string" },
                   "visibility": {
                     "anyOf": [
-                      {
-                        "const": "public",
-                        "type": "string"
-                      },
-                      {
-                        "const": "hidden",
-                        "type": "string"
-                      }
+                      { "const": "public", "type": "string" },
+                      { "const": "hidden", "type": "string" }
                     ]
                   }
                 }
@@ -304,158 +200,61 @@
               "^(.*)$": {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "type",
-                  "schemaVersion",
-                  "visibility"
-                ],
+                "required": ["type", "schemaVersion", "visibility"],
                 "properties": {
-                  "type": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "schemaVersion": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
+                  "type": { "minLength": 1, "type": "string" },
+                  "schemaVersion": { "minLength": 1, "type": "string" },
                   "visibility": {
                     "anyOf": [
-                      {
-                        "const": "public",
-                        "type": "string"
-                      },
-                      {
-                        "const": "hidden",
-                        "type": "string"
-                      }
+                      { "const": "public", "type": "string" },
+                      { "const": "hidden", "type": "string" }
                     ]
                   }
                 }
               }
             }
           },
-          "reads": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "writes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
+          "reads": { "type": "array", "items": { "type": "string" } },
+          "writes": { "type": "array", "items": { "type": "string" } },
           "capabilities": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "filesystemRead",
-              "filesystemWrite",
-              "network",
-              "tools",
-              "secretRefs"
-            ],
+            "required": ["filesystemRead", "filesystemWrite", "network", "tools", "secretRefs"],
             "properties": {
-              "filesystemRead": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "filesystemWrite": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "network": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "tools": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "secretRefs": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
+              "filesystemRead": { "type": "array", "items": { "type": "string" } },
+              "filesystemWrite": { "type": "array", "items": { "type": "string" } },
+              "network": { "type": "array", "items": { "type": "string" } },
+              "tools": { "type": "array", "items": { "type": "string" } },
+              "secretRefs": { "type": "array", "items": { "type": "string" } }
             }
           },
           "budget": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "maxAttempts",
-              "timeoutSec"
-            ],
+            "required": ["maxAttempts", "timeoutSec"],
             "properties": {
-              "maxAttempts": {
-                "minimum": 1,
-                "maximum": 10,
-                "type": "integer"
-              },
-              "timeoutSec": {
-                "minimum": 1,
-                "maximum": 86400,
-                "type": "integer"
-              },
-              "maxTokens": {
-                "minimum": 0,
-                "type": "integer"
-              },
-              "maxCostUsd": {
-                "minimum": 0,
-                "type": "number"
-              },
-              "maxChildren": {
-                "minimum": 0,
-                "type": "integer"
-              }
+              "maxAttempts": { "minimum": 1, "maximum": 10, "type": "integer" },
+              "timeoutSec": { "minimum": 1, "maximum": 86400, "type": "integer" },
+              "maxTokens": { "minimum": 0, "type": "integer" },
+              "maxCostUsd": { "minimum": 0, "type": "number" },
+              "maxChildren": { "minimum": 0, "type": "integer" }
             }
           },
           "cache": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "mode",
-              "includeModelRevision",
-              "includeEnvironmentDigest"
-            ],
+            "required": ["mode", "includeModelRevision", "includeEnvironmentDigest"],
             "properties": {
               "mode": {
                 "anyOf": [
-                  {
-                    "const": "disabled",
-                    "type": "string"
-                  },
-                  {
-                    "const": "exact",
-                    "type": "string"
-                  },
-                  {
-                    "const": "verified",
-                    "type": "string"
-                  }
+                  { "const": "disabled", "type": "string" },
+                  { "const": "exact", "type": "string" },
+                  { "const": "verified", "type": "string" }
                 ]
               },
-              "includeModelRevision": {
-                "type": "boolean"
-              },
-              "includeEnvironmentDigest": {
-                "type": "boolean"
-              },
-              "ttlSec": {
-                "minimum": 1,
-                "type": "integer"
-              }
+              "includeModelRevision": { "type": "boolean" },
+              "includeEnvironmentDigest": { "type": "boolean" },
+              "ttlSec": { "minimum": 1, "type": "integer" }
             }
           },
           "verifiers": {
@@ -463,33 +262,15 @@
             "items": {
               "additionalProperties": false,
               "type": "object",
-              "required": [
-                "verifierId",
-                "required",
-                "phase"
-              ],
+              "required": ["verifierId", "required", "phase"],
               "properties": {
-                "verifierId": {
-                  "minLength": 1,
-                  "type": "string"
-                },
-                "required": {
-                  "type": "boolean"
-                },
+                "verifierId": { "minLength": 1, "type": "string" },
+                "required": { "type": "boolean" },
                 "phase": {
                   "anyOf": [
-                    {
-                      "const": "pre",
-                      "type": "string"
-                    },
-                    {
-                      "const": "post",
-                      "type": "string"
-                    },
-                    {
-                      "const": "release",
-                      "type": "string"
-                    }
+                    { "const": "pre", "type": "string" },
+                    { "const": "post", "type": "string" },
+                    { "const": "release", "type": "string" }
                   ]
                 }
               }
@@ -498,27 +279,13 @@
           "retryPolicy": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "retryableClasses",
-              "backoff"
-            ],
+            "required": ["retryableClasses", "backoff"],
             "properties": {
-              "retryableClasses": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
+              "retryableClasses": { "type": "array", "items": { "type": "string" } },
               "backoff": {
                 "anyOf": [
-                  {
-                    "const": "fixed",
-                    "type": "string"
-                  },
-                  {
-                    "const": "exponential",
-                    "type": "string"
-                  }
+                  { "const": "fixed", "type": "string" },
+                  { "const": "exponential", "type": "string" }
                 ]
               }
             }
@@ -526,46 +293,21 @@
           "sideEffect": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "operation"
-            ],
+            "required": ["operation"],
             "properties": {
-              "operation": {
-                "minLength": 1,
-                "type": "string"
-              },
-              "idempotencyKeyTemplate": {
-                "minLength": 1,
-                "type": "string"
-              },
-              "compensationNodeId": {
-                "minLength": 1,
-                "type": "string"
-              }
+              "operation": { "minLength": 1, "type": "string" },
+              "idempotencyKeyTemplate": { "minLength": 1, "type": "string" },
+              "compensationNodeId": { "minLength": 1, "type": "string" }
             }
           },
           "loop": {
             "additionalProperties": false,
             "type": "object",
-            "required": [
-              "maxRounds",
-              "progressMetric",
-              "minImprovement"
-            ],
+            "required": ["maxRounds", "progressMetric", "minImprovement"],
             "properties": {
-              "maxRounds": {
-                "minimum": 1,
-                "maximum": 50,
-                "type": "integer"
-              },
-              "progressMetric": {
-                "minLength": 1,
-                "type": "string"
-              },
-              "minImprovement": {
-                "minimum": 0,
-                "type": "number"
-              }
+              "maxRounds": { "minimum": 1, "maximum": 50, "type": "integer" },
+              "progressMetric": { "minLength": 1, "type": "string" },
+              "minImprovement": { "minimum": 0, "type": "number" }
             }
           }
         }
@@ -576,52 +318,27 @@
       "items": {
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "source",
-          "target"
-        ],
+        "required": ["source", "target"],
         "properties": {
           "source": {
             "anyOf": [
               {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "kind",
-                  "port"
-                ],
+                "required": ["kind", "port"],
                 "properties": {
-                  "kind": {
-                    "const": "workflowInput",
-                    "type": "string"
-                  },
-                  "port": {
-                    "minLength": 1,
-                    "type": "string"
-                  }
+                  "kind": { "const": "workflowInput", "type": "string" },
+                  "port": { "minLength": 1, "type": "string" }
                 }
               },
               {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "kind",
-                  "nodeId",
-                  "port"
-                ],
+                "required": ["kind", "nodeId", "port"],
                 "properties": {
-                  "kind": {
-                    "const": "nodeOutput",
-                    "type": "string"
-                  },
-                  "nodeId": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "port": {
-                    "minLength": 1,
-                    "type": "string"
-                  }
+                  "kind": { "const": "nodeOutput", "type": "string" },
+                  "nodeId": { "minLength": 1, "type": "string" },
+                  "port": { "minLength": 1, "type": "string" }
                 }
               }
             ]
@@ -631,73 +348,36 @@
               {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "kind",
-                  "nodeId",
-                  "port"
-                ],
+                "required": ["kind", "nodeId", "port"],
                 "properties": {
-                  "kind": {
-                    "const": "nodeInput",
-                    "type": "string"
-                  },
-                  "nodeId": {
-                    "minLength": 1,
-                    "type": "string"
-                  },
-                  "port": {
-                    "minLength": 1,
-                    "type": "string"
-                  }
+                  "kind": { "const": "nodeInput", "type": "string" },
+                  "nodeId": { "minLength": 1, "type": "string" },
+                  "port": { "minLength": 1, "type": "string" }
                 }
               },
               {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "kind",
-                  "port"
-                ],
+                "required": ["kind", "port"],
                 "properties": {
-                  "kind": {
-                    "const": "workflowOutput",
-                    "type": "string"
-                  },
-                  "port": {
-                    "minLength": 1,
-                    "type": "string"
-                  }
+                  "kind": { "const": "workflowOutput", "type": "string" },
+                  "port": { "minLength": 1, "type": "string" }
                 }
               }
             ]
           },
-          "condition": {
-            "type": "string"
-          }
+          "condition": { "type": "string" }
         }
       }
     },
     "releasePolicy": {
       "additionalProperties": false,
       "type": "object",
-      "required": [
-        "requiredVerifiers",
-        "maxBlockingFindings"
-      ],
+      "required": ["requiredVerifiers", "maxBlockingFindings"],
       "properties": {
-        "requiredVerifiers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "maxBlockingFindings": {
-          "minimum": 0,
-          "type": "integer"
-        },
-        "requireDirectBaseline": {
-          "type": "boolean"
-        }
+        "requiredVerifiers": { "type": "array", "items": { "type": "string" } },
+        "maxBlockingFindings": { "minimum": 0, "type": "integer" },
+        "requireDirectBaseline": { "type": "boolean" }
       }
     }
   }

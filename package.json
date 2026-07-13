@@ -22,7 +22,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "generate:schema": "tsx scripts/generate-schema.ts",
-    "bench:direct": "tsx benchmarks/direct-v0/harness/run-direct.ts"
+    "bench:direct": "tsx benchmarks/direct-v0/harness/run-direct.ts",
+    "bench:direct:reverify": "tsx benchmarks/direct-v0/harness/reverify.ts"
   },
   "dependencies": {
     "@sinclair/typebox": "0.34.52",

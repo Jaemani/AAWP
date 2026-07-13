@@ -1,9 +1,17 @@
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "**/*.tsbuildinfo"]
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/coverage/**",
+      "**/*.ts",
+      "**/*.tsbuildinfo",
+      "benchmarks/direct-v0/runs/**",
+      "benchmarks/direct-v0/workspaces/**"
+    ]
   },
   {
-    files: ["**/*.js", "**/*.ts"],
+    files: ["**/*.js", "**/*.mjs"],
     rules: {
       "no-unused-vars": "off",
       "no-undef": "off",
