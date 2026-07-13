@@ -77,48 +77,35 @@
       "type": "object",
       "patternProperties": {
         "^(.*)$": {
+          "additionalProperties": false,
           "type": "object",
-          "allOf": [
-            {
-              "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "type",
-                "schemaVersion"
-              ],
-              "properties": {
-                "type": {
-                  "minLength": 1,
+          "required": [
+            "type",
+            "schemaVersion",
+            "visibility"
+          ],
+          "properties": {
+            "type": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "schemaVersion": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "visibility": {
+              "anyOf": [
+                {
+                  "const": "public",
                   "type": "string"
                 },
-                "schemaVersion": {
-                  "minLength": 1,
+                {
+                  "const": "hidden",
                   "type": "string"
                 }
-              }
-            },
-            {
-              "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "visibility"
-              ],
-              "properties": {
-                "visibility": {
-                  "anyOf": [
-                    {
-                      "const": "public",
-                      "type": "string"
-                    },
-                    {
-                      "const": "hidden",
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
+              ]
             }
-          ]
+          }
         }
       }
     },
@@ -126,48 +113,35 @@
       "type": "object",
       "patternProperties": {
         "^(.*)$": {
+          "additionalProperties": false,
           "type": "object",
-          "allOf": [
-            {
-              "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "type",
-                "schemaVersion"
-              ],
-              "properties": {
-                "type": {
-                  "minLength": 1,
+          "required": [
+            "type",
+            "schemaVersion",
+            "visibility"
+          ],
+          "properties": {
+            "type": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "schemaVersion": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "visibility": {
+              "anyOf": [
+                {
+                  "const": "public",
                   "type": "string"
                 },
-                "schemaVersion": {
-                  "minLength": 1,
+                {
+                  "const": "hidden",
                   "type": "string"
                 }
-              }
-            },
-            {
-              "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "visibility"
-              ],
-              "properties": {
-                "visibility": {
-                  "anyOf": [
-                    {
-                      "const": "public",
-                      "type": "string"
-                    },
-                    {
-                      "const": "hidden",
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
+              ]
             }
-          ]
+          }
         }
       }
     },
@@ -292,48 +266,35 @@
             "type": "object",
             "patternProperties": {
               "^(.*)$": {
+                "additionalProperties": false,
                 "type": "object",
-                "allOf": [
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "type",
-                      "schemaVersion"
-                    ],
-                    "properties": {
-                      "type": {
-                        "minLength": 1,
+                "required": [
+                  "type",
+                  "schemaVersion",
+                  "visibility"
+                ],
+                "properties": {
+                  "type": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "schemaVersion": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "visibility": {
+                    "anyOf": [
+                      {
+                        "const": "public",
                         "type": "string"
                       },
-                      "schemaVersion": {
-                        "minLength": 1,
+                      {
+                        "const": "hidden",
                         "type": "string"
                       }
-                    }
-                  },
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "visibility"
-                    ],
-                    "properties": {
-                      "visibility": {
-                        "anyOf": [
-                          {
-                            "const": "public",
-                            "type": "string"
-                          },
-                          {
-                            "const": "hidden",
-                            "type": "string"
-                          }
-                        ]
-                      }
-                    }
+                    ]
                   }
-                ]
+                }
               }
             }
           },
@@ -341,48 +302,35 @@
             "type": "object",
             "patternProperties": {
               "^(.*)$": {
+                "additionalProperties": false,
                 "type": "object",
-                "allOf": [
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "type",
-                      "schemaVersion"
-                    ],
-                    "properties": {
-                      "type": {
-                        "minLength": 1,
+                "required": [
+                  "type",
+                  "schemaVersion",
+                  "visibility"
+                ],
+                "properties": {
+                  "type": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "schemaVersion": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "visibility": {
+                    "anyOf": [
+                      {
+                        "const": "public",
                         "type": "string"
                       },
-                      "schemaVersion": {
-                        "minLength": 1,
+                      {
+                        "const": "hidden",
                         "type": "string"
                       }
-                    }
-                  },
-                  {
-                    "additionalProperties": false,
-                    "type": "object",
-                    "required": [
-                      "visibility"
-                    ],
-                    "properties": {
-                      "visibility": {
-                        "anyOf": [
-                          {
-                            "const": "public",
-                            "type": "string"
-                          },
-                          {
-                            "const": "hidden",
-                            "type": "string"
-                          }
-                        ]
-                      }
-                    }
+                    ]
                   }
-                ]
+                }
               }
             }
           },

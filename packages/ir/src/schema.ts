@@ -21,15 +21,14 @@ const artifactRef = Type.Object(
   { additionalProperties: false }
 );
 
-const port = Type.Intersect([
-  artifactRef,
-  Type.Object(
-    {
-      visibility: Type.Union([Type.Literal("public"), Type.Literal("hidden")])
-    },
-    { additionalProperties: false }
-  )
-]);
+const port = Type.Object(
+  {
+    type: Type.String({ minLength: 1 }),
+    schemaVersion: Type.String({ minLength: 1 }),
+    visibility: Type.Union([Type.Literal("public"), Type.Literal("hidden")])
+  },
+  { additionalProperties: false }
+);
 
 const artifactSchema = Type.Object(
   {
