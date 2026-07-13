@@ -1,0 +1,41 @@
+{
+  "name": "adaptive-artifact-workflow-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "bin": {
+    "awf": "./apps/cli/dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json && npm run generate:schema",
+    "typecheck": "tsc -b tsconfig.build.json --pretty false",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "generate:schema": "tsx scripts/generate-schema.ts",
+    "bench:direct": "tsx benchmarks/direct-v0/harness/run-direct.ts"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "0.34.52",
+    "ajv": "8.20.0",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "eslint": "10.7.0",
+    "fast-check": "4.9.0",
+    "prettier": "3.9.5",
+    "tsx": "4.23.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}

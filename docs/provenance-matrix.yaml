@@ -1,0 +1,58 @@
+generated_at: "2026-07-14"
+clean_room_policy:
+  durable_agents_attached_source: excluded
+  excluded_material:
+    - source_code
+    - schemas
+    - prompts
+    - file_layout
+    - test_wording
+dependencies:
+  - name: Node.js
+    classification: runtime_dependency
+    source_url: https://nodejs.org/
+    license_classification: permissive-open-source
+  - name: npm
+    classification: package_manager_dependency
+    source_url: https://www.npmjs.com/
+    license_classification: permissive-open-source
+  - name: TypeScript
+    classification: build_dependency
+    source_url: https://www.typescriptlang.org/
+    license_classification: permissive-open-source
+  - name: TypeBox
+    classification: runtime_dependency
+    source_url: https://github.com/sinclairzx81/typebox
+    license_classification: permissive-open-source
+  - name: Ajv
+    classification: runtime_dependency
+    source_url: https://ajv.js.org/
+    license_classification: permissive-open-source
+  - name: Vitest
+    classification: test_dependency
+    source_url: https://vitest.dev/
+    license_classification: permissive-open-source
+  - name: fast-check
+    classification: test_dependency
+    source_url: https://fast-check.dev/
+    license_classification: permissive-open-source
+  - name: ESLint
+    classification: quality_dependency
+    source_url: https://eslint.org/
+    license_classification: permissive-open-source
+  - name: Prettier
+    classification: quality_dependency
+    source_url: https://prettier.io/
+    license_classification: permissive-open-source
+  - name: YAML
+    classification: parser_dependency
+    source_url: https://eemeli.org/yaml/
+    license_classification: permissive-open-source
+public_spec_reimplementations:
+  - Workflow IR public behavior described in local architecture docs
+excluded_references:
+  - durable-agents source code
+  - durable-agents schema definitions
+  - durable-agents prompts
+  - durable-agents file layout
+  - durable-agents tests and wording

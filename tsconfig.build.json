@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/ir" },
+    { "path": "./packages/compiler" },
+    { "path": "./packages/runtime-core" },
+    { "path": "./apps/cli" }
+  ]
+}

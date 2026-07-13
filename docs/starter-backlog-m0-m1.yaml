@@ -1,0 +1,29 @@
+source_original: agentic_workflow_framework_starter_backlog.yaml
+status: reconciled-supplement
+milestones:
+  M0:
+    required_outputs:
+      - docs/adr/ADR-001-artifact-graph.md
+      - docs/adr/ADR-002-temporal-runtime.md
+      - docs/adr/ADR-003-immutable-wir.md
+      - docs/adr/ADR-004-content-addressed-artifacts.md
+      - docs/adr/ADR-005-direct-baseline-promotion.md
+      - docs/adr/ADR-006-authority-separation.md
+      - docs/provenance-matrix.yaml
+      - docs/dependency-sources.md
+      - benchmarks/direct-v0
+    clarified_exit_criteria:
+      - 원본 문서 보존
+      - clean-room provenance 기록
+      - direct baseline 10건 결과 요약 커밋
+  M1:
+    required_outputs:
+      - packages/ir
+      - packages/compiler
+      - packages/runtime-core
+      - apps/cli
+      - examples/spec-to-demo.wir.yaml
+    clarified_exit_criteria:
+      - JSON Schema는 런타임 TypeBox schema에서 생성
+      - warning은 check 실패로 만들지 않고 error만 exit 1
+      - simulate는 모델, 네트워크, secret, 외부 effect 없이 deterministic stub만 사용

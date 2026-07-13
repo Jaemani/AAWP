@@ -1,0 +1,494 @@
+project:
+  name: adaptive-artifact-workflow-platform
+  version: 0.1.0
+  generated_at: "2026-07-13"
+  source_plan: agentic_workflow_framework_implementation_plan_ko.md
+  principles:
+    - artifact_graph_is_source_of_truth
+    - durable_runtime_is_reused_not_reimplemented
+    - direct_mode_is_mandatory_baseline
+    - acceptance_authority_is_separate_from_product_writer
+    - every_loop_has_hard_bounds
+    - every_external_write_has_idempotency
+    - workflow_versions_and_artifacts_are_immutable
+    - revision_reruns_minimal_dependency_closure
+    - deterministic_verification_precedes_model_judgment
+    - default_deny_capabilities
+
+milestones:
+  - id: M0
+    title: Architecture baseline and clean-room record
+    exit_criteria:
+      - Six core ADRs are committed.
+      - Ten direct-mode benchmark tasks are reproducible.
+      - Provenance matrix classifies every planned dependency.
+      - No implementation requires access to the attached project source.
+
+  - id: M1
+    title: Workflow IR and compiler MVP
+    depends_on: [M0]
+    exit_criteria:
+      - Canonical WIR digest is deterministic.
+      - Invalid graph classes are rejected with stable error codes.
+      - awf check and awf simulate work without model calls.
+      - At least 30 negative compiler tests pass.
+
+  - id: M2
+    title: Artifact, event, and lineage plane
+    depends_on: [M1]
+    exit_criteria:
+      - Content-addressed artifacts are stored and verified.
+      - Run events are append-only and ordered.
+      - Artifact lineage is queryable.
+      - Cross-tenant cache access is rejected.
+
+  - id: M3
+    title: Temporal durable runtime
+    depends_on: [M1, M2]
+    exit_criteria:
+      - Worker-kill recovery test passes.
+      - Completed node effects are not repeated.
+      - Wait and approval survive process restarts.
+      - Cancellation and retry classification tests pass.
+
+  - id: M4
+    title: Agent and tool security gateways
+    depends_on: [M3]
+    exit_criteria:
+      - Provider-neutral model adapter is operational.
+      - Filesystem, network, tool, and secret capability checks are default deny.
+      - Structured outputs fail closed.
+      - Prompt and tool payload telemetry is disabled by default.
+
+  - id: M5
+    title: Revision and impact engine
+    depends_on: [M2, M3]
+    exit_criteria:
+      - A revision branch preserves the parent run unchanged.
+      - Minimal downstream invalidation is computed.
+      - Every cache decision is explainable.
+      - Candidate promotion uses compare-and-swap.
+
+  - id: M6
+    title: Independent verifier plane
+    depends_on: [M4, M5]
+    exit_criteria:
+      - Hidden verifier source is unavailable to builders.
+      - Product, contract, harness, infra, and policy failures are distinguished.
+      - Unauthorized repair writes are rolled back.
+      - Stable finding IDs survive reviewer wording changes.
+
+  - id: M7
+    title: Spec-to-demo vertical slice
+    depends_on: [M6]
+    exit_criteria:
+      - Five structurally different specs complete end to end.
+      - Hidden behavioral tests and screenshot matrix execute.
+      - A single requirement revision reruns only the affected closure plus broad regression.
+      - Results are compared with a frozen direct-mode baseline.
+
+  - id: M8
+    title: Value router and explorer mode
+    depends_on: [M7]
+    exit_criteria:
+      - DIRECT, CONTRACT, and EXPLORER decisions are explainable.
+      - Small tasks are not unnecessarily decomposed.
+      - Independent research branches are bounded by expected information gain.
+      - Router runs in shadow mode before automated enforcement.
+
+  - id: M9
+    title: Studio and production hardening
+    depends_on: [M8]
+    exit_criteria:
+      - Studio round-trips canonical WIR without loss.
+      - Semantic workflow diff and revision impact preview work.
+      - Backup/restore preserves lineage.
+      - Retention, redaction, quotas, alerts, and audit export are documented.
+
+epics:
+  - id: E0
+    milestone: M0
+    title: ADR and benchmark foundation
+    tasks:
+      - id: E0-T1
+        title: Write ADR-001 artifact graph as product center
+        outputs: [docs/adr/ADR-001-artifact-graph.md]
+        acceptance:
+          - Alternatives include conversation memory and step journal.
+          - Trade-offs include reproducibility, storage, and invalidation.
+      - id: E0-T2
+        title: Write ADR-002 Temporal default runtime
+        outputs: [docs/adr/ADR-002-temporal-runtime.md]
+        acceptance:
+          - DBOS and Restate are evaluated as alternatives.
+          - RuntimePort boundary is specified.
+      - id: E0-T3
+        title: Create direct baseline suite
+        outputs: [benchmarks/direct-v0]
+        acceptance:
+          - At least ten tasks cover small edit, coupled coding, scoped generation, and research.
+          - Input, environment, model revision, budget, and verifier are frozen.
+      - id: E0-T4
+        title: Create clean-room provenance matrix
+        outputs: [docs/provenance-matrix.yaml]
+        acceptance:
+          - Every external dependency is classified as dependency, public-spec reimplementation, or excluded.
+          - Attached-project code, schema, prompts, and file layout are marked excluded.
+
+  - id: E1
+    milestone: M1
+    title: Typed workflow compiler
+    tasks:
+      - id: E1-T1
+        title: Bootstrap TypeScript monorepo
+        outputs: [packages/ir, packages/compiler, packages/runtime-core, apps/cli]
+        tests: [workspace_build, package_boundaries]
+      - id: E1-T2
+        title: Implement WIR TypeScript types and JSON Schema
+        depends_on: [E1-T1]
+        outputs: [packages/ir/src/types.ts, packages/ir/schema/wir-v1.json]
+        acceptance:
+          - Node kinds, schemas, read/write sets, capabilities, budgets, cache, retries, and verifiers are required.
+      - id: E1-T3
+        title: Implement canonical serialization and workflow digest
+        depends_on: [E1-T2]
+        outputs: [packages/ir/src/canonicalize.ts]
+        tests:
+          - key_order_independence
+          - unicode_normalization
+          - stable_numeric_encoding
+          - digest_golden_files
+      - id: E1-T4
+        title: Implement graph and schema validation
+        depends_on: [E1-T2]
+        outputs: [packages/compiler/src/validate-graph.ts]
+        tests:
+          - missing_producer
+          - incompatible_schema
+          - unreachable_output
+          - forbidden_cycle
+          - unbounded_loop
+      - id: E1-T5
+        title: Implement authority and capability validation
+        depends_on: [E1-T2]
+        outputs: [packages/compiler/src/validate-authority.ts]
+        tests:
+          - parallel_write_conflict
+          - hidden_verifier_leak
+          - product_acceptance_same_owner
+          - undeclared_secret
+          - undeclared_network
+      - id: E1-T6
+        title: Implement budget upper-bound analysis
+        depends_on: [E1-T2]
+        outputs: [packages/compiler/src/analyze-budget.ts]
+        tests:
+          - nested_loop_cost
+          - map_fanout_limit
+          - retry_worst_case
+      - id: E1-T7
+        title: Implement awf check and awf simulate
+        depends_on: [E1-T3, E1-T4, E1-T5, E1-T6]
+        outputs: [apps/cli/src/commands/check.ts, apps/cli/src/commands/simulate.ts]
+        acceptance:
+          - Simulation uses deterministic stubs only.
+          - Machine-readable error codes are stable.
+
+  - id: E2
+    milestone: M2
+    title: Artifact and lineage plane
+    tasks:
+      - id: E2-T1
+        title: Define Postgres schema and migrations
+        outputs: [packages/artifact-store/migrations]
+        acceptance:
+          - Workflow versions and artifacts are immutable.
+          - Event sequence and branch CAS constraints exist.
+      - id: E2-T2
+        title: Implement object CAS adapter
+        depends_on: [E2-T1]
+        outputs: [packages/artifact-store/src/cas.ts]
+        tests:
+          - content_dedup
+          - hash_mismatch
+          - interrupted_upload
+      - id: E2-T3
+        title: Implement artifact metadata and provenance edges
+        depends_on: [E2-T1, E2-T2]
+        outputs: [packages/lineage/src]
+        tests:
+          - lineage_traversal
+          - supersedes_edge
+          - tenant_isolation
+      - id: E2-T4
+        title: Implement append-only run events
+        depends_on: [E2-T1]
+        outputs: [packages/runtime-core/src/events.ts]
+        tests:
+          - monotonic_sequence
+          - duplicate_event_key
+          - projection_rebuild
+      - id: E2-T5
+        title: Implement fingerprint cache
+        depends_on: [E2-T2, E2-T3]
+        outputs: [packages/artifact-store/src/cache.ts]
+        tests:
+          - exact_hit
+          - model_revision_miss
+          - environment_digest_miss
+          - verifier_policy_miss
+          - cross_tenant_miss
+
+  - id: E3
+    milestone: M3
+    title: Temporal runtime
+    tasks:
+      - id: E3-T1
+        title: Define RuntimePort
+        outputs: [packages/runtime-core/src/runtime-port.ts]
+      - id: E3-T2
+        title: Map WIR nodes to Temporal workflows and activities
+        depends_on: [E3-T1, E1-T2]
+        outputs: [packages/runtime-temporal/src]
+      - id: E3-T3
+        title: Implement wait, approval, signal, cancellation, and retry classes
+        depends_on: [E3-T2]
+        tests:
+          - approval_after_restart
+          - timer_after_restart
+          - cancel_during_activity
+          - auth_error_not_retried
+          - capacity_error_retried
+      - id: E3-T4
+        title: Add crash and replay test harness
+        depends_on: [E3-T2, E2-T4]
+        outputs: [tests/chaos/runtime]
+        tests:
+          - kill_worker_mid_activity
+          - kill_worker_after_activity_before_projection
+          - duplicate_task_delivery
+          - workflow_version_compatibility
+
+  - id: E4
+    milestone: M4
+    title: Agent and tool gateways
+    tasks:
+      - id: E4-T1
+        title: Define provider-neutral model contract
+        outputs: [packages/agent-gateway/src/provider.ts]
+      - id: E4-T2
+        title: Implement schema-bound model invocation
+        depends_on: [E4-T1]
+        tests:
+          - malformed_json
+          - schema_violation
+          - provider_timeout
+          - token_budget
+      - id: E4-T3
+        title: Implement capability-aware sandbox launcher
+        outputs: [packages/policy/src/capabilities.ts, packages/tool-gateway/src/sandbox.ts]
+        tests:
+          - path_traversal
+          - symlink_escape
+          - network_egress_denied
+          - env_secret_not_forwarded
+      - id: E4-T4
+        title: Implement MCP and CLI tool adapters
+        depends_on: [E4-T3]
+        outputs: [packages/tool-gateway/src/adapters]
+        acceptance:
+          - All tool results are schema validated.
+          - Tool trust level is recorded.
+      - id: E4-T5
+        title: Add OpenTelemetry spans with redaction
+        depends_on: [E4-T1, E4-T4]
+        outputs: [packages/telemetry/src]
+        tests:
+          - prompt_content_off_by_default
+          - secret_redaction
+          - run_node_artifact_correlation
+
+  - id: E5
+    milestone: M5
+    title: Revision and impact engine
+    tasks:
+      - id: E5-T1
+        title: Implement immutable revision branches
+        outputs: [packages/impact-engine/src/revision.ts]
+      - id: E5-T2
+        title: Implement graph diff and changed-root detection
+        depends_on: [E5-T1, E1-T3]
+        outputs: [packages/impact-engine/src/diff.ts]
+      - id: E5-T3
+        title: Implement downstream invalidation closure
+        depends_on: [E5-T2, E2-T3]
+        outputs: [packages/impact-engine/src/invalidate.ts]
+        tests:
+          - input_change
+          - contract_change
+          - tool_change
+          - policy_change
+          - verifier_change
+      - id: E5-T4
+        title: Implement explainable cache plan
+        depends_on: [E5-T3, E2-T5]
+        outputs: [packages/impact-engine/src/explain.ts]
+      - id: E5-T5
+        title: Implement candidate promotion and rollback
+        depends_on: [E5-T1, E2-T1]
+        tests:
+          - compare_and_swap
+          - concurrent_promotion
+          - failed_candidate_preserves_parent
+
+  - id: E6
+    milestone: M6
+    title: Verifier plane
+    tasks:
+      - id: E6-T1
+        title: Define verifier and finding schemas
+        outputs: [packages/verifier-sdk/src]
+      - id: E6-T2
+        title: Implement separate verifier container execution
+        depends_on: [E4-T3, E6-T1]
+        outputs: [apps/verifier-worker]
+        tests:
+          - hidden_source_not_mounted
+          - read_only_product_mount
+          - resource_limit
+      - id: E6-T3
+        title: Implement evidence bundle
+        depends_on: [E6-T2, E2-T2]
+        outputs: [packages/verifier-sdk/src/evidence.ts]
+      - id: E6-T4
+        title: Implement failure classification and repair authorization
+        depends_on: [E6-T1]
+        tests:
+          - product_defect
+          - contract_defect
+          - harness_defect
+          - infra_capacity
+          - policy_violation
+          - inconclusive
+      - id: E6-T5
+        title: Implement monotonic candidate guard
+        depends_on: [E6-T3, E6-T4, E5-T5]
+        tests:
+          - regression_rejected
+          - no_op_rejected
+          - unauthorized_write_rejected
+          - evidence_loss_rejected
+
+  - id: E7
+    milestone: M7
+    title: Spec-to-demo vertical slice
+    tasks:
+      - id: E7-T1
+        title: Implement scope and requirement compilers
+        outputs: [workflows/templates/spec-to-demo/compiler]
+      - id: E7-T2
+        title: Implement acceptance IR compiler
+        depends_on: [E7-T1, E6-T1]
+        outputs: [workflows/templates/spec-to-demo/acceptance]
+      - id: E7-T3
+        title: Implement public brief and hidden verifier packaging
+        depends_on: [E7-T2, E6-T2]
+      - id: E7-T4
+        title: Implement deterministic React/Vite scaffold
+        outputs: [workflows/templates/spec-to-demo/scaffold]
+      - id: E7-T5
+        title: Implement coherent builder node
+        depends_on: [E7-T3, E7-T4, E4-T2]
+      - id: E7-T6
+        title: Implement build, unit, Playwright, screenshot, and accessibility verifiers
+        depends_on: [E7-T5, E6-T2]
+      - id: E7-T7
+        title: Implement classified bounded repair
+        depends_on: [E7-T6, E6-T4, E6-T5]
+      - id: E7-T8
+        title: Implement one-requirement revision benchmark
+        depends_on: [E7-T7, E5-T4]
+        acceptance:
+          - Unrelated scaffold and dependency artifacts are reused.
+          - Broad regression still runs.
+          - Parent branch remains unchanged.
+
+  - id: E8
+    milestone: M8
+    title: Value router and explorer
+    tasks:
+      - id: E8-T1
+        title: Implement routing feature extraction
+        outputs: [packages/router/src/features.ts]
+      - id: E8-T2
+        title: Implement explainable rule-based router
+        depends_on: [E8-T1]
+        outputs: [packages/router/src/rules.ts]
+      - id: E8-T3
+        title: Implement DIRECT, CONTRACT, and EXPLORER templates
+        depends_on: [E8-T2]
+      - id: E8-T4
+        title: Implement versioned dynamic plans
+        depends_on: [E8-T3, E2-T3]
+      - id: E8-T5
+        title: Add shadow routing evaluation
+        depends_on: [E8-T2, E0-T3]
+        acceptance:
+          - Operator decision is compared without changing production routing.
+          - Regret and cost are recorded.
+
+  - id: E9
+    milestone: M9
+    title: Studio and operations
+    tasks:
+      - id: E9-T1
+        title: Build graph and contract editor
+        outputs: [apps/studio]
+      - id: E9-T2
+        title: Build workflow semantic diff
+        depends_on: [E9-T1, E5-T2]
+      - id: E9-T3
+        title: Build artifact lineage and evidence viewer
+        depends_on: [E9-T1, E2-T3, E6-T3]
+      - id: E9-T4
+        title: Build revision impact preview
+        depends_on: [E9-T1, E5-T4]
+      - id: E9-T5
+        title: Implement backup, retention, redaction, and audit export
+        outputs: [docs/operations, infra/backup]
+      - id: E9-T6
+        title: Define SLOs, alerts, and runbooks
+        depends_on: [E9-T5]
+        outputs: [docs/operations/slo.md, docs/operations/runbooks]
+
+promotion_policy:
+  required_comparisons:
+    - hidden_acceptance_pass_rate
+    - scope_violation_rate
+    - first_pass_success_rate
+    - post_repair_success_rate
+    - p95_latency
+    - token_cost
+    - dollar_cost
+    - recovery_success
+    - human_interventions
+    - false_closure_rate
+    - revision_reuse_ratio
+  rules:
+    - A workflow must beat or materially complement DIRECT mode.
+    - Agent count is never a promotion metric.
+    - The same frozen verifier and resource ceiling must be used.
+    - Repeated cohorts are required.
+    - Templates that lose to DIRECT mode across recent cohorts are simplified or retired.
+
+global_definition_of_done:
+  - Natural-language authoring compiles to editable immutable WIR.
+  - Invalid scope, schema, authority, loop, and side-effect contracts fail before execution.
+  - Durable recovery works after worker termination.
+  - Exact artifacts can be replayed without effects.
+  - Revisions rerun only the affected dependency closure plus mandatory regression checks.
+  - Hidden release acceptance is independent from product writers.
+  - Every cache and invalidation decision is explainable.
+  - Every external effect has an idempotency strategy.
+  - Direct-mode baseline results are current.
+  - Clean-room provenance records are committed.
