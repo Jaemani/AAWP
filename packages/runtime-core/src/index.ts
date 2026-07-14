@@ -1,6 +1,18 @@
 import { canonicalize, digestWorkflow, type WorkflowDefinition } from "@awf/ir";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
+export {
+  DuplicateEventKeyError,
+  EventSequenceConflictError,
+  EventTenantBoundaryError,
+  InMemoryRunEventStore,
+  rebuildProjection,
+  type AppendRunEvent,
+  type RunEventStore,
+  type RunEventType,
+  type StoredRunEvent
+} from "./events.js";
+
 export interface RuntimePort {
   readonly name: string;
   runDeterministicNode(

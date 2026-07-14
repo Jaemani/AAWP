@@ -4,6 +4,8 @@
     { "path": "./packages/ir" },
     { "path": "./packages/compiler" },
     { "path": "./packages/runtime-core" },
+    { "path": "./packages/artifact-store" },
+    { "path": "./packages/lineage" },
     { "path": "./apps/cli" },
     { "path": "./benchmarks/direct-v0" }
   ]

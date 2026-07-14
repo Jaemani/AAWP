@@ -48,6 +48,10 @@ dependencies:
     classification: parser_dependency
     source_url: https://eemeli.org/yaml/
     license_classification: permissive-open-source
+  - name: PGlite
+    classification: test_dependency
+    source_url: https://pglite.dev/
+    license_classification: permissive-open-source
 public_spec_reimplementations:
   - Workflow IR public behavior described in local architecture docs
 excluded_references:

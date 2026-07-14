@@ -16,3 +16,4 @@
 | tsx         | 4.23.1                | https://tsx.is/                                    | MIT            |
 | yaml        | 2.9.0                 | https://eemeli.org/yaml/                           | ISC            |
 | @types/node | 26.1.1                | https://github.com/DefinitelyTyped/DefinitelyTyped | MIT            |
+| PGlite      | 0.5.4                 | https://pglite.dev/                                | Apache-2.0     |

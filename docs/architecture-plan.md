@@ -3,6 +3,7 @@
 이 문서는 루트 원본 `agentic_workflow_framework_implementation_plan_ko.md`를 삭제하거나 대체하지 않는다. M0/M1 공개 계약을 구현 가능한 형태로 정리한 보충본이다.
 
 M1의 세부 실행 의미와 오류 처리 규칙은 `docs/m1-implementation-contract.md`를 규범으로 사용한다.
+M2의 artifact, event, lineage 저장 의미는 `docs/m2-implementation-contract.md`를 규범으로 사용한다.
 
 ## M0 합의 사항
 
