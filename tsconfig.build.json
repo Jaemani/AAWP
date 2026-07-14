@@ -12,7 +12,9 @@
     { "path": "./packages/agent-gateway" },
     { "path": "./packages/tool-gateway" },
     { "path": "./packages/impact-engine" },
+    { "path": "./packages/verifier-sdk" },
     { "path": "./apps/cli" },
+    { "path": "./apps/verifier-worker" },
     { "path": "./benchmarks/direct-v0" }
   ]
 }

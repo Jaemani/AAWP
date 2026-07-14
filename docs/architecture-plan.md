@@ -7,6 +7,7 @@ M2의 artifact, event, lineage 저장 의미는 `docs/m2-implementation-contract
 M3의 Temporal workflow, activity, signal, retry와 side-effect 의미는 `docs/m3-implementation-contract.md`를 규범으로 사용한다.
 M4의 model, tool, capability, secret과 telemetry 의미는 `docs/m4-implementation-contract.md`를 규범으로 사용한다.
 M5의 revision, invalidation, cache planning과 branch promotion 의미는 `docs/m5-implementation-contract.md`를 규범으로 사용한다.
+M6의 verifier 격리, evidence, finding, repair authority와 monotonic promotion 의미는 `docs/m6-implementation-contract.md`를 규범으로 사용한다.
 
 ## M0 합의 사항
 

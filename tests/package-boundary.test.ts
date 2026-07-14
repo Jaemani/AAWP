@@ -10,6 +10,8 @@ import { simulateDeterministic } from "@awf/runtime-core";
 import { TemporalRuntimePort } from "@awf/runtime-temporal";
 import { GatewayTelemetry } from "@awf/telemetry";
 import { ToolGateway } from "@awf/tool-gateway";
+import { evaluateMonotonicCandidate } from "@awf/verifier-sdk";
+import { VerifierWorker } from "@awf/verifier-worker";
 
 describe("package boundaries", () => {
   it("exposes core APIs through package exports", () => {
@@ -25,5 +27,7 @@ describe("package boundaries", () => {
     expect(ModelGateway).toBeTypeOf("function");
     expect(ToolGateway).toBeTypeOf("function");
     expect(diffRevisionStates).toBeTypeOf("function");
+    expect(evaluateMonotonicCandidate).toBeTypeOf("function");
+    expect(VerifierWorker).toBeTypeOf("function");
   });
 });
