@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ModelGateway } from "@awf/agent-gateway";
 import { LocalObjectCas } from "@awf/artifact-store";
 import { validateWorkflow } from "@awf/compiler";
+import { diffRevisionStates } from "@awf/impact-engine";
 import { digestWorkflow, WorkflowDefinitionSchema } from "@awf/ir";
 import { InMemoryArtifactLineage } from "@awf/lineage";
 import { CapabilityAuthorizer } from "@awf/policy";
@@ -23,5 +24,6 @@ describe("package boundaries", () => {
     expect(GatewayTelemetry).toBeTypeOf("function");
     expect(ModelGateway).toBeTypeOf("function");
     expect(ToolGateway).toBeTypeOf("function");
+    expect(diffRevisionStates).toBeTypeOf("function");
   });
 });

@@ -11,6 +11,7 @@
     { "path": "./packages/telemetry" },
     { "path": "./packages/agent-gateway" },
     { "path": "./packages/tool-gateway" },
+    { "path": "./packages/impact-engine" },
     { "path": "./apps/cli" },
     { "path": "./benchmarks/direct-v0" }
   ]
