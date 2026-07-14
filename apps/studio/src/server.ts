@@ -16,11 +16,13 @@ import {
   JsonlStudioRunStore,
   type StudioRunStore
 } from "./run-store.js";
+import { LocalStudioDemoStore, type StudioDemoStore } from "./demo-store.js";
 import { createStudioView, renderStudioHtml } from "./studio.js";
 
 export interface StudioServerOptions {
   document: WorkflowEditorDocument;
   runStore?: StudioRunStore;
+  demoStore?: StudioDemoStore;
   initialInputs?: unknown;
 }
 
@@ -64,6 +66,7 @@ export async function loadStudioInputs(path: string): Promise<unknown> {
 
 export function createStudioServer(options: StudioServerOptions): Server {
   const runStore = options.runStore ?? new InMemoryStudioRunStore();
+  const demoStore = options.demoStore;
   const html = renderStudioHtml(
     createStudioView({
       document: options.document,
@@ -72,12 +75,36 @@ export function createStudioServer(options: StudioServerOptions): Server {
   );
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+    const demoRoute = url.pathname.match(/^\/runs\/([^/]+)\/demo(?:\/(.*))?$/);
+    if (["GET", "HEAD"].includes(request.method ?? "") && demoRoute !== null) {
+      const runId = decodeURIComponent(demoRoute[1] ?? "");
+      if (!/^run_[A-Za-z0-9-]+$/.test(runId)) {
+        sendJson(response, 404, { error: "demo_not_found" });
+        return;
+      }
+      const record = await runStore.get(runId);
+      const asset =
+        record?.demo === undefined || demoStore === undefined
+          ? undefined
+          : await demoStore.read(runId, demoRoute[2] ?? "");
+      if (asset === undefined) {
+        sendJson(response, 404, { error: "demo_not_found" });
+        return;
+      }
+      response.writeHead(200, {
+        "content-type": asset.mediaType,
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff"
+      });
+      response.end(request.method === "HEAD" ? undefined : asset.content);
+      return;
+    }
     if (request.method === "GET" && url.pathname === "/") {
       response.writeHead(200, {
         "content-type": "text/html; charset=utf-8",
         "cache-control": "no-store",
         "content-security-policy":
-          "default-src 'none'; connect-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "default-src 'none'; connect-src 'self'; frame-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         "x-content-type-options": "nosniff",
         "x-frame-options": "DENY"
       });
@@ -92,17 +119,57 @@ export function createStudioServer(options: StudioServerOptions): Server {
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/runs") {
-      sendJson(response, 200, { runs: await runStore.list() });
+      const summaries = await runStore.list();
+      sendJson(response, 200, {
+        runs: await Promise.all(
+          summaries.map(async (summary) => ({
+            ...summary,
+            ...(summary.demo === undefined
+              ? {}
+              : {
+                  demo: {
+                    ...summary.demo,
+                    available: (await demoStore?.exists(summary.runId)) ?? false
+                  }
+                })
+          }))
+        )
+      });
       return;
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/runs/")) {
       const runId = decodeURIComponent(url.pathname.slice("/api/runs/".length));
-      const record = await runStore.get(runId);
+      const storedRecord = await runStore.get(runId);
+      const record =
+        storedRecord?.demo === undefined
+          ? storedRecord
+          : {
+              ...storedRecord,
+              demo: {
+                ...storedRecord.demo,
+                available: (await demoStore?.exists(runId)) ?? false
+              }
+            };
       sendJson(
         response,
         record === undefined ? 404 : 200,
         record === undefined ? { error: "run_not_found" } : record
       );
+      return;
+    }
+    if (
+      request.method === "DELETE" &&
+      url.pathname.startsWith("/api/runs/") &&
+      url.pathname.endsWith("/demo")
+    ) {
+      const runId = decodeURIComponent(url.pathname.slice("/api/runs/".length, -"/demo".length));
+      const record = await runStore.get(runId);
+      if (record === undefined) {
+        sendJson(response, 404, { error: "run_not_found" });
+        return;
+      }
+      const deleted = (await demoStore?.delete(runId)) ?? false;
+      sendJson(response, 200, { ok: true, runId, deleted });
       return;
     }
     if (request.method === "POST" && url.pathname === "/api/runs") {
@@ -115,7 +182,8 @@ export function createStudioServer(options: StudioServerOptions): Server {
         const record = await executeStudioRun({
           workflow: options.document.workflow,
           inputs,
-          store: runStore
+          store: runStore,
+          ...(demoStore === undefined ? {} : { publishDemo: (runId) => demoStore.publish(runId) })
         });
         sendJson(response, 201, record);
       } catch (error) {
@@ -153,7 +221,7 @@ async function main(): Promise<void> {
   const workflowPath = argument("--workflow");
   if (workflowPath === undefined) {
     throw new Error(
-      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--input fixture.json] [--runs .awf/studio-runs.jsonl] [--port 4173]"
+      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--input fixture.json] [--runs .awf/studio-runs.jsonl] [--demo-source directory] [--demo-root .awf/demos] [--port 4173]"
     );
   }
   const portValue = argument("--port") ?? "4173";
@@ -164,8 +232,13 @@ async function main(): Promise<void> {
   const inputPath = argument("--input");
   const initialInputs = inputPath === undefined ? {} : await loadStudioInputs(inputPath);
   const runStore = new JsonlStudioRunStore(resolve(argument("--runs") ?? ".awf/studio-runs.jsonl"));
+  const demoSource = argument("--demo-source");
+  const demoStore = new LocalStudioDemoStore({
+    rootDirectory: resolve(argument("--demo-root") ?? ".awf/demos"),
+    ...(demoSource === undefined ? {} : { sourceDirectory: resolve(demoSource) })
+  });
   const host = "127.0.0.1";
-  createStudioServer({ document, runStore, initialInputs }).listen(port, host, () => {
+  createStudioServer({ document, runStore, demoStore, initialInputs }).listen(port, host, () => {
     process.stdout.write(`AWF Studio loaded at http://${host}:${port}\n`);
   });
 }

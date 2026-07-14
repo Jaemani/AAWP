@@ -59,9 +59,13 @@ describe("Studio HTML", () => {
     expect(html).toContain('data-node-id="execute"');
     expect(html).toContain("Run workflow");
     expect(html).toContain("Run history");
+    expect(html).toContain("Workflow</strong>");
+    expect(html).toContain("Open demo");
+    expect(html).toContain("Delete result");
+    expect(html).toContain("demo-frame");
     expect(html).toContain("Event timeline");
     expect(html).toContain("/api/runs");
-    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html.match(/<button/g)).toHaveLength(2);
     expect(html).not.toContain("Canonical WIR editor");
     expect(html).not.toContain("Semantic diff");
   });

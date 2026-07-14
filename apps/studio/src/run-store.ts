@@ -8,6 +8,7 @@ import {
   type SimulationTrace,
   type StoredRunEvent
 } from "@awf/runtime-core";
+import type { StudioDemoRecord } from "./demo-store.js";
 
 export type StudioRunStatus = "completed" | "failed";
 export type StudioNodeStatus = "waiting" | "scheduled" | "running" | "completed" | "failed";
@@ -35,6 +36,7 @@ export interface StudioRunRecord {
   events: StoredRunEvent[];
   nodeStates: Record<string, StudioNodeStatus>;
   artifacts: StudioArtifactRecord[];
+  demo?: StudioDemoRecord;
   outputs?: Record<string, unknown>;
   error?: { name: string; message: string };
 }
@@ -49,6 +51,7 @@ export interface StudioRunSummary {
   completedAt: string;
   eventCount: number;
   artifactCount: number;
+  demo?: StudioDemoRecord;
 }
 
 export interface StudioRunStore {
@@ -75,7 +78,8 @@ function summarize(record: StudioRunRecord): StudioRunSummary {
     createdAt: record.createdAt,
     completedAt: record.completedAt,
     eventCount: record.events.length,
-    artifactCount: record.artifacts.length
+    artifactCount: record.artifacts.length,
+    ...(record.demo === undefined ? {} : { demo: record.demo })
   };
 }
 
@@ -155,6 +159,7 @@ function materializeTrace(input: {
   createdAt: string;
   completedAt: string;
   inputDigest: string;
+  demo?: StudioDemoRecord;
 }): StudioRunRecord {
   const events: StoredRunEvent[] = [];
   const artifacts: StudioArtifactRecord[] = [];
@@ -236,6 +241,7 @@ function materializeTrace(input: {
     events,
     nodeStates,
     artifacts,
+    ...(input.demo === undefined ? {} : { demo: input.demo }),
     outputs: input.trace.outputs
   });
 }
@@ -246,6 +252,7 @@ export async function executeStudioRun(input: {
   store: StudioRunStore;
   runId?: string;
   now?: () => string;
+  publishDemo?: (runId: string) => Promise<StudioDemoRecord | undefined>;
 }): Promise<StudioRunRecord> {
   const runId = input.runId ?? `run_${randomUUID()}`;
   const now = input.now ?? (() => new Date().toISOString());
@@ -254,13 +261,15 @@ export async function executeStudioRun(input: {
   try {
     const fixture = validateFixtureInput(input.workflow, input.inputs);
     const trace = simulateDeterministic(input.workflow, fixture);
+    const demo = await input.publishDemo?.(runId);
     const record = materializeTrace({
       workflow: input.workflow,
       trace,
       runId,
       createdAt,
       completedAt: now(),
-      inputDigest
+      inputDigest,
+      ...(demo === undefined ? {} : { demo })
     });
     await input.store.append(record);
     return record;

@@ -1,0 +1,176 @@
+import { createHash } from "node:crypto";
+import {
+  access,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rename,
+  rm,
+  stat
+} from "node:fs/promises";
+import { basename, join, relative, resolve, sep } from "node:path";
+
+export interface StudioDemoRecord {
+  label: string;
+  entryUrl: string;
+  contentDigest: string;
+}
+
+export interface StudioDemoAsset {
+  content: Buffer;
+  mediaType: string;
+}
+
+export interface StudioDemoStore {
+  publish(runId: string): Promise<StudioDemoRecord | undefined>;
+  exists(runId: string): Promise<boolean>;
+  delete(runId: string): Promise<boolean>;
+  read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined>;
+}
+
+function assertRunId(runId: string): void {
+  if (!/^run_[A-Za-z0-9-]+$/.test(runId)) throw new Error(`invalid demo run id: ${runId}`);
+}
+
+function mediaType(path: string): string {
+  const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
+  return (
+    (
+      {
+        ".css": "text/css; charset=utf-8",
+        ".gif": "image/gif",
+        ".html": "text/html; charset=utf-8",
+        ".ico": "image/x-icon",
+        ".jpeg": "image/jpeg",
+        ".jpg": "image/jpeg",
+        ".js": "text/javascript; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
+        ".mjs": "text/javascript; charset=utf-8",
+        ".png": "image/png",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp"
+      } as Record<string, string>
+    )[extension] ?? "application/octet-stream"
+  );
+}
+
+async function directoryDigest(directory: string): Promise<string> {
+  const hash = createHash("sha256");
+
+  async function visit(path: string): Promise<void> {
+    const entries = await readdir(path, { withFileTypes: true });
+    entries.sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      const absolutePath = join(path, entry.name);
+      if (entry.isSymbolicLink())
+        throw new Error(`demo source contains a symlink: ${absolutePath}`);
+      if (entry.isDirectory()) {
+        await visit(absolutePath);
+        continue;
+      }
+      if (!entry.isFile())
+        throw new Error(`demo source contains an unsupported entry: ${absolutePath}`);
+      hash.update(relative(directory, absolutePath));
+      hash.update("\0");
+      hash.update(await readFile(absolutePath));
+      hash.update("\0");
+    }
+  }
+
+  await visit(directory);
+  return hash.digest("hex");
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+export class LocalStudioDemoStore implements StudioDemoStore {
+  private readonly rootDirectory: string;
+  private readonly sourceDirectory: string | undefined;
+
+  constructor(input: { rootDirectory: string; sourceDirectory?: string }) {
+    this.rootDirectory = resolve(input.rootDirectory);
+    this.sourceDirectory =
+      input.sourceDirectory === undefined ? undefined : resolve(input.sourceDirectory);
+  }
+
+  private runDirectory(runId: string): string {
+    assertRunId(runId);
+    return join(this.rootDirectory, runId);
+  }
+
+  async publish(runId: string): Promise<StudioDemoRecord | undefined> {
+    if (this.sourceDirectory === undefined) return undefined;
+    const entryPath = join(this.sourceDirectory, "index.html");
+    const entry = await stat(entryPath).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") throw new Error(`demo source has no index.html: ${entryPath}`);
+      throw error;
+    });
+    if (!entry.isFile()) throw new Error(`demo source index is not a file: ${entryPath}`);
+
+    await mkdir(this.rootDirectory, { recursive: true });
+    const temporaryDirectory = await mkdtemp(join(this.rootDirectory, `.publish-${runId}-`));
+    const targetDirectory = this.runDirectory(runId);
+    try {
+      await cp(this.sourceDirectory, temporaryDirectory, { recursive: true, errorOnExist: true });
+      const contentDigest = await directoryDigest(temporaryDirectory);
+      await rename(temporaryDirectory, targetDirectory);
+      return {
+        label: basename(this.sourceDirectory),
+        entryUrl: `/runs/${encodeURIComponent(runId)}/demo/`,
+        contentDigest
+      };
+    } catch (error) {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+      throw error;
+    }
+  }
+
+  async exists(runId: string): Promise<boolean> {
+    return pathExists(join(this.runDirectory(runId), "index.html"));
+  }
+
+  async delete(runId: string): Promise<boolean> {
+    const directory = this.runDirectory(runId);
+    if (!(await pathExists(directory))) return false;
+    await rm(directory, { recursive: true, force: true });
+    return true;
+  }
+
+  async read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined> {
+    const runDirectory = this.runDirectory(runId);
+    const requestedPath = assetPath.length === 0 ? "index.html" : decodeURIComponent(assetPath);
+    const absolutePath = resolve(runDirectory, requestedPath);
+    if (absolutePath !== runDirectory && !absolutePath.startsWith(`${runDirectory}${sep}`))
+      return undefined;
+
+    try {
+      const [realRunDirectory, realAssetPath] = await Promise.all([
+        realpath(runDirectory),
+        realpath(absolutePath)
+      ]);
+      if (
+        realAssetPath !== realRunDirectory &&
+        !realAssetPath.startsWith(`${realRunDirectory}${sep}`)
+      )
+        return undefined;
+      const asset = await stat(realAssetPath);
+      if (!asset.isFile()) return undefined;
+      return { content: await readFile(realAssetPath), mediaType: mediaType(realAssetPath) };
+    } catch (error) {
+      if (["ENOENT", "EISDIR"].includes((error as NodeJS.ErrnoException).code ?? ""))
+        return undefined;
+      throw error;
+    }
+  }
+}

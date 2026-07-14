@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "awf/spec-slice/v1",
+  "source": {
+    "path": "/Users/jaeman/Gyeonggi-PoC/resources/handoff_shared_0709/20260709T043425-itnxih/artifacts/refined-production-spec.json",
+    "sha256": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "totalScreens": 102
+  },
+  "selectedScreens": [
+    {
+      "id": "home-wallet",
+      "route": "/",
+      "surface": "사용자 앱(모바일)",
+      "testedState": "default"
+    },
+    {
+      "id": "pay-qr",
+      "route": "/pay",
+      "surface": "사용자 앱(모바일)",
+      "testedState": "confirm-to-success"
+    },
+    {
+      "id": "admin-policy-list",
+      "route": "/admin/policy/list",
+      "surface": "관리 콘솔(웹)",
+      "testedState": "default-filter-detail"
+    }
+  ]
+}

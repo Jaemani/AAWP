@@ -18,13 +18,20 @@ node apps/studio/dist/server.js \
   --workflow examples/spec-to-demo.wir.yaml \
   --input examples/spec-to-demo.input.json \
   --runs .awf/studio-runs.jsonl \
+  --demo-source examples/heavy-spec-slice \
+  --demo-root .awf/demos \
   --port 4173
 ```
 
 - `POST /api/runs`은 입력 fixture를 검증하고 deterministic dry-run을 실행한다.
 - `GET /api/runs`은 append-only JSONL에 저장된 run 목록을 반환한다.
 - `GET /api/runs/:runId`는 node 상태, event timeline, artifact와 output 기록을 반환한다.
+- 성공한 run의 `--demo-source`는 `.awf/demos/<run-id>/`에 content digest가 붙은 snapshot으로 복사된다.
+- `GET /runs/:runId/demo/`는 run ID별 웹 데모 결과를 제공한다.
+- `DELETE /api/runs/:runId/demo`는 웹 데모 snapshot만 삭제한다. append-only run/event 기록과 source는 보존한다.
+
+Studio 상세 화면은 workflow node 순서를 항상 표시하고, 웹 데모가 있는 run은 dashboard 안에서 미리 본다. `Open demo`는 run ID가 포함된 독립 주소를 열고 `Delete result`는 해당 snapshot을 삭제한다. 같은 workflow를 다시 실행하면 새 run ID로 결과 snapshot을 다시 만들 수 있다.
 
 현재 WIR에는 executable implementation binding이 없으므로 이 경로는 `DETERMINISTIC_SIMULATION`이다. Temporal activity, tool 또는 model을 실제 호출하지 않으며 side effect는 실행하지 않는다. Production 실행을 표시하려면 같은 API projection에 Temporal event source와 artifact store를 연결해야 한다.
 
-기본 화면은 `Run workflow`와 실행 기록만 제공한다. WIR candidate 검사 API는 남아 있지만 실행 console에는 editor, semantic diff와 impact control을 노출하지 않는다. publish, approval, pause, resume와 cancel은 이 로컬 서버가 수행하지 않는다. production에 연결할 때는 인증된 API gateway가 operator command intent를 받아 runtime event로 기록해야 한다.
+기본 화면의 실행 action은 `Run workflow` 하나다. 결과가 있는 경우에만 `Open demo`와 `Delete result`를 표시한다. WIR candidate 검사 API는 남아 있지만 실행 console에는 editor, semantic diff와 impact control을 노출하지 않는다. publish, approval, pause, resume와 cancel은 이 로컬 서버가 수행하지 않는다. production에 연결할 때는 인증된 API gateway가 operator command intent를 받아 runtime event로 기록해야 한다.

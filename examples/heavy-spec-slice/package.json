@@ -1,0 +1,8 @@
+{
+  "name": "aawp-heavy-spec-slice",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test verify.test.mjs"
+  }
+}

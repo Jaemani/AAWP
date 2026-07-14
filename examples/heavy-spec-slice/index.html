@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="경기 지역화폐 통합월렛 production spec의 3-screen 검증 slice"
+    />
+    <title>경기 통합월렛 · Spec slice</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="i-home" viewBox="0 0 24 24">
+        <path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
+      </symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+      </symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24">
+        <path
+          d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"
+        />
+      </symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24">
+        <path
+          d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7Zm0 0h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7Z"
+        />
+      </symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24">
+        <path d="M6 2v20l3-2 3 2 3-2 3 2V2l-3 2-3-2-3 2zM9 9h6M9 13h6" />
+      </symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24">
+        <path d="M4 6h16M4 12h16M4 18h16" />
+      </symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24">
+        <path d="m9 18 6-6-6-6" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6" />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path
+          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h6"
+        />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </symbol>
+    </svg>
+
+    <header class="demo-header">
+      <div class="demo-brand">
+        <span class="demo-mark">G</span>
+        <div>
+          <strong>경기 통합월렛</strong>
+          <small>Production spec slice · 3 / 102 screens</small>
+        </div>
+      </div>
+      <nav class="screen-switcher" aria-label="테스트 화면 선택">
+        <button type="button" data-target="home-wallet">월렛 홈</button>
+        <button type="button" data-target="pay-qr">QR 결제</button>
+        <button type="button" data-target="admin-policy-list">정책 콘솔</button>
+      </nav>
+      <span
+        class="source-chip"
+        title="Spec SHA b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33"
+        ><i></i>Demo running</span
+      >
+    </header>
+
+    <main class="demo-stage">
+      <section class="preview mobile-preview" data-screen="home-wallet" aria-label="통합월렛 홈">
+        <div class="phone-shell">
+          <div class="phone-status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="mobile-appbar">
+            <div><small>경기 지역화폐</small><strong>우리동네 통합월렛</strong></div>
+            <button class="icon-button" type="button" aria-label="알림센터">
+              <svg><use href="#i-bell" /></svg><i></i>
+            </button>
+          </div>
+          <div class="mobile-scroll">
+            <article class="balance-hero">
+              <div class="eyebrow-row">
+                <span>사용가능 잔액</span
+                ><span class="verified"
+                  ><svg><use href="#i-check" /></svg>검증됨</span
+                >
+              </div>
+              <strong class="balance">286,400<em>원</em></strong>
+              <p>7월 14일 20:12 기준으로 반영됨</p>
+              <small>최근 지급·결제·정산 기록을 반영한 조회 금액이에요</small>
+            </article>
+
+            <article class="authority-row">
+              <span class="authority-icon">✓</span>
+              <div>
+                <strong>충전금 계좌 운용 권한이 확인됐어요</strong
+                ><small>충전금 환불 신청 가능 42,000원</small>
+              </div>
+              <svg><use href="#i-chevron" /></svg>
+            </article>
+
+            <div class="section-heading">
+              <div>
+                <strong>내 상품권</strong><small>여러 유통 단위의 잔액을 합쳐서 보여드려요</small>
+              </div>
+              <button id="open-pockets" type="button">상품권별로 보기</button>
+            </div>
+            <div class="pocket-stack">
+              <article class="pocket blue">
+                <div class="pocket-top">
+                  <span class="pocket-symbol">경기</span><span>2026 청년기본소득</span
+                  ><small>D-76</small>
+                </div>
+                <strong>180,000원</strong>
+                <p>경기도 · 생활/문화 가맹점</p>
+                <div class="progress"><i style="width: 72%"></i></div>
+              </article>
+              <article class="pocket mint">
+                <div class="pocket-top">
+                  <span class="pocket-symbol">안양</span><span>안양사랑상품권</span
+                  ><small>상시</small>
+                </div>
+                <strong>64,400원</strong>
+                <p>안양시 · 전통시장/소상공인</p>
+              </article>
+              <article class="pocket gray">
+                <div class="pocket-top">
+                  <span class="pocket-symbol">충전</span><span>고객 충전금</span
+                  ><small>환불 가능</small>
+                </div>
+                <strong>42,000원</strong>
+                <p>계좌 운용 권한 확인 완료</p>
+              </article>
+            </div>
+            <button class="scan-cta" type="button" data-navigate="pay-qr">
+              <svg><use href="#i-scan" /></svg
+              ><span><strong>스캔하고 결제</strong><small>가맹점 QR을 비춰주세요</small></span>
+            </button>
+          </div>
+          <nav class="bottom-tabs" aria-label="사용자 앱 하단 메뉴">
+            <button class="active" type="button">
+              <svg><use href="#i-home" /></svg><span>홈</span>
+            </button>
+            <button type="button">
+              <svg><use href="#i-gift" /></svg><span>혜택</span>
+            </button>
+            <button type="button" data-navigate="pay-qr">
+              <svg><use href="#i-scan" /></svg><span>스캔</span>
+            </button>
+            <button type="button">
+              <svg><use href="#i-receipt" /></svg><span>거래내역</span>
+            </button>
+            <button type="button">
+              <svg><use href="#i-menu" /></svg><span>전체</span>
+            </button>
+          </nav>
+          <div id="pocket-sheet" class="bottom-sheet" hidden>
+            <div class="sheet-handle"></div>
+            <div class="sheet-head">
+              <strong>상품권별 잔액</strong
+              ><button id="close-pockets" type="button" aria-label="닫기">×</button>
+            </div>
+            <p>각 상품권의 출처, 사용처와 환불 가능 여부를 확인할 수 있어요.</p>
+            <div class="sheet-line"><span>청년기본소득</span><strong>180,000원</strong></div>
+            <div class="sheet-line"><span>안양사랑상품권</span><strong>64,400원</strong></div>
+            <div class="sheet-line"><span>고객 충전금</span><strong>42,000원</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview mobile-preview" data-screen="pay-qr" aria-label="QR 결제">
+        <div class="phone-shell pay-phone">
+          <div class="phone-status"><span>9:41</span><span>● ● ●</span></div>
+          <div class="pay-header">
+            <button type="button" data-navigate="home-wallet" aria-label="뒤로">‹</button
+            ><strong>QR 결제</strong><span></span>
+          </div>
+          <div class="mobile-scroll pay-scroll">
+            <div class="pay-title">
+              <span class="merchant-logo">오</span>
+              <div><strong>오늘도 좋은마트</strong><small>수원시 팔달구 · 생활잡화</small></div>
+            </div>
+            <article class="amount-card">
+              <span>총 결제금액</span><strong>38,000원</strong>
+              <div><span>정책 즉시 할인</span><em>-3,000원</em></div>
+              <div class="net"><span>내 결제금액</span><strong>35,000원</strong></div>
+            </article>
+            <div class="status-stepper" aria-label="결제 상태">
+              <div class="done">
+                <i
+                  ><svg><use href="#i-check" /></svg></i
+                ><span>내용 확인</span>
+              </div>
+              <b></b>
+              <div id="pay-step"><i>2</i><span>결제 요청</span></div>
+              <b></b>
+              <div id="done-step"><i>3</i><span>완료</span></div>
+            </div>
+            <div class="section-heading compact">
+              <div>
+                <strong>이렇게 차감하는 걸 추천해요</strong
+                ><small>사용기한과 정책 조건을 반영했어요</small>
+              </div>
+            </div>
+            <article class="deduction-card">
+              <div>
+                <span class="dot blue-dot"></span>
+                <div>
+                  <strong>2026 청년기본소득</strong><small>먼저 사용 · 2026.09.30 만료</small>
+                </div>
+                <strong>30,000원</strong>
+              </div>
+              <div>
+                <span class="dot mint-dot"></span>
+                <div><strong>안양사랑상품권</strong><small>남은 금액</small></div>
+                <strong>5,000원</strong>
+              </div>
+              <button type="button">차감 상품권 변경</button>
+            </article>
+            <article class="policy-note">
+              <span>i</span>
+              <p>
+                <strong>정책 적용 완료</strong>이 가맹점과 품목에서 사용할 수 있는 상품권만
+                선택했어요.
+              </p>
+            </article>
+            <div id="pay-result" class="pay-result" hidden>
+              <span
+                ><svg><use href="#i-check" /></svg></span
+              ><strong>결제 완료</strong>
+              <p>35,000원이 결제됐어요.</p>
+            </div>
+          </div>
+          <div class="pay-footer">
+            <button id="pay-button" type="button">이대로 결제하기</button
+            ><small id="pay-helper">확인 전에는 잔액이 차감되지 않아요</small>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="preview admin-preview"
+        data-screen="admin-policy-list"
+        aria-label="정책 목록 관리 콘솔"
+      >
+        <div class="console-shell">
+          <aside class="console-nav">
+            <div class="console-logo">
+              <span>G</span>
+              <div><strong>경기 정책관리</strong><small>관리 콘솔</small></div>
+            </div>
+            <nav>
+              <a class="active" href="#admin-policy-list"
+                ><svg><use href="#i-file" /></svg>정책</a
+              >
+              <a href="#"
+                ><svg><use href="#i-gift" /></svg>상품권 정책</a
+              >
+              <a href="#"
+                ><svg><use href="#i-menu" /></svg>조건·표준코드</a
+              >
+              <a href="#"
+                ><svg><use href="#i-receipt" /></svg>정산</a
+              >
+              <a href="#"
+                ><svg><use href="#i-search" /></svg>감사</a
+              >
+            </nav>
+            <div class="actor"><span>김정책</span><small>정책총괄 · 경기도</small></div>
+          </aside>
+          <div class="console-main">
+            <header class="console-top">
+              <div>
+                <small>정책 관리 / 정책 목록</small>
+                <h1>정책 목록 · 생애주기</h1>
+              </div>
+              <span class="authority-badge">경기도 전역</span>
+            </header>
+            <div class="console-toolbar">
+              <label
+                ><span>정책 검색</span>
+                <div class="search-field">
+                  <svg><use href="#i-search" /></svg
+                  ><input id="policy-search" placeholder="정책명 또는 ID" /></div
+              ></label>
+              <label
+                ><span>승인 상태</span
+                ><select id="approval-filter">
+                  <option value="all">전체</option>
+                  <option value="approved">승인</option>
+                  <option value="pending">대기</option>
+                  <option value="rejected">반려</option>
+                </select></label
+              >
+              <label
+                ><span>생애주기</span
+                ><select id="lifecycle-filter">
+                  <option value="all">전체</option>
+                  <option value="active">활성</option>
+                  <option value="expired">만료</option>
+                </select></label
+              >
+              <label
+                ><span>정책 구분</span
+                ><select id="category-filter">
+                  <option value="all">전체</option>
+                  <option value="general">일반 정책</option>
+                  <option value="topup">충전 정책</option>
+                  <option value="voucher">상품권 정책</option>
+                </select></label
+              >
+              <button class="primary-small" type="button">+ 일반 정책 작성</button>
+            </div>
+            <div class="table-summary">
+              <strong id="policy-count">4개 정책</strong
+              ><span>승인·생애주기·실행 상태를 각각 표시합니다.</span>
+            </div>
+            <div class="policy-table-wrap">
+              <table class="policy-table">
+                <thead>
+                  <tr>
+                    <th>정책명 / ID</th>
+                    <th>구분</th>
+                    <th>승인</th>
+                    <th>생애주기</th>
+                    <th>실행</th>
+                    <th>담당부서</th>
+                    <th>발행계획 참조</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    data-policy
+                    data-name="청년기본소득"
+                    data-approval="approved"
+                    data-lifecycle="active"
+                    data-category="voucher"
+                  >
+                    <td>
+                      <button class="policy-name" type="button" data-policy-id="pol-youth-2026">
+                        <strong>2026 청년기본소득</strong
+                        ><small>pol-youth-basic-income-2026 · v3</small>
+                      </button>
+                    </td>
+                    <td><span class="type-chip voucher">상품권</span></td>
+                    <td><span class="status-chip approved">승인</span></td>
+                    <td><span class="status-chip active">활성</span></td>
+                    <td><span class="status-chip approved">실행 가능</span></td>
+                    <td>청년정책과</td>
+                    <td><code>ip-youth-2026-approved</code></td>
+                    <td>›</td>
+                  </tr>
+                  <tr
+                    data-policy
+                    data-name="안양사랑 충전"
+                    data-approval="approved"
+                    data-lifecycle="active"
+                    data-category="topup"
+                  >
+                    <td>
+                      <button class="policy-name" type="button" data-policy-id="pol-topup-anyang">
+                        <strong>안양사랑 충전 정책</strong
+                        ><small>pol-topup-anyang-approved-2026 · v5</small>
+                      </button>
+                    </td>
+                    <td><span class="type-chip topup">충전</span></td>
+                    <td><span class="status-chip approved">승인</span></td>
+                    <td><span class="status-chip active">활성</span></td>
+                    <td><span class="status-chip approved">실행 가능</span></td>
+                    <td>지역금융과</td>
+                    <td><span class="muted">해당 없음</span></td>
+                    <td>›</td>
+                  </tr>
+                  <tr
+                    data-policy
+                    data-name="산후조리 지원"
+                    data-approval="pending"
+                    data-lifecycle="active"
+                    data-category="general"
+                  >
+                    <td>
+                      <button class="policy-name" type="button" data-policy-id="pol-postpartum">
+                        <strong>산후조리 지원금</strong><small>pdraft-postpartum-2026 · v1</small>
+                      </button>
+                    </td>
+                    <td><span class="type-chip">일반</span></td>
+                    <td><span class="status-chip pending">결재 대기</span></td>
+                    <td><span class="status-chip active">활성 예정</span></td>
+                    <td>
+                      <span class="status-chip blocked">차단</span
+                      ><small class="reason">최종 승인 대기</small>
+                    </td>
+                    <td>인구정책과</td>
+                    <td><span class="muted">후보 아님</span></td>
+                    <td>›</td>
+                  </tr>
+                  <tr
+                    data-policy
+                    data-name="청소년 교통"
+                    data-approval="approved"
+                    data-lifecycle="expired"
+                    data-category="general"
+                  >
+                    <td>
+                      <button class="policy-name" type="button" data-policy-id="pol-transport">
+                        <strong>청소년 교통비 지원</strong
+                        ><small>pol-youth-transport-2025 · v2</small>
+                      </button>
+                    </td>
+                    <td><span class="type-chip">일반</span></td>
+                    <td><span class="status-chip approved">승인</span></td>
+                    <td><span class="status-chip expired">만료</span></td>
+                    <td><span class="status-chip blocked">차단</span></td>
+                    <td>교통정책과</td>
+                    <td><code>ip-transport-2025</code></td>
+                    <td>›</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <aside id="policy-detail" class="policy-drawer" hidden>
+              <div>
+                <small>정책 상세</small
+                ><button id="close-policy" type="button" aria-label="닫기">×</button>
+              </div>
+              <h2>2026 청년기본소득</h2>
+              <p>승인·활성·신규 발행 필요 정책입니다.</p>
+              <dl>
+                <div>
+                  <dt>최종 승인자</dt>
+                  <dd>정책책임관 박승인</dd>
+                </div>
+                <div>
+                  <dt>승인 일시</dt>
+                  <dd>2026.06.28 14:32</dd>
+                </div>
+                <div>
+                  <dt>결재 ID</dt>
+                  <dd>apv-youth-2026-003</dd>
+                </div>
+                <div>
+                  <dt>발행계획 참조</dt>
+                  <dd>ip-youth-2026-approved</dd>
+                </div>
+              </dl>
+              <button type="button">개정(새 버전 작성)</button>
+            </aside>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

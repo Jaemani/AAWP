@@ -1,0 +1,12 @@
+{
+  "brief": {
+    "title": "경기 통합월렛 production spec 3-screen slice",
+    "requirements": [
+      "home-wallet 모바일 월렛 홈",
+      "pay-qr 결제 확인에서 완료까지",
+      "admin-policy-list 검색, 필터와 상세 drawer"
+    ],
+    "source": "/Users/jaeman/Gyeonggi-PoC/resources/handoff_shared_0709/20260709T043425-itnxih/artifacts/refined-production-spec.json",
+    "sourceSha256": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33"
+  }
+}

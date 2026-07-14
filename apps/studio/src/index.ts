@@ -1,5 +1,11 @@
 export { createStudioView, renderStudioHtml, type StudioViewModel } from "./studio.js";
 export {
+  LocalStudioDemoStore,
+  type StudioDemoAsset,
+  type StudioDemoRecord,
+  type StudioDemoStore
+} from "./demo-store.js";
+export {
   createStudioServer,
   loadStudioInputs,
   loadWorkflowDocument,

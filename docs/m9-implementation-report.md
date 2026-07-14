@@ -24,6 +24,7 @@
 - read-only source API와 2 MiB 제한 compiler check API
 - deterministic dry-run 실행 API와 node/event/artifact 기록 화면
 - 서버 재시작 후에도 유지되는 local append-only JSONL run history
+- run ID 기반 웹 데모 snapshot, dashboard 미리보기와 결과 파일 삭제
 - CSP, no-store, nosniff와 frame deny 응답 header
 
 Studio 후보는 source 파일, production runtime 또는 database를 직접 변경하지 않는다. browser-side 정규화는 편집 편의를 위한 것이며 publish 판단은 서버 측 compiler 결과만 사용한다. Local run은 실제 Temporal·tool·model 실행이 아니라 `DETERMINISTIC_SIMULATION`으로 표시한다.
@@ -54,8 +55,9 @@ Studio 후보는 source 파일, production runtime 또는 database를 직접 변
 
 ## 검증 결과
 
-- M9 focused Vitest: 8개 test file, 18개 test 통과
-- 전체 Vitest: 42개 test file, 218개 test 통과
+- 기존 M9 focused Vitest: 8개 test file, 18개 test 통과
+- 현재 Studio focused Vitest: 4개 test file, 5개 test 통과
+- 전체 Vitest: 43개 test file, 220개 test 통과
 - `npm install`, build, typecheck, lint, format check, schema generation, whitespace 검사 통과
 - Studio HTTP source·valid candidate·invalid candidate integration test 통과
 - Studio run API의 event sequence와 JSONL restart persistence test 통과
