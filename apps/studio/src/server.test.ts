@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { createWorkflowEditorDocument } from "@awf/control-plane";
 import type { WorkflowDefinition } from "@awf/ir";
+import type { StudioRunRecord, StudioRunSummary } from "./run-store.js";
 import { createStudioServer } from "./server.js";
 
 const port = { type: "value", schemaVersion: "1", visibility: "public" as const };
@@ -83,5 +84,36 @@ describe("Studio local server", () => {
     const invalidResponse = await fetch(`${base}/api/check`, { method: "POST", body: "{}" });
     expect(invalidResponse.status).toBe(400);
     await expect(invalidResponse.json()).resolves.toMatchObject({ ok: false });
+
+    const runResponse = await fetch(`${base}/api/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ inputs: { input: { message: "hello" } } })
+    });
+    expect(runResponse.status).toBe(201);
+    const run = (await runResponse.json()) as StudioRunRecord;
+    expect(run).toMatchObject({
+      status: "completed",
+      executionMode: "DETERMINISTIC_SIMULATION",
+      nodeStates: { execute: "completed" }
+    });
+    expect(run.events.map((item: { type: string }) => item.type)).toEqual([
+      "RunCreated",
+      "NodeScheduled",
+      "NodeStarted",
+      "ArtifactPublished",
+      "NodeCompleted",
+      "RunCompleted"
+    ]);
+
+    const history = (await fetch(`${base}/api/runs`).then(async (response) => response.json())) as {
+      runs: StudioRunSummary[];
+    };
+    expect(history.runs).toMatchObject([{ runId: run.runId, status: "completed", eventCount: 6 }]);
+    await expect(
+      fetch(`${base}/api/runs/${encodeURIComponent(run.runId)}`).then(async (response) =>
+        response.json()
+      )
+    ).resolves.toMatchObject({ runId: run.runId, artifacts: [{ nodeId: "execute" }] });
   });
 });

@@ -7,10 +7,12 @@ import {
   type WorkflowEditorDocument,
   type WorkflowSemanticDiff
 } from "@awf/control-plane";
+import { canonicalize } from "@awf/ir";
 
 export interface StudioViewModel {
   document: WorkflowEditorDocument;
   graph: ReturnType<typeof projectWorkflowGraph>;
+  initialInputJson: string;
   semanticDiff?: WorkflowSemanticDiff;
   impactPreview?: RevisionImpactPreview;
   run?: RunControlProjection;
@@ -20,6 +22,7 @@ export interface StudioViewModel {
 
 export function createStudioView(input: {
   document: WorkflowEditorDocument;
+  initialInputs?: unknown;
   semanticDiff?: WorkflowSemanticDiff;
   impactPreview?: RevisionImpactPreview;
   run?: RunControlProjection;
@@ -28,6 +31,7 @@ export function createStudioView(input: {
 }): StudioViewModel {
   return {
     ...input,
+    initialInputJson: canonicalize(input.initialInputs ?? {}),
     graph: projectWorkflowGraph(input.document.workflow)
   };
 }
@@ -159,8 +163,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .span-2 { grid-column:1 / -1; } .graph { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.7rem; }
     .node { display:flex; flex-direction:column; gap:.35rem; padding:.8rem; text-align:left; color:inherit; background:#17233a; border:1px solid #31415f; border-radius:9px; cursor:pointer; }
     .node:hover,.node:focus-visible { border-color:#38bdf8; outline:none; } .node span,.node small,.muted { color:#9cabc6; }
+    .node[data-run-status="completed"] { border-color:#22c55e; } .node[data-run-status="running"] { border-color:#38bdf8; } .node[data-run-status="failed"] { border-color:#ef4444; }
     textarea { width:100%; min-height:260px; resize:vertical; padding:.8rem; color:#dbeafe; background:#09111f; border:1px solid #31415f; border-radius:8px; font:12px/1.5 ui-monospace, monospace; }
-    #contract-editor { min-height:180px; } .actions { display:flex; gap:.5rem; margin-top:.6rem; }
+    #contract-editor { min-height:180px; } #run-input { min-height:150px; } .actions { display:flex; gap:.5rem; margin-top:.6rem; }
     .actions button { padding:.55rem .8rem; color:#08111f; background:#7dd3fc; border:0; border-radius:7px; font-weight:700; cursor:pointer; }
     .actions button.secondary { color:#dbeafe; background:#24334f; }
     .metrics { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.8rem; } .metrics span { padding:.4rem .6rem; background:#17233a; border-radius:6px; }
@@ -169,7 +174,16 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .artifact-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:.6rem; } .artifact-grid article,.evidence { display:flex; flex-direction:column; gap:.3rem; padding:.7rem; background:#17233a; border-radius:8px; }
     code { overflow:hidden; text-overflow:ellipsis; color:#7dd3fc; } .evidence.redacted { border:1px dashed #b45309; }
     #editor-status { min-height:1.2rem; color:#9cabc6; }
+    .execution { display:grid; grid-template-columns:minmax(260px,.7fr) minmax(220px,.55fr) minmax(360px,1.4fr); gap:1rem; }
+    .run-history { display:flex; flex-direction:column; gap:.5rem; max-height:360px; overflow:auto; }
+    .run-history button { display:flex; flex-direction:column; gap:.2rem; padding:.65rem; text-align:left; color:inherit; background:#17233a; border:1px solid #31415f; border-radius:8px; cursor:pointer; }
+    .run-history button:hover,.run-history button:focus-visible { border-color:#38bdf8; outline:none; }
+    .node-states { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.5rem; margin-bottom:.8rem; }
+    .node-states article { display:flex; justify-content:space-between; gap:.5rem; padding:.55rem; background:#17233a; border-radius:7px; }
+    .run-output { max-height:240px; overflow:auto; padding:.7rem; background:#09111f; border-radius:8px; font:11px/1.5 ui-monospace,monospace; white-space:pre-wrap; }
+    .mode-notice { padding:.65rem; border:1px solid #b45309; border-radius:8px; color:#fdba74; background:#43140755; }
     @media (max-width:900px) { main { grid-template-columns:1fr; } .span-2 { grid-column:auto; } .digest { display:none; } }
+    @media (max-width:1100px) { .execution { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -182,12 +196,32 @@ export function renderStudioHtml(view: StudioViewModel): string {
       view.graph.edges.map((edge) => edge.label),
       "edge가 없습니다."
     )}</section>
+    <section class="span-2">
+      <h2>Workflow dry-run & history</h2>
+      <p class="mode-notice">현재 WIR에는 executable binding이 없습니다. 아래 실행은 실제 Temporal·tool·model 호출이 아닌 <b>DETERMINISTIC_SIMULATION</b>이며 기록은 로컬 append-only JSONL에 보존됩니다.</p>
+      <div class="execution">
+        <div>
+          <h3>Run input</h3>
+          <textarea id="run-input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea>
+          <div class="actions"><button id="run-workflow" type="button">Run dry-run</button><button id="refresh-runs" class="secondary" type="button">Refresh</button></div>
+          <p id="run-status" class="muted" aria-live="polite">실행할 입력을 확인하세요.</p>
+        </div>
+        <div><h3>Run history</h3><div id="run-history" class="run-history"><p class="muted">기록을 불러오는 중입니다.</p></div></div>
+        <div>
+          <h3>Selected run</h3>
+          <div id="run-metrics" class="metrics"><span>선택한 run 없음</span></div>
+          <div id="node-states" class="node-states"></div>
+          <ol id="run-timeline" class="timeline"></ol>
+          <h3>Outputs</h3><pre id="run-output" class="run-output">{}</pre>
+        </div>
+      </div>
+    </section>
     <section><h2>Canonical WIR editor</h2><textarea id="wir-editor" spellcheck="false">${escapeHtml(view.document.canonicalJson)}</textarea><div class="actions"><button id="canonicalize" type="button">Canonicalize candidate</button><button id="reset" class="secondary" type="button">Reset</button></div><p id="editor-status" aria-live="polite">편집 결과는 compiler 검증 전까지 publish되지 않습니다.</p></section>
     <section><h2>Node contract editor</h2><p class="muted">graph node를 선택하세요. 적용 시 canonical WIR 후보만 변경됩니다.</p><textarea id="contract-editor" spellcheck="false" disabled></textarea><div class="actions"><button id="apply-contract" type="button" disabled>Apply to candidate</button></div></section>
     <section><h2>Semantic diff</h2>${renderDiff(view.semanticDiff)}</section>
     <section><h2>Revision impact preview</h2>${renderImpact(view.impactPreview)}</section>
-    <section class="span-2"><h2>Run timeline & approval inbox</h2>${renderRun(view.run)}</section>
-    <section><h2>Artifact lineage</h2>${renderLineage(view.lineage)}</section>
+    <section><h2>Run artifacts</h2><div id="run-artifacts"><p class="muted">run을 선택하면 artifact 기록이 표시됩니다.</p></div></section>
+    <section><h2>Persisted lineage</h2>${renderLineage(view.lineage)}</section>
     <section><h2>Verifier evidence</h2>${renderEvidence(view.evidence)}</section>
   </main>
   <script>
@@ -197,10 +231,69 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const contract = document.getElementById("contract-editor");
       const apply = document.getElementById("apply-contract");
       const status = document.getElementById("editor-status");
+      const runInput = document.getElementById("run-input");
+      const runStatus = document.getElementById("run-status");
+      const runHistory = document.getElementById("run-history");
+      const runMetrics = document.getElementById("run-metrics");
+      const nodeStates = document.getElementById("node-states");
+      const runTimeline = document.getElementById("run-timeline");
+      const runOutput = document.getElementById("run-output");
+      const runArtifacts = document.getElementById("run-artifacts");
       let selectedNodeId = null;
       const stable = (value) => Array.isArray(value) ? value.map(stable) : value && typeof value === "object"
         ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])])) : value;
       const parse = () => JSON.parse(wir.value);
+      const clear = (element) => { while (element.firstChild) element.removeChild(element.firstChild); };
+      const element = (tag, text, className) => {
+        const item = document.createElement(tag);
+        if (text !== undefined) item.textContent = text;
+        if (className) item.className = className;
+        return item;
+      };
+      const renderSelectedRun = (record) => {
+        clear(runMetrics);
+        [record.status, record.executionMode, String(record.events.length) + " events", String(record.artifacts.length) + " artifacts"]
+          .forEach((value) => { const span = element("span"); const strong = element("b", value); span.appendChild(strong); runMetrics.appendChild(span); });
+        clear(nodeStates);
+        Object.entries(record.nodeStates).sort(([left], [right]) => left.localeCompare(right)).forEach(([nodeId, state]) => {
+          const card = element("article"); card.appendChild(element("strong", nodeId)); card.appendChild(element("span", state)); nodeStates.appendChild(card);
+          const graphNode = document.querySelector('[data-node-id="' + CSS.escape(nodeId) + '"]');
+          if (graphNode) graphNode.dataset.runStatus = state;
+        });
+        clear(runTimeline);
+        record.events.forEach((event) => {
+          const row = element("li"); row.appendChild(element("time", event.occurredAt));
+          const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
+          row.appendChild(element("span", String(event.sequence) + ". " + event.type + (payload.nodeId ? " · " + payload.nodeId : "")));
+          runTimeline.appendChild(row);
+        });
+        runOutput.textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
+        clear(runArtifacts);
+        if (record.artifacts.length === 0) runArtifacts.appendChild(element("p", "artifact 기록이 없습니다.", "muted"));
+        record.artifacts.forEach((artifact) => {
+          const card = element("article", undefined, "evidence"); card.appendChild(element("strong", artifact.artifactId));
+          card.appendChild(element("span", artifact.nodeId + " / " + artifact.port)); card.appendChild(element("code", artifact.contentHash)); runArtifacts.appendChild(card);
+        });
+      };
+      const selectRun = async (runId) => {
+        runStatus.textContent = runId + " 기록을 불러오는 중입니다.";
+        const response = await fetch("/api/runs/" + encodeURIComponent(runId));
+        if (!response.ok) throw new Error("run record request failed: " + response.status);
+        const record = await response.json(); renderSelectedRun(record); runStatus.textContent = runId + " · " + record.status;
+      };
+      const loadRuns = async (selectLatest) => {
+        const response = await fetch("/api/runs");
+        if (!response.ok) throw new Error("run history request failed: " + response.status);
+        const payload = await response.json(); clear(runHistory);
+        if (payload.runs.length === 0) runHistory.appendChild(element("p", "아직 실행 기록이 없습니다.", "muted"));
+        payload.runs.forEach((run) => {
+          const button = element("button"); button.type = "button"; button.appendChild(element("strong", run.runId));
+          button.appendChild(element("span", run.status + " · " + run.eventCount + " events"));
+          button.appendChild(element("small", run.createdAt)); button.addEventListener("click", () => selectRun(run.runId).catch((error) => runStatus.textContent = error.message));
+          runHistory.appendChild(button);
+        });
+        if (selectLatest && payload.runs[0]) await selectRun(payload.runs[0].runId);
+      };
       const showNode = () => {
         if (!selectedNodeId) return;
         const node = parse().nodes.find((item) => item.id === selectedNodeId);
@@ -235,6 +328,18 @@ export function renderStudioHtml(view: StudioViewModel): string {
           status.textContent = "Node contract applied to candidate; compiler validation is still required.";
         } catch (error) { status.textContent = error.message; }
       });
+      document.getElementById("run-workflow").addEventListener("click", async () => {
+        const button = document.getElementById("run-workflow"); button.disabled = true; runStatus.textContent = "Dry-run 실행 중…";
+        try {
+          const inputs = JSON.parse(runInput.value);
+          const response = await fetch("/api/runs", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ inputs }) });
+          const record = await response.json(); if (!response.ok) throw new Error(record.message || "run failed");
+          renderSelectedRun(record); await loadRuns(false); runStatus.textContent = record.runId + " · " + record.status;
+        } catch (error) { runStatus.textContent = error.message; }
+        finally { button.disabled = false; }
+      });
+      document.getElementById("refresh-runs").addEventListener("click", () => loadRuns(false).catch((error) => runStatus.textContent = error.message));
+      loadRuns(true).catch((error) => runStatus.textContent = error.message);
     })();
   </script>
 </body>

@@ -10,12 +10,18 @@ import {
   type WorkflowEditorDocument
 } from "@awf/control-plane";
 import { parse as parseYaml } from "yaml";
+import {
+  executeStudioRun,
+  InMemoryStudioRunStore,
+  JsonlStudioRunStore,
+  type StudioRunStore
+} from "./run-store.js";
 import { createStudioView, renderStudioHtml } from "./studio.js";
 
 export interface StudioServerOptions {
   document: WorkflowEditorDocument;
-  host?: string;
-  port?: number;
+  runStore?: StudioRunStore;
+  initialInputs?: unknown;
 }
 
 function sendJson(response: ServerResponse, status: number, payload: unknown): void {
@@ -48,8 +54,22 @@ export async function loadWorkflowDocument(path: string): Promise<WorkflowEditor
   return parseWorkflowEditorDocument(source);
 }
 
+export async function loadStudioInputs(path: string): Promise<unknown> {
+  const absolutePath = resolve(path);
+  const source = await readFile(absolutePath, "utf8");
+  return [".yaml", ".yml"].includes(extname(absolutePath).toLowerCase())
+    ? (parseYaml(source) as unknown)
+    : (JSON.parse(source) as unknown);
+}
+
 export function createStudioServer(options: StudioServerOptions): Server {
-  const html = renderStudioHtml(createStudioView({ document: options.document }));
+  const runStore = options.runStore ?? new InMemoryStudioRunStore();
+  const html = renderStudioHtml(
+    createStudioView({
+      document: options.document,
+      initialInputs: options.initialInputs ?? {}
+    })
+  );
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
     if (request.method === "GET" && url.pathname === "/") {
@@ -57,7 +77,7 @@ export function createStudioServer(options: StudioServerOptions): Server {
         "content-type": "text/html; charset=utf-8",
         "cache-control": "no-store",
         "content-security-policy":
-          "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "default-src 'none'; connect-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         "x-content-type-options": "nosniff",
         "x-frame-options": "DENY"
       });
@@ -69,6 +89,38 @@ export function createStudioServer(options: StudioServerOptions): Server {
         digest: options.document.digest,
         canonicalJson: options.document.canonicalJson
       });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/runs") {
+      sendJson(response, 200, { runs: await runStore.list() });
+      return;
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/api/runs/")) {
+      const runId = decodeURIComponent(url.pathname.slice("/api/runs/".length));
+      const record = await runStore.get(runId);
+      sendJson(
+        response,
+        record === undefined ? 404 : 200,
+        record === undefined ? { error: "run_not_found" } : record
+      );
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/runs") {
+      try {
+        const body = JSON.parse(await readBody(request)) as unknown;
+        const inputs =
+          typeof body === "object" && body !== null && "inputs" in body
+            ? (body as { inputs: unknown }).inputs
+            : body;
+        const record = await executeStudioRun({
+          workflow: options.document.workflow,
+          inputs,
+          store: runStore
+        });
+        sendJson(response, 201, record);
+      } catch (error) {
+        sendJson(response, 400, { ok: false, message: (error as Error).message });
+      }
       return;
     }
     if (request.method === "POST" && url.pathname === "/api/check") {
@@ -100,16 +152,21 @@ function argument(name: string): string | undefined {
 async function main(): Promise<void> {
   const workflowPath = argument("--workflow");
   if (workflowPath === undefined) {
-    throw new Error("usage: awf-studio --workflow <workflow.json|workflow.yaml> [--port 4173]");
+    throw new Error(
+      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--input fixture.json] [--runs .awf/studio-runs.jsonl] [--port 4173]"
+    );
   }
   const portValue = argument("--port") ?? "4173";
   const port = Number(portValue);
   if (!Number.isInteger(port) || port < 1 || port > 65_535)
     throw new Error(`invalid port ${portValue}`);
   const document = await loadWorkflowDocument(workflowPath);
+  const inputPath = argument("--input");
+  const initialInputs = inputPath === undefined ? {} : await loadStudioInputs(inputPath);
+  const runStore = new JsonlStudioRunStore(resolve(argument("--runs") ?? ".awf/studio-runs.jsonl"));
   const host = "127.0.0.1";
-  createStudioServer({ document, host, port }).listen(port, host, () => {
-    process.stdout.write(`AWF Studio read-only source loaded at http://${host}:${port}\n`);
+  createStudioServer({ document, runStore, initialInputs }).listen(port, host, () => {
+    process.stdout.write(`AWF Studio loaded at http://${host}:${port}\n`);
   });
 }
 

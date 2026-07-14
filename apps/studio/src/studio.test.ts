@@ -58,6 +58,9 @@ describe("Studio HTML", () => {
     expect(html).toContain("Adaptive Artifact Workflow Studio");
     expect(html).toContain('data-node-id="execute"');
     expect(html).toContain("Canonical WIR editor");
+    expect(html).toContain("Workflow dry-run & history");
+    expect(html).toContain("DETERMINISTIC_SIMULATION");
+    expect(html).toContain("/api/runs");
     expect(html).toContain(document.digest);
     expect(html).toContain("compiler validation is still required");
   });

@@ -3,6 +3,7 @@ dist/
 coverage/
 .turbo/
 .tokensave/
+.awf/
 .DS_Store
 benchmarks/direct-v0/runs/
 benchmarks/direct-v0/workspaces/
