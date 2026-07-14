@@ -117,6 +117,11 @@ describe("Studio local server", () => {
       runs: StudioRunSummary[];
     };
     expect(history.runs).toMatchObject([{ runId: run.runId, status: "completed", eventCount: 6 }]);
+    const deepLinkedDashboard = await fetch(`${base}/?run=${encodeURIComponent(run.runId)}`).then(
+      async (response) => response.text()
+    );
+    expect(deepLinkedDashboard).toContain("Adaptive Workflow Studio");
+    expect(deepLinkedDashboard).toContain("URLSearchParams");
     await expect(
       fetch(`${base}/api/runs/${encodeURIComponent(run.runId)}`).then(async (response) =>
         response.json()

@@ -1,6 +1,6 @@
 # M9 Studio·운영 강화 구현 결과
 
-기준일은 2026년 7월 14일이다. M9은 WIR을 유일한 진실원으로 유지하는 control-plane projection, 최소 Studio와 운영 안전장치를 구현했다.
+기준일은 2026년 7월 15일이다. M9은 WIR을 유일한 진실원으로 유지하는 control-plane projection, 최소 Studio와 운영 안전장치를 구현했다.
 
 ## 완료 범위
 
@@ -17,9 +17,13 @@
 ### Studio
 
 - `Run workflow` 단일 action과 자동 갱신 run history
+- workflow 실행, 기록 선택, 선택 결과 검토가 한 방향으로 이어지는 운영 console 정보 구조
+- 실행 즉시 표시되는 node `Running` 상태, 완료·실패 feedback과 접근 가능한 busy/current 상태
+- 긴 run ID를 읽기 쉽게 줄인 기록 rail과 한국 로케일 실행 시각
+- `/?run=<runId>` dashboard deep link와 `/runs/<runId>/demo/` 독립 결과 주소
 - 선택한 run의 node 상태, event timeline, artifact와 output panel
 - WIR editor, semantic diff, impact, lineage와 evidence는 control-plane API에 유지하고 기본 실행 화면에서는 제거
-- 반응형·keyboard-focus 가능한 dependency-free HTML
+- 1600px desktop부터 320px mobile까지 대응하는 반응형·keyboard-focus 가능한 dependency-free HTML
 - YAML/JSON source를 읽는 local-only server
 - read-only source API와 2 MiB 제한 compiler check API
 - deterministic dry-run 실행 API와 node/event/artifact 기록 화면

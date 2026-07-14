@@ -30,10 +30,11 @@ function escapeHtml(value: unknown): string {
 export function renderStudioHtml(view: StudioViewModel): string {
   const graphNodes = view.graph.nodes
     .map(
-      (node, index) => `${index === 0 ? "" : '<span class="arrow" aria-hidden="true">→</span>'}
+      (node, index) => `
         <div class="workflow-node" data-node-id="${escapeHtml(node.id)}">
-          <span class="node-state"></span>
-          <div><strong>${escapeHtml(node.id)}</strong><small>${escapeHtml(node.kind)}</small></div>
+          <span class="node-index">${String(index + 1).padStart(2, "0")}</span>
+          <div class="node-copy"><strong>${escapeHtml(node.id)}</strong><small>${escapeHtml(node.kind)}</small></div>
+          <span class="node-state">Waiting</span>
         </div>`
     )
     .join("");
@@ -45,105 +46,234 @@ export function renderStudioHtml(view: StudioViewModel): string {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AWF · ${escapeHtml(view.graph.workflowId)}</title>
   <style>
-    :root { font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#171717; background:#f6f7f8; font-synthesis:none; }
+    :root {
+      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:#172033;
+      background:#f3f5f8;
+      font-synthesis:none;
+      --ink:#172033;
+      --muted:#667085;
+      --subtle:#98a2b3;
+      --line:#dfe4ea;
+      --line-soft:#edf0f3;
+      --panel:#fff;
+      --panel-soft:#f8fafc;
+      --accent:#2759d7;
+      --accent-dark:#1f49b5;
+      --accent-soft:#eef3ff;
+      --success:#087a55;
+      --success-soft:#eaf8f2;
+      --danger:#b42318;
+      --danger-soft:#fff0ee;
+      --warning:#9a5b13;
+      --warning-soft:#fff6e7;
+      --shadow:0 1px 2px rgb(16 24 40 / 4%),0 12px 32px rgb(16 24 40 / 5%);
+    }
     * { box-sizing:border-box; }
-    body { margin:0; min-width:320px; }
+    html { min-width:320px; background:#f3f5f8; }
+    body { min-width:320px; min-height:100vh; margin:0; background:linear-gradient(180deg,#f8fafc 0,#f3f5f8 260px); }
     button,textarea { font:inherit; }
-    header { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:#fff; border-bottom:1px solid #e5e7eb; }
-    .identity { display:flex; align-items:center; gap:14px; min-width:0; }
-    .logo { display:grid; place-items:center; width:32px; height:32px; color:#fff; background:#171717; border-radius:8px; font-size:12px; font-weight:800; }
-    h1 { margin:0; font-size:15px; font-weight:650; } .subtitle { margin-top:2px; color:#737373; font-size:12px; }
-    .mode { flex:none; padding:5px 9px; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:999px; font-size:11px; font-weight:650; }
-    .toolbar { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; padding:22px 28px; background:#fff; border-bottom:1px solid #e5e7eb; }
-    .toolbar-copy h2 { margin:0 0 5px; font-size:20px; letter-spacing:-.02em; } .toolbar-copy p { margin:0; color:#737373; font-size:13px; }
-    .run-control { display:flex; align-items:flex-start; gap:10px; }
-    .run-button { min-width:140px; padding:10px 17px; color:#fff; background:#171717; border:1px solid #171717; border-radius:8px; font-weight:650; cursor:pointer; }
-    .run-button:hover { background:#333; } .run-button:focus-visible { outline:3px solid #bfdbfe; outline-offset:2px; } .run-button:disabled { cursor:wait; opacity:.55; }
-    details.input { position:relative; } details.input summary { padding:10px 12px; color:#525252; background:#fff; border:1px solid #d4d4d4; border-radius:8px; font-size:13px; cursor:pointer; list-style:none; }
-    details.input[open] summary { border-radius:8px 8px 0 0; } details.input textarea { position:absolute; z-index:5; right:0; width:420px; height:180px; padding:12px; color:#e5e7eb; background:#171717; border:0; border-radius:8px 0 8px 8px; resize:vertical; font:12px/1.5 ui-monospace,SFMono-Regular,monospace; }
-    #run-message { min-height:18px; margin:8px 28px 0; color:#737373; font-size:12px; }
-    .workflow-panel { margin:18px 28px; overflow:hidden; background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
-    .workflow-title { display:flex; align-items:center; justify-content:space-between; min-height:38px; padding:0 16px; border-bottom:1px solid #f0f0f0; font-size:11px; }
-    .workflow-title span { color:#a3a3a3; }
-    .workflow-strip { display:flex; align-items:center; gap:12px; padding:12px 16px; overflow-x:auto; }
-    .workflow-node { display:flex; align-items:center; gap:9px; min-width:max-content; padding:6px 9px; border-radius:7px; }
-    .workflow-node strong,.workflow-node small { display:block; } .workflow-node strong { font-size:12px; } .workflow-node small { margin-top:2px; color:#a3a3a3; font-size:10px; }
-    .node-state { width:8px; height:8px; background:#d4d4d4; border-radius:50%; }
-    .workflow-node[data-run-status="completed"] .node-state { background:#16a34a; } .workflow-node[data-run-status="failed"] .node-state { background:#dc2626; } .workflow-node[data-run-status="running"] .node-state { background:#2563eb; box-shadow:0 0 0 4px #dbeafe; }
-    .arrow { color:#d4d4d4; }
-    main { display:grid; grid-template-columns:310px minmax(0,1fr); min-height:calc(100vh - 238px); margin:0 28px 28px; overflow:hidden; background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
-    aside { border-right:1px solid #e5e7eb; } .panel-title { display:flex; align-items:center; justify-content:space-between; height:48px; padding:0 16px; border-bottom:1px solid #e5e7eb; font-size:12px; font-weight:650; }
-    #run-count { color:#a3a3a3; font-weight:500; } .history { max-height:calc(100vh - 287px); overflow:auto; }
-    .history-empty { padding:40px 20px; color:#a3a3a3; text-align:center; font-size:13px; }
-    .run-row { display:grid; grid-template-columns:10px minmax(0,1fr); gap:10px; width:100%; padding:13px 16px; text-align:left; color:inherit; background:#fff; border:0; border-bottom:1px solid #f0f0f0; cursor:pointer; }
-    .run-row:hover { background:#fafafa; } .run-row.active { background:#f5f5f5; box-shadow:inset 3px 0 #171717; } .run-row:focus-visible { outline:2px solid #93c5fd; outline-offset:-2px; }
-    .status-dot { width:8px; height:8px; margin-top:4px; background:#16a34a; border-radius:50%; } .status-dot.failed { background:#dc2626; }
-    .run-row strong,.run-row small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .run-row strong { font:11px ui-monospace,SFMono-Regular,monospace; } .run-row small { margin-top:5px; color:#a3a3a3; font-size:10px; }
-    .detail { min-width:0; } .empty-detail { display:grid; min-height:420px; place-items:center; color:#a3a3a3; font-size:13px; }
+    button,a,summary { -webkit-tap-highlight-color:transparent; }
+    [hidden] { display:none!important; }
+    button:focus-visible,a:focus-visible,summary:focus-visible,textarea:focus-visible { outline:3px solid rgb(39 89 215 / 24%); outline-offset:2px; }
+    .topbar { position:sticky; z-index:20; top:0; border-bottom:1px solid rgb(223 228 234 / 90%); background:rgb(255 255 255 / 92%); backdrop-filter:blur(14px); }
+    .topbar-inner { display:flex; width:min(1600px,100%); min-height:68px; align-items:center; justify-content:space-between; gap:24px; margin:0 auto; padding:0 32px; }
+    .identity { display:flex; min-width:0; align-items:center; gap:12px; }
+    .logo { display:grid; width:36px; height:36px; flex:0 0 auto; place-items:center; border-radius:10px; color:#fff; background:#172033; box-shadow:inset 0 0 0 1px rgb(255 255 255 / 8%); font-size:11px; font-weight:800; letter-spacing:.04em; }
+    .product-name,.product-context { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .product-name { font-size:13px; font-weight:720; letter-spacing:-.01em; }
+    .product-context { margin-top:3px; color:var(--muted); font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .mode { display:inline-flex; min-height:28px; flex:none; align-items:center; gap:7px; padding:0 10px; border:1px solid #f0d8af; border-radius:999px; color:var(--warning); background:var(--warning-soft); font-size:10px; font-weight:700; letter-spacing:.02em; }
+    .mode::before { width:6px; height:6px; border-radius:50%; background:#d88b2b; content:""; }
+    .page-shell { width:min(1600px,100%); margin:0 auto; padding:28px 32px 40px; }
+    .control-hero { display:flex; align-items:center; justify-content:space-between; gap:28px; padding:24px 26px; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:var(--shadow); }
+    .eyebrow { display:block; margin-bottom:8px; color:var(--accent); font-size:10px; font-weight:760; letter-spacing:.11em; text-transform:uppercase; }
+    .toolbar-copy h1 { margin:0; color:var(--ink); font-size:24px; font-weight:730; letter-spacing:-.035em; }
+    .toolbar-copy p { max-width:640px; margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.55; }
+    .run-control { display:flex; flex:0 0 auto; align-items:center; gap:9px; }
+    .run-button { min-width:146px; min-height:42px; padding:0 18px; border:1px solid var(--accent); border-radius:9px; color:#fff; background:var(--accent); box-shadow:0 1px 2px rgb(39 89 215 / 24%); font-size:12px; font-weight:720; cursor:pointer; transition:background 140ms ease,transform 140ms ease; }
+    .run-button:hover { background:var(--accent-dark); }
+    .run-button:active { transform:translateY(1px); }
+    .run-button:disabled { cursor:wait; opacity:.68; transform:none; }
+    details.input { position:relative; }
+    details.input summary { display:flex; min-height:42px; align-items:center; padding:0 13px; border:1px solid #cfd6df; border-radius:9px; color:#475467; background:#fff; font-size:11px; font-weight:650; cursor:pointer; list-style:none; }
+    details.input summary::-webkit-details-marker { display:none; }
+    details.input[open] summary { border-color:#aeb8c6; border-radius:9px 9px 0 0; }
+    details.input textarea { position:absolute; z-index:15; top:41px; right:0; width:min(520px,calc(100vw - 64px)); height:240px; padding:15px; resize:vertical; border:1px solid #273244; border-radius:9px 0 9px 9px; color:#dce5f1; background:#172033; box-shadow:0 18px 40px rgb(16 24 40 / 24%); font:11px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .run-message { min-height:18px; margin:10px 4px 0; color:var(--muted); font-size:11px; }
+    .run-message[data-tone="working"] { color:var(--accent); }
+    .run-message[data-tone="success"] { color:var(--success); }
+    .run-message[data-tone="error"] { color:var(--danger); }
+    .workflow-panel { margin-top:18px; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 1px 2px rgb(16 24 40 / 3%); }
+    .workflow-title { display:flex; min-height:52px; align-items:center; justify-content:space-between; gap:16px; padding:0 18px; border-bottom:1px solid var(--line-soft); }
+    .workflow-title strong { font-size:12px; font-weight:700; }
+    .workflow-title span { color:var(--muted); font-size:10px; }
+    .workflow-strip { display:grid; grid-auto-columns:minmax(220px,1fr); grid-auto-flow:column; gap:10px; overflow-x:auto; padding:14px; background:var(--panel-soft); }
+    .workflow-node { display:grid; min-width:220px; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:10px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+    .node-index { display:grid; width:30px; height:30px; place-items:center; border-radius:8px; color:#6f7b8d; background:#f1f4f7; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .node-copy { min-width:0; }
+    .node-copy strong,.node-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .node-copy strong { font-size:11px; font-weight:690; }
+    .node-copy small { margin-top:3px; color:var(--muted); font-size:9px; }
+    .node-state { padding:4px 7px; border-radius:999px; color:#667085; background:#f2f4f7; font-size:8px; font-weight:720; text-transform:uppercase; letter-spacing:.04em; }
+    .workflow-node[data-run-status="running"] { border-color:#b9c9f5; box-shadow:0 0 0 3px var(--accent-soft); }
+    .workflow-node[data-run-status="running"] .node-state { color:var(--accent); background:var(--accent-soft); }
+    .workflow-node[data-run-status="completed"] .node-state { color:var(--success); background:var(--success-soft); }
+    .workflow-node[data-run-status="failed"] .node-state { color:var(--danger); background:var(--danger-soft); }
+    .workspace { display:grid; min-height:660px; grid-template-columns:300px minmax(0,1fr); margin-top:18px; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:var(--shadow); }
+    .run-rail { min-width:0; border-right:1px solid var(--line); background:#fafbfc; }
+    .panel-title { display:flex; min-height:56px; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:1px solid var(--line); font-size:11px; font-weight:700; }
+    #run-count { display:grid; min-width:23px; height:23px; place-items:center; padding:0 6px; border-radius:999px; color:#667085; background:#eef1f4; font-size:9px; font-weight:700; }
+    .history { max-height:calc(100vh - 220px); overflow:auto; padding:8px; scrollbar-width:thin; }
+    .history-empty { padding:40px 20px; color:var(--subtle); text-align:center; font-size:11px; line-height:1.6; }
+    .run-row { display:grid; width:100%; grid-template-columns:9px minmax(0,1fr); align-items:start; gap:10px; margin-bottom:3px; padding:11px 10px; border:1px solid transparent; border-radius:9px; color:inherit; background:transparent; text-align:left; cursor:pointer; }
+    .run-row:hover { background:#f2f4f7; }
+    .run-row.active { border-color:#d9e2f8; background:#fff; box-shadow:0 1px 3px rgb(16 24 40 / 6%),inset 3px 0 var(--accent); }
+    .status-dot { width:7px; height:7px; margin-top:5px; border-radius:50%; background:var(--success); box-shadow:0 0 0 3px var(--success-soft); }
+    .status-dot.failed { background:var(--danger); box-shadow:0 0 0 3px var(--danger-soft); }
+    .run-copy { min-width:0; }
+    .run-row-head { display:flex; min-width:0; align-items:center; gap:7px; }
+    .run-row strong { min-width:0; flex:1; overflow:hidden; color:#344054; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; text-overflow:ellipsis; white-space:nowrap; }
+    .run-row small { display:block; margin-top:5px; overflow:hidden; color:var(--muted); font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
+    .run-demo-badge { flex:none; padding:3px 6px; border-radius:999px; color:var(--accent); background:var(--accent-soft); font-size:7px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
+    .detail { min-width:0; background:#fff; }
+    .empty-detail { display:grid; min-height:520px; place-items:center; padding:40px; text-align:center; }
+    .empty-state strong,.empty-state span { display:block; }
+    .empty-state strong { color:#344054; font-size:14px; }
+    .empty-state span { max-width:340px; margin-top:7px; color:var(--muted); font-size:11px; line-height:1.55; }
     #run-detail[hidden] { display:none; }
-    .detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:20px 22px; border-bottom:1px solid #e5e7eb; }
-    .detail-head h2 { margin:0; font:14px ui-monospace,SFMono-Regular,monospace; } .detail-head p { margin:5px 0 0; color:#a3a3a3; font-size:11px; }
-    .detail-actions { display:flex; align-items:center; gap:8px; }
-    .demo-link,.delete-result { min-height:32px; display:inline-flex; align-items:center; justify-content:center; padding:0 10px; border-radius:7px; font-size:11px; font-weight:650; text-decoration:none; }
-    .demo-link { color:#fff; background:#171717; } .demo-link:hover { background:#333; }
-    .delete-result { color:#991b1b; background:#fff; border:1px solid #fecaca; cursor:pointer; } .delete-result:hover { background:#fef2f2; }
-    .status-label { padding:4px 8px; color:#166534; background:#f0fdf4; border-radius:999px; font-size:11px; font-weight:650; } .status-label.failed { color:#991b1b; background:#fef2f2; }
-    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-bottom:1px solid #e5e7eb; } .summary div { padding:15px 22px; border-right:1px solid #f0f0f0; } .summary div:last-child { border:0; }
-    .summary span,.summary strong { display:block; } .summary span { color:#a3a3a3; font-size:10px; text-transform:uppercase; letter-spacing:.06em; } .summary strong { margin-top:5px; font-size:13px; }
-    .detail-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,.7fr); }
-    .demo-result { padding:18px 22px 22px; border-right:0!important; }
-    .demo-result-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
-    .demo-result-head h3 { margin-bottom:4px; } .demo-result-head p { margin:0; color:#a3a3a3; font:10px ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; }
-    .demo-frame { width:100%; height:560px; border:1px solid #e5e7eb; border-radius:8px; background:#f6f7f8; }
-    .demo-empty { display:grid; min-height:120px; place-items:center; color:#a3a3a3; background:#f8fafc; border:1px dashed #d4d4d4; border-radius:8px; font-size:12px; }
-    section { min-width:0; padding:20px 22px; border-bottom:1px solid #e5e7eb; } section:nth-child(odd) { border-right:1px solid #e5e7eb; } section h3 { margin:0 0 13px; color:#737373; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
-    .nodes { display:flex; flex-wrap:wrap; gap:8px; } .node-record { display:flex; align-items:center; gap:7px; padding:7px 9px; background:#f5f5f5; border-radius:6px; font-size:11px; } .node-record i { width:7px; height:7px; background:#16a34a; border-radius:50%; } .node-record.failed i { background:#dc2626; }
-    .timeline { margin:0; padding:0; list-style:none; } .timeline li { display:grid; grid-template-columns:34px 90px minmax(0,1fr); gap:10px; padding:7px 0; border-bottom:1px solid #f5f5f5; font-size:11px; } .timeline li:last-child { border:0; } .sequence,.time { color:#a3a3a3; font:10px ui-monospace,SFMono-Regular,monospace; }
-    .artifacts { display:flex; flex-direction:column; gap:8px; } .artifact { min-width:0; padding:9px 10px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:6px; } .artifact strong,.artifact small,.artifact code { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .artifact strong { font-size:11px; } .artifact small { margin:3px 0 6px; color:#a3a3a3; font-size:10px; } .artifact code { color:#737373; font-size:9px; }
-    pre { max-height:300px; margin:0; overflow:auto; padding:12px; color:#e5e7eb; background:#171717; border-radius:7px; font:11px/1.5 ui-monospace,SFMono-Regular,monospace; white-space:pre-wrap; }
-    @media (max-width:850px) { header,.toolbar { padding-left:16px; padding-right:16px; } .toolbar { align-items:stretch; flex-direction:column; } .run-control { justify-content:space-between; } #run-message,.workflow-panel,main { margin-left:16px; margin-right:16px; } main { grid-template-columns:1fr; } aside { border-right:0; border-bottom:1px solid #e5e7eb; } .history { max-height:230px; } .detail-grid { grid-template-columns:1fr; } section:nth-child(odd) { border-right:0; } .summary { grid-template-columns:repeat(2,1fr); } .detail-head { align-items:stretch; flex-direction:column; } .detail-actions { flex-wrap:wrap; } .demo-frame { height:520px; } details.input textarea { right:auto; left:0; width:min(420px,calc(100vw - 32px)); } }
+    .detail-head { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:20px 22px; border-bottom:1px solid var(--line); }
+    .detail-heading { min-width:0; }
+    .detail-kicker { display:block; margin-bottom:6px; color:var(--accent); font-size:8px; font-weight:760; letter-spacing:.1em; text-transform:uppercase; }
+    .detail-head h2 { margin:0; overflow:hidden; color:#273244; font:12px ui-monospace,SFMono-Regular,Menlo,monospace; text-overflow:ellipsis; white-space:nowrap; }
+    .detail-head p { margin:6px 0 0; color:var(--muted); font-size:10px; }
+    .detail-actions { display:flex; flex:none; align-items:center; gap:8px; }
+    .demo-link,.delete-result { display:inline-flex; min-height:34px; align-items:center; justify-content:center; padding:0 11px; border-radius:8px; font-size:10px; font-weight:680; text-decoration:none; }
+    .demo-link { border:1px solid #b8c6eb; color:var(--accent); background:#fff; }
+    .demo-link:hover { background:var(--accent-soft); }
+    .delete-result { border:1px solid transparent; color:var(--danger); background:transparent; cursor:pointer; }
+    .delete-result:hover { background:var(--danger-soft); }
+    .delete-result:disabled { cursor:wait; opacity:.55; }
+    .status-label { padding:5px 8px; border-radius:999px; color:var(--success); background:var(--success-soft); font-size:8px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
+    .status-label.failed { color:var(--danger); background:var(--danger-soft); }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); padding:14px 22px; gap:8px; border-bottom:1px solid var(--line); background:#fcfcfd; }
+    .summary div { padding:10px 12px; border:1px solid var(--line-soft); border-radius:9px; background:#fff; }
+    .summary span,.summary strong { display:block; }
+    .summary span { color:var(--muted); font-size:8px; font-weight:680; letter-spacing:.06em; text-transform:uppercase; }
+    .summary strong { margin-top:5px; overflow:hidden; color:#344054; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+    .demo-result { min-width:0; padding:22px; border-bottom:1px solid var(--line); }
+    .demo-result-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:13px; }
+    .demo-result-head h3 { margin:0; color:#344054; font-size:12px; }
+    .demo-result-head p { margin:5px 0 0; color:var(--muted); font:9px ui-monospace,SFMono-Regular,Menlo,monospace; overflow-wrap:anywhere; }
+    .preview-label { color:var(--subtle); font-size:9px; }
+    .preview-shell { padding:12px; border:1px solid #d9dee6; border-radius:12px; background:#e9edf2; }
+    .demo-frame { display:block; width:100%; height:640px; border:0; border-radius:8px; background:#fff; box-shadow:0 1px 5px rgb(16 24 40 / 12%); }
+    .demo-empty { display:grid; min-height:140px; place-items:center; padding:24px; border:1px dashed #cbd3dd; border-radius:10px; color:var(--muted); background:var(--panel-soft); text-align:center; font-size:11px; }
+    .detail-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.78fr); }
+    .detail-grid section { min-width:0; padding:20px 22px; border-bottom:1px solid var(--line); }
+    .detail-grid section:nth-child(odd) { border-right:1px solid var(--line); }
+    .detail-grid h3 { margin:0 0 13px; color:#667085; font-size:9px; font-weight:760; letter-spacing:.08em; text-transform:uppercase; }
+    .nodes { display:flex; flex-wrap:wrap; gap:7px; }
+    .node-record { display:flex; align-items:center; gap:7px; padding:7px 9px; border:1px solid var(--line-soft); border-radius:7px; color:#475467; background:#fafbfc; font-size:9px; }
+    .node-record i { width:6px; height:6px; border-radius:50%; background:var(--success); }
+    .node-record.failed i { background:var(--danger); }
+    .timeline { margin:0; padding:0; list-style:none; }
+    .timeline li { display:grid; grid-template-columns:30px 74px minmax(0,1fr); gap:8px; padding:8px 0; border-bottom:1px solid var(--line-soft); color:#475467; font-size:9px; }
+    .timeline li:last-child { border:0; }
+    .sequence,.time { color:var(--subtle); font:8px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .artifacts { display:flex; flex-direction:column; gap:7px; }
+    .artifact { min-width:0; padding:9px 10px; border:1px solid var(--line-soft); border-radius:8px; background:#fafbfc; }
+    .artifact strong,.artifact small,.artifact code { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .artifact strong { color:#344054; font-size:9px; }
+    .artifact small { margin:3px 0 6px; color:var(--muted); font-size:8px; }
+    .artifact code { color:#7a8699; font-size:8px; }
+    pre { max-height:300px; margin:0; overflow:auto; padding:13px; border-radius:8px; color:#dce5f1; background:#172033; font:9px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+    @media (max-width:1050px) {
+      .workspace { grid-template-columns:260px minmax(0,1fr); }
+      .demo-frame { height:560px; }
+    }
+    @media (max-width:820px) {
+      .topbar-inner,.page-shell { padding-right:18px; padding-left:18px; }
+      .control-hero { align-items:stretch; flex-direction:column; }
+      .run-control { justify-content:space-between; }
+      .workspace { grid-template-columns:1fr; }
+      .run-rail { border-right:0; border-bottom:1px solid var(--line); }
+      .history { display:flex; max-height:190px; gap:4px; overflow:auto; }
+      .run-row { min-width:230px; margin:0; }
+      .detail-grid { grid-template-columns:1fr; }
+      .detail-grid section:nth-child(odd) { border-right:0; }
+      .demo-frame { height:520px; }
+    }
+    @media (max-width:560px) {
+      .topbar-inner { min-height:60px; padding-right:14px; padding-left:14px; }
+      .product-context { max-width:190px; }
+      .page-shell { padding:14px 12px 28px; }
+      .control-hero { padding:20px; border-radius:12px; }
+      .toolbar-copy h1 { font-size:21px; }
+      .run-control { align-items:stretch; flex-direction:column-reverse; }
+      .run-button,details.input summary { width:100%; justify-content:center; }
+      details.input textarea { right:auto; left:0; width:calc(100vw - 64px); }
+      .workflow-panel,.workspace { border-radius:12px; }
+      .workflow-title { padding:0 14px; }
+      .workflow-strip { grid-auto-columns:minmax(205px,1fr); }
+      .detail-head { align-items:stretch; flex-direction:column; }
+      .detail-actions { flex-wrap:wrap; }
+      .summary { grid-template-columns:repeat(2,1fr); padding:12px; }
+      .demo-result { padding:16px 12px; }
+      .demo-result-head { align-items:flex-start; flex-direction:column; }
+      .preview-shell { padding:6px; }
+      .demo-frame { height:480px; }
+      .detail-grid section { padding:18px 16px; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      * { scroll-behavior:auto!important; transition-duration:.01ms!important; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="identity"><div class="logo">AWF</div><div><h1>${escapeHtml(view.graph.workflowId)}</h1><div class="subtitle">v${escapeHtml(view.graph.version)} · ${escapeHtml(view.graph.mode)}</div></div></div>
-    <span class="mode">Local simulation</span>
-  </header>
-  <div class="toolbar">
-    <div class="toolbar-copy"><h2>Workflow runs</h2><p>실행하고, 결과를 기록으로 확인합니다.</p></div>
-    <div class="run-control">
-      <details class="input"><summary>Input</summary><textarea id="run-input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea></details>
-      <button id="run-workflow" class="run-button" type="button">Run workflow</button>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="identity"><div class="logo">AWF</div><div><span class="product-name">Adaptive Workflow Studio</span><span class="product-context">${escapeHtml(view.graph.workflowId)} · v${escapeHtml(view.graph.version)}</span></div></div>
+      <span class="mode">Local simulation</span>
     </div>
-  </div>
-  <p id="run-message" aria-live="polite">외부 tool과 model을 호출하지 않는 deterministic simulation입니다.</p>
-  <div class="workflow-panel">
-    <div class="workflow-title"><strong>Workflow</strong><span>${escapeHtml(view.graph.nodes.length)} nodes · 실행 순서</span></div>
-    <div class="workflow-strip" aria-label="Workflow nodes">${graphNodes}</div>
-  </div>
-  <main>
-    <aside><div class="panel-title"><span>Run history</span><span id="run-count">0</span></div><div id="run-history" class="history"><div class="history-empty">기록을 불러오는 중입니다.</div></div></aside>
-    <div class="detail">
-      <div id="empty-detail" class="empty-detail">Run workflow를 눌러 첫 기록을 만드세요.</div>
-      <div id="run-detail" hidden>
-        <div class="detail-head"><div><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><a id="demo-link" class="demo-link" target="_blank" rel="noopener" hidden>Open demo</a><button id="delete-demo" class="delete-result" type="button" hidden>Delete result</button></div></div>
-        <div class="summary"><div><span>Mode</span><strong id="selected-mode"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Duration</span><strong id="selected-duration"></strong></div></div>
-        <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><h3>Demo result</h3><p id="demo-address"></p></div></div><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin"></iframe><div id="demo-empty" class="demo-empty" hidden>결과 파일이 삭제되었습니다. 같은 workflow를 다시 실행하면 재생성됩니다.</div></section>
-        <div class="detail-grid">
-          <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
-          <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
-          <section><h3>Event timeline</h3><ol id="event-timeline" class="timeline"></ol></section>
-          <section><h3>Output</h3><pre id="run-output">{}</pre></section>
+  </header>
+  <div class="page-shell">
+    <section class="control-hero">
+      <div class="toolbar-copy"><span class="eyebrow">Workflow control</span><h1>Run and inspect</h1><p>${escapeHtml(view.graph.workflowId)} workflow를 실행하고 node 상태, artifact, event와 웹 결과를 한곳에서 확인합니다.</p></div>
+      <div class="run-control">
+        <details class="input"><summary>Run input</summary><textarea id="run-input" aria-label="Workflow run input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea></details>
+        <button id="run-workflow" class="run-button" type="button">Run workflow</button>
+      </div>
+    </section>
+    <p id="run-message" class="run-message" data-tone="neutral" aria-live="polite">외부 tool과 model을 호출하지 않는 deterministic simulation입니다.</p>
+    <div class="workflow-panel">
+      <div class="workflow-title"><strong>Workflow</strong><span>${escapeHtml(view.graph.mode)} · ${escapeHtml(view.graph.nodes.length)} steps · execution order</span></div>
+      <div class="workflow-strip" aria-label="Workflow nodes">${graphNodes}</div>
+    </div>
+    <main class="workspace">
+      <aside class="run-rail"><div class="panel-title"><span>Runs</span><span id="run-count">0</span></div><div id="run-history" class="history"><div class="history-empty">실행 기록을 불러오는 중입니다.</div></div></aside>
+      <div class="detail">
+        <div id="empty-detail" class="empty-detail"><div class="empty-state"><strong>No run selected</strong><span>Run workflow를 실행하면 node 상태와 결과 preview가 여기에 표시됩니다.</span></div></div>
+        <div id="run-detail" hidden>
+          <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><a id="demo-link" class="demo-link" target="_blank" rel="noopener" hidden>Open demo</a><button id="delete-demo" class="delete-result" type="button" hidden>Delete result</button></div></div>
+          <div class="summary"><div><span>Mode</span><strong id="selected-mode"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Duration</span><strong id="selected-duration"></strong></div></div>
+          <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin"></iframe><div id="demo-empty" class="demo-empty" hidden>결과 파일이 삭제되었습니다. 실행 기록은 보존되며 같은 workflow를 다시 실행해 재생성할 수 있습니다.</div></div></section>
+          <div class="detail-grid">
+            <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
+            <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
+            <section><h3>Event timeline</h3><ol id="event-timeline" class="timeline"></ol></section>
+            <section><h3>Output</h3><pre id="run-output">{}</pre></section>
+          </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
   <script>
     (() => {
       const runButton = document.getElementById("run-workflow");
       const runInput = document.getElementById("run-input");
       const message = document.getElementById("run-message");
-      const history = document.getElementById("run-history");
+      const historyList = document.getElementById("run-history");
       const runCount = document.getElementById("run-count");
       const emptyDetail = document.getElementById("empty-detail");
       const detail = document.getElementById("run-detail");
@@ -160,9 +290,23 @@ export function renderStudioHtml(view: StudioViewModel): string {
 
       const clear = (target) => { while (target.firstChild) target.removeChild(target.firstChild); };
       const make = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
-      const shortTime = (value) => new Date(value).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" });
-      const markSelected = () => document.querySelectorAll("[data-run-id]").forEach((row) => row.classList.toggle("active", row.dataset.runId === selectedRunId));
-      const updateGraph = (states) => document.querySelectorAll("[data-node-id]").forEach((node) => { node.dataset.runStatus = states[node.dataset.nodeId] || "waiting"; });
+      const shortTime = (value) => new Date(value).toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+      const fullDateTime = (value) => new Date(value).toLocaleString("ko-KR", { dateStyle:"medium", timeStyle:"medium" });
+      const shortRunId = (value) => value.length > 22 ? value.slice(0, 12) + "…" + value.slice(-6) : value;
+      const statusLabel = (value) => ({ waiting:"Waiting", scheduled:"Scheduled", running:"Running", completed:"Completed", failed:"Failed" })[value] || value;
+      const setMessage = (text, tone = "neutral") => { message.textContent = text; message.dataset.tone = tone; };
+      const syncRunUrl = (runId) => { const url = new URL(window.location.href); url.searchParams.set("run", runId); window.history.replaceState({}, "", url); };
+      const markSelected = () => document.querySelectorAll("[data-run-id]").forEach((row) => {
+        const active = row.dataset.runId === selectedRunId;
+        row.classList.toggle("active", active);
+        if (active) row.setAttribute("aria-current", "true"); else row.removeAttribute("aria-current");
+      });
+      const updateGraph = (states) => document.querySelectorAll("[data-node-id]").forEach((node) => {
+        const state = states[node.dataset.nodeId] || "waiting";
+        node.dataset.runStatus = state;
+        const label = node.querySelector(".node-state");
+        if (label) label.textContent = statusLabel(state);
+      });
       const renderDemo = (record) => {
         if (!record.demo) { demoResult.hidden = true; demoLink.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; return; }
         const available = record.demo.available !== false;
@@ -173,11 +317,11 @@ export function renderStudioHtml(view: StudioViewModel): string {
       };
 
       const renderRun = (record) => {
-        selectedRunId = record.runId; markSelected(); updateGraph(record.nodeStates); renderDemo(record);
+        selectedRunId = record.runId; syncRunUrl(record.runId); markSelected(); updateGraph(record.nodeStates); renderDemo(record);
         emptyDetail.hidden = true; detail.hidden = false;
         document.getElementById("selected-run-id").textContent = record.runId;
-        document.getElementById("selected-run-time").textContent = record.createdAt;
-        const status = document.getElementById("selected-status"); status.textContent = record.status; status.className = "status-label" + (record.status === "failed" ? " failed" : "");
+        document.getElementById("selected-run-time").textContent = fullDateTime(record.createdAt);
+        const status = document.getElementById("selected-status"); status.textContent = statusLabel(record.status); status.className = "status-label" + (record.status === "failed" ? " failed" : "");
         document.getElementById("selected-mode").textContent = record.executionMode;
         document.getElementById("selected-events").textContent = String(record.events.length);
         document.getElementById("selected-artifacts").textContent = String(record.artifacts.length);
@@ -198,32 +342,54 @@ export function renderStudioHtml(view: StudioViewModel): string {
         renderRun(await response.json());
       };
 
-      const loadHistory = async (selectLatest) => {
+      const loadHistory = async ({ selectLatest = false, preferredRunId = null } = {}) => {
         const response = await fetch("/api/runs");
         if (!response.ok) throw new Error("실행 기록을 불러오지 못했습니다.");
-        const payload = await response.json(); clear(history); runCount.textContent = String(payload.runs.length);
-        if (!payload.runs.length) history.appendChild(make("div", "아직 실행 기록이 없습니다.", "history-empty"));
-        payload.runs.forEach((run) => { const row = make("button", undefined, "run-row"); row.type = "button"; row.dataset.runId = run.runId; const dot = make("span", undefined, "status-dot" + (run.status === "failed" ? " failed" : "")); const copy = make("span"); copy.appendChild(make("strong", run.runId)); copy.appendChild(make("small", run.status + (run.demo?.available ? " · demo" : "") + " · " + shortTime(run.createdAt))); row.appendChild(dot); row.appendChild(copy); row.addEventListener("click", () => selectRun(run.runId).catch((error) => message.textContent = error.message)); history.appendChild(row); });
-        markSelected(); if (selectLatest && payload.runs[0]) await selectRun(payload.runs[0].runId);
+        const payload = await response.json(); clear(historyList); runCount.textContent = String(payload.runs.length);
+        if (!payload.runs.length) historyList.appendChild(make("div", "아직 실행 기록이 없습니다.", "history-empty"));
+        payload.runs.forEach((run) => {
+          const row = make("button", undefined, "run-row");
+          row.type = "button"; row.dataset.runId = run.runId; row.title = run.runId; row.setAttribute("aria-label", run.runId + " 실행 기록 열기");
+          const dot = make("span", undefined, "status-dot" + (run.status === "failed" ? " failed" : ""));
+          const copy = make("span", undefined, "run-copy");
+          const head = make("span", undefined, "run-row-head");
+          head.appendChild(make("strong", shortRunId(run.runId)));
+          if (run.demo?.available) head.appendChild(make("span", "Demo", "run-demo-badge"));
+          copy.appendChild(head);
+          copy.appendChild(make("small", statusLabel(run.status) + " · " + shortTime(run.createdAt)));
+          row.appendChild(dot); row.appendChild(copy);
+          row.addEventListener("click", () => selectRun(run.runId).catch((error) => setMessage(error.message, "error")));
+          historyList.appendChild(row);
+        });
+        markSelected();
+        const targetRunId = preferredRunId || (selectLatest && payload.runs[0] ? payload.runs[0].runId : null);
+        if (targetRunId && payload.runs.some((run) => run.runId === targetRunId)) await selectRun(targetRunId);
+        else if (preferredRunId) {
+          setMessage("요청한 run ID를 찾지 못해 최신 기록을 표시합니다.", "error");
+          if (payload.runs[0]) await selectRun(payload.runs[0].runId);
+        }
       };
 
       runButton.addEventListener("click", async () => {
-        runButton.disabled = true; message.textContent = "Workflow 실행 중…";
-        try { const inputs = JSON.parse(runInput.value); const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({inputs}) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(false); message.textContent = record.runId + " 기록 완료"; }
-        catch (error) { message.textContent = error.message; }
-        finally { runButton.disabled = false; }
+        const previousStates = Object.fromEntries(Array.from(document.querySelectorAll("[data-node-id]")).map((node) => [node.dataset.nodeId, node.dataset.runStatus || "waiting"]));
+        const optimisticStates = Object.fromEntries(Object.keys(previousStates).map((nodeId, index) => [nodeId, index === 0 ? "running" : "waiting"]));
+        runButton.disabled = true; runButton.textContent = "Running…"; runButton.setAttribute("aria-busy", "true"); updateGraph(optimisticStates); setMessage("Workflow를 실행하고 기록을 생성하는 중입니다…", "working");
+        try { const inputs = JSON.parse(runInput.value); const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({inputs}) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(); setMessage(shortRunId(record.runId) + " 실행과 결과 저장을 완료했습니다.", "success"); }
+        catch (error) { updateGraph(previousStates); setMessage(error.message, "error"); }
+        finally { runButton.disabled = false; runButton.textContent = "Run workflow"; runButton.setAttribute("aria-busy", "false"); }
       });
 
       deleteDemo.addEventListener("click", async () => {
         if (!selectedRunId || !confirm("이 run의 데모 결과 파일을 삭제할까요? 실행 기록은 남습니다.")) return;
         deleteDemo.disabled = true;
-        try { const response = await fetch("/api/runs/" + encodeURIComponent(selectedRunId) + "/demo", { method:"DELETE" }); const result = await response.json(); if (!response.ok) throw new Error(result.message || "결과를 삭제하지 못했습니다."); await selectRun(selectedRunId); await loadHistory(false); message.textContent = selectedRunId + " 데모 결과 삭제 완료"; }
-        catch (error) { message.textContent = error.message; }
+        try { const response = await fetch("/api/runs/" + encodeURIComponent(selectedRunId) + "/demo", { method:"DELETE" }); const result = await response.json(); if (!response.ok) throw new Error(result.message || "결과를 삭제하지 못했습니다."); await selectRun(selectedRunId); await loadHistory(); setMessage(shortRunId(selectedRunId) + " 결과를 삭제했습니다. 실행 기록은 보존됩니다.", "success"); }
+        catch (error) { setMessage(error.message, "error"); }
         finally { deleteDemo.disabled = false; }
       });
 
-      loadHistory(true).catch((error) => message.textContent = error.message);
-      setInterval(() => loadHistory(false).catch(() => {}), 5000);
+      const requestedRunId = new URLSearchParams(window.location.search).get("run");
+      loadHistory({ selectLatest:true, preferredRunId:requestedRunId }).catch((error) => setMessage(error.message, "error"));
+      setInterval(() => loadHistory().catch(() => {}), 5000);
     })();
   </script>
 </body>

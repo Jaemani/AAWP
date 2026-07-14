@@ -55,16 +55,23 @@ describe("Studio HTML", () => {
     const document = createWorkflowEditorDocument(workflow);
     const html = renderStudioHtml(createStudioView({ document }));
 
-    expect(html).toContain("Workflow runs");
+    expect(html).toContain("Adaptive Workflow Studio");
+    expect(html).toContain("Run and inspect");
     expect(html).toContain('data-node-id="execute"');
     expect(html).toContain("Run workflow");
-    expect(html).toContain("Run history");
+    expect(html).toContain("Run input");
+    expect(html).toContain(">Runs<");
     expect(html).toContain("Workflow</strong>");
+    expect(html).toContain("Result preview");
     expect(html).toContain("Open demo");
     expect(html).toContain("Delete result");
     expect(html).toContain("demo-frame");
     expect(html).toContain("Event timeline");
     expect(html).toContain("/api/runs");
+    expect(html).toContain("URLSearchParams");
+    expect(html).toContain("window.history.replaceState");
+    expect(html).toContain('setAttribute("aria-busy"');
+    expect(html).toContain('setAttribute("aria-current"');
     expect(html.match(/<button/g)).toHaveLength(2);
     expect(html).not.toContain("Canonical WIR editor");
     expect(html).not.toContain("Semantic diff");
