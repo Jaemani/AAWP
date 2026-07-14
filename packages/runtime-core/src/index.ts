@@ -12,14 +12,19 @@ export {
   type RunEventType,
   type StoredRunEvent
 } from "./events.js";
-
-export interface RuntimePort {
-  readonly name: string;
-  runDeterministicNode(
-    nodeId: string,
-    inputs: Record<string, unknown>
-  ): Promise<Record<string, unknown>>;
-}
+export {
+  RUNTIME_ERROR_CLASSES,
+  RuntimeNodeError,
+  type NodeExecutionRequest,
+  type NodeExecutor,
+  type NodeProjectionRequest,
+  type NodeProjectionSink,
+  type RuntimeErrorClass,
+  type RuntimeNodeControl,
+  type RuntimePort,
+  type RuntimeRunHandle,
+  type RuntimeStartRequest
+} from "./runtime-port.js";
 
 export interface SimulationTrace {
   workflowId: string;

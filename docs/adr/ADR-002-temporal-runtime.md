@@ -6,7 +6,7 @@
 
 ## 결정
 
-생산 기본 런타임은 Temporal TypeScript SDK다. M1은 실제 Temporal adapter를 만들지 않고 `RuntimePort` 경계를 둔다.
+생산 기본 런타임은 Temporal TypeScript SDK다. M1은 `RuntimePort` 경계를 정의하고 M3는 실제 Temporal adapter를 제공한다.
 
 ## 대안
 

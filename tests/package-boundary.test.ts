@@ -4,6 +4,7 @@ import { validateWorkflow } from "@awf/compiler";
 import { simulateDeterministic } from "@awf/runtime-core";
 import { LocalObjectCas } from "@awf/artifact-store";
 import { InMemoryArtifactLineage } from "@awf/lineage";
+import { TemporalRuntimePort } from "@awf/runtime-temporal";
 
 describe("package boundaries", () => {
   it("exposes core APIs through package exports", () => {
@@ -13,5 +14,6 @@ describe("package boundaries", () => {
     expect(simulateDeterministic).toBeTypeOf("function");
     expect(LocalObjectCas).toBeTypeOf("function");
     expect(InMemoryArtifactLineage).toBeTypeOf("function");
+    expect(TemporalRuntimePort).toBeTypeOf("function");
   });
 });

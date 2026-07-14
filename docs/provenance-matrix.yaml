@@ -52,6 +52,10 @@ dependencies:
     classification: test_dependency
     source_url: https://pglite.dev/
     license_classification: permissive-open-source
+  - name: Temporal TypeScript SDK
+    classification: runtime_and_test_dependency
+    source_url: https://docs.temporal.io/develop/typescript
+    license_classification: permissive-open-source
 public_spec_reimplementations:
   - Workflow IR public behavior described in local architecture docs
 excluded_references:

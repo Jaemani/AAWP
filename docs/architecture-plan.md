@@ -4,11 +4,12 @@
 
 M1의 세부 실행 의미와 오류 처리 규칙은 `docs/m1-implementation-contract.md`를 규범으로 사용한다.
 M2의 artifact, event, lineage 저장 의미는 `docs/m2-implementation-contract.md`를 규범으로 사용한다.
+M3의 Temporal workflow, activity, signal, retry와 side-effect 의미는 `docs/m3-implementation-contract.md`를 규범으로 사용한다.
 
 ## M0 합의 사항
 
 - 제품 중심은 에이전트 수가 아니라 불변 산출물 그래프다.
-- 생산 내구 실행 기본값은 Temporal이며, M1은 `RuntimePort` 타입 경계만 둔다.
+- 생산 내구 실행 기본값은 Temporal이다. M1은 `RuntimePort` 경계를 정의했고 M3는 그 경계의 첫 adapter를 구현한다.
 - 첨부 durable-agents 프로젝트의 소스, 스키마, 프롬프트, 파일 레이아웃, 테스트 문구는 복사하지 않는다.
 - DIRECT 기준선은 항상 같은 입력, 같은 검증기, 같은 가격 스냅샷, 같은 환경 요약으로 재실행 가능해야 한다.
 
