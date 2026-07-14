@@ -14,7 +14,9 @@
     { "path": "./packages/impact-engine" },
     { "path": "./packages/verifier-sdk" },
     { "path": "./packages/router" },
+    { "path": "./packages/control-plane" },
     { "path": "./apps/cli" },
+    { "path": "./apps/studio" },
     { "path": "./apps/verifier-worker" },
     { "path": "./workflows/templates/spec-to-demo" },
     { "path": "./benchmarks/direct-v0" }

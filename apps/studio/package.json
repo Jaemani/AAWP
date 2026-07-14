@@ -1,0 +1,24 @@
+{
+  "name": "@awf/studio",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "awf-studio": "./dist/server.js"
+  },
+  "dependencies": {
+    "@awf/control-plane": "0.1.0",
+    "@awf/ir": "0.1.0",
+    "yaml": "2.9.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -b --pretty false"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@awf/control-plane",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@awf/compiler": "0.1.0",
+    "@awf/impact-engine": "0.1.0",
+    "@awf/ir": "0.1.0",
+    "@awf/lineage": "0.1.0",
+    "@awf/runtime-core": "0.1.0",
+    "@awf/verifier-sdk": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  }
+}
