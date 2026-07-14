@@ -9,6 +9,7 @@ M4의 model, tool, capability, secret과 telemetry 의미는 `docs/m4-implementa
 M5의 revision, invalidation, cache planning과 branch promotion 의미는 `docs/m5-implementation-contract.md`를 규범으로 사용한다.
 M6의 verifier 격리, evidence, finding, repair authority와 monotonic promotion 의미는 `docs/m6-implementation-contract.md`를 규범으로 사용한다.
 M7의 spec-to-demo contract compilation, visibility split, coherent builder, verifier plan과 revision 의미는 `docs/m7-implementation-contract.md`를 규범으로 사용한다.
+M8의 value routing, execution template, versioned explorer plan과 shadow evaluation 의미는 `docs/m8-implementation-contract.md`를 규범으로 사용한다.
 
 ## M0 합의 사항
 

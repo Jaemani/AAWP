@@ -7,6 +7,7 @@ import { digestWorkflow, WorkflowDefinitionSchema } from "@awf/ir";
 import { InMemoryArtifactLineage } from "@awf/lineage";
 import { CapabilityAuthorizer } from "@awf/policy";
 import { simulateDeterministic } from "@awf/runtime-core";
+import { routeTask } from "@awf/router";
 import { TemporalRuntimePort } from "@awf/runtime-temporal";
 import { GatewayTelemetry } from "@awf/telemetry";
 import { ToolGateway } from "@awf/tool-gateway";
@@ -31,5 +32,6 @@ describe("package boundaries", () => {
     expect(evaluateMonotonicCandidate).toBeTypeOf("function");
     expect(VerifierWorker).toBeTypeOf("function");
     expect(compileSpecContracts).toBeTypeOf("function");
+    expect(routeTask).toBeTypeOf("function");
   });
 });

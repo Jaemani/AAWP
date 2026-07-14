@@ -13,6 +13,7 @@
     { "path": "./packages/tool-gateway" },
     { "path": "./packages/impact-engine" },
     { "path": "./packages/verifier-sdk" },
+    { "path": "./packages/router" },
     { "path": "./apps/cli" },
     { "path": "./apps/verifier-worker" },
     { "path": "./workflows/templates/spec-to-demo" },
