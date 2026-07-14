@@ -60,6 +60,22 @@ dependencies:
     classification: runtime_dependency
     source_url: https://opentelemetry.io/docs/languages/js/
     license_classification: permissive-open-source
+  - name: React
+    classification: generated_template_dependency
+    source_url: https://react.dev/
+    license_classification: permissive-open-source
+  - name: Vite
+    classification: generated_template_dependency
+    source_url: https://vite.dev/
+    license_classification: permissive-open-source
+  - name: Playwright
+    classification: generated_verifier_dependency
+    source_url: https://playwright.dev/
+    license_classification: permissive-open-source
+  - name: axe-core
+    classification: generated_verifier_dependency
+    source_url: https://github.com/dequelabs/axe-core
+    license_classification: permissive-open-source
 public_spec_reimplementations:
   - Workflow IR public behavior described in local architecture docs
   - MCP tool adapter boundary described by https://modelcontextprotocol.io/specification/2025-11-25

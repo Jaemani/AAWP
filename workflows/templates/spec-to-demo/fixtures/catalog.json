@@ -1,0 +1,51 @@
+{
+  "apiVersion": "awf/spec-document/v1",
+  "documentId": "fixture-catalog",
+  "title": "Catalog search demo",
+  "sourceArtifactId": "spec-catalog-v1",
+  "screens": [
+    {
+      "id": "catalog",
+      "title": "Catalog",
+      "route": "/catalog",
+      "summary": "Search a fixture-backed product catalog.",
+      "requirements": [
+        {
+          "key": "search-products",
+          "text": "Searching for notebook shows matching products.",
+          "kind": "interaction",
+          "sourceSpan": { "start": 0, "end": 47, "lineStart": 1, "lineEnd": 1 },
+          "publicCriterion": "A labeled search field filters products.",
+          "preconditions": [{ "fixture": "catalog-default" }],
+          "actions": [
+            {
+              "operation": "type",
+              "role": "searchbox",
+              "name": "Search products",
+              "value": "notebook"
+            },
+            { "operation": "click", "role": "button", "name": "Search" }
+          ],
+          "oracles": [
+            {
+              "type": "dom",
+              "assertion": { "role": "list", "name": "Search results", "text": "Notebook" }
+            }
+          ]
+        },
+        {
+          "key": "catalog-fixture",
+          "text": "Catalog data is loaded through the declared fixture protocol.",
+          "kind": "state",
+          "sourceSpan": { "start": 48, "end": 111, "lineStart": 2, "lineEnd": 2 },
+          "publicCriterion": "Loading and empty states are represented.",
+          "preconditions": [],
+          "actions": [{ "operation": "visit", "fixtureRef": "catalog-default" }],
+          "oracles": [
+            { "type": "network", "assertion": { "fixtureRef": "catalog-default", "status": 200 } }
+          ]
+        }
+      ]
+    }
+  ]
+}

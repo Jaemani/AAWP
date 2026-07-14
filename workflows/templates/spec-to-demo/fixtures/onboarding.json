@@ -1,0 +1,36 @@
+{
+  "apiVersion": "awf/spec-document/v1",
+  "documentId": "fixture-onboarding",
+  "title": "Onboarding demo",
+  "sourceArtifactId": "spec-onboarding-v1",
+  "screens": [
+    {
+      "id": "welcome",
+      "title": "Welcome",
+      "route": "/welcome",
+      "summary": "Start onboarding from an accessible welcome screen.",
+      "requirements": [
+        {
+          "key": "start-onboarding",
+          "text": "The Get started action moves to profile setup.",
+          "kind": "navigation",
+          "sourceSpan": { "start": 0, "end": 48, "lineStart": 1, "lineEnd": 1 },
+          "publicCriterion": "Get started advances to the next step.",
+          "preconditions": [],
+          "actions": [{ "operation": "click", "role": "button", "name": "Get started" }],
+          "oracles": [{ "type": "navigation", "assertion": { "path": "/profile" } }]
+        },
+        {
+          "key": "welcome-a11y",
+          "text": "The welcome screen has no critical accessibility violations.",
+          "kind": "a11y",
+          "sourceSpan": { "start": 49, "end": 110, "lineStart": 2, "lineEnd": 2 },
+          "publicCriterion": "The welcome flow uses semantic controls and labels.",
+          "preconditions": [],
+          "actions": [],
+          "oracles": [{ "type": "a11y", "assertion": { "level": "wcag-aa-target" } }]
+        }
+      ]
+    }
+  ]
+}

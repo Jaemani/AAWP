@@ -1,0 +1,49 @@
+{
+  "apiVersion": "awf/spec-document/v1",
+  "documentId": "fixture-checkout",
+  "title": "Checkout confirmation demo",
+  "sourceArtifactId": "spec-checkout-v1",
+  "screens": [
+    {
+      "id": "checkout",
+      "title": "Checkout",
+      "route": "/checkout",
+      "summary": "Collect an order and show a confirmation.",
+      "requirements": [
+        {
+          "key": "submit-order",
+          "text": "Submitting a valid order opens the confirmation screen.",
+          "kind": "navigation",
+          "sourceSpan": { "start": 0, "end": 63, "lineStart": 1, "lineEnd": 1 },
+          "publicCriterion": "The Place order button completes checkout.",
+          "preconditions": [{ "fixture": "cart-with-one-item" }],
+          "actions": [{ "operation": "submit", "role": "button", "name": "Place order" }],
+          "oracles": [{ "type": "navigation", "assertion": { "path": "/confirmation" } }]
+        }
+      ]
+    },
+    {
+      "id": "confirmation",
+      "title": "Confirmation",
+      "route": "/confirmation",
+      "summary": "Confirm that the order was received.",
+      "requirements": [
+        {
+          "key": "confirmation-copy",
+          "text": "The confirmation heading says Order received.",
+          "kind": "content",
+          "sourceSpan": { "start": 64, "end": 115, "lineStart": 2, "lineEnd": 2 },
+          "publicCriterion": "A clear success heading is visible.",
+          "preconditions": [],
+          "actions": [],
+          "oracles": [
+            {
+              "type": "dom",
+              "assertion": { "role": "heading", "name": "Order received", "text": "Order received" }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

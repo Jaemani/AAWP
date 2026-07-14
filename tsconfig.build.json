@@ -15,6 +15,7 @@
     { "path": "./packages/verifier-sdk" },
     { "path": "./apps/cli" },
     { "path": "./apps/verifier-worker" },
+    { "path": "./workflows/templates/spec-to-demo" },
     { "path": "./benchmarks/direct-v0" }
   ]
 }

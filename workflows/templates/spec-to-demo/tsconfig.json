@@ -1,0 +1,17 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../../packages/agent-gateway" },
+    { "path": "../../../packages/artifact-store" },
+    { "path": "../../../packages/compiler" },
+    { "path": "../../../packages/impact-engine" },
+    { "path": "../../../packages/ir" },
+    { "path": "../../../packages/verifier-sdk" }
+  ]
+}

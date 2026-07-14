@@ -1,0 +1,40 @@
+{
+  "apiVersion": "awf/spec-document/v1",
+  "documentId": "fixture-settings",
+  "title": "Notification settings demo",
+  "sourceArtifactId": "spec-settings-v1",
+  "screens": [
+    {
+      "id": "settings",
+      "title": "Settings",
+      "route": "/settings",
+      "summary": "Update and persist a notification preference.",
+      "requirements": [
+        {
+          "key": "toggle-email",
+          "text": "A user can enable email notifications.",
+          "kind": "state",
+          "sourceSpan": { "start": 0, "end": 42, "lineStart": 1, "lineEnd": 1 },
+          "publicCriterion": "The email notification control can be enabled.",
+          "preconditions": [],
+          "actions": [{ "operation": "click", "role": "checkbox", "name": "Email notifications" }],
+          "oracles": [
+            { "type": "state", "assertion": { "key": "email-notifications", "value": "enabled" } }
+          ]
+        },
+        {
+          "key": "saved-status",
+          "text": "Saving preferences shows a Saved status.",
+          "kind": "interaction",
+          "sourceSpan": { "start": 43, "end": 84, "lineStart": 2, "lineEnd": 2 },
+          "publicCriterion": "The save action gives visible feedback.",
+          "preconditions": [],
+          "actions": [{ "operation": "click", "role": "button", "name": "Save preferences" }],
+          "oracles": [
+            { "type": "dom", "assertion": { "role": "status", "name": "Saved", "text": "Saved" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

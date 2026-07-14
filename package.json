@@ -9,7 +9,8 @@
   },
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "workflows/templates/*"
   ],
   "bin": {
     "awf": "./apps/cli/dist/index.js"
