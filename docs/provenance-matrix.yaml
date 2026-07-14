@@ -56,8 +56,13 @@ dependencies:
     classification: runtime_and_test_dependency
     source_url: https://docs.temporal.io/develop/typescript
     license_classification: permissive-open-source
+  - name: OpenTelemetry API
+    classification: runtime_dependency
+    source_url: https://opentelemetry.io/docs/languages/js/
+    license_classification: permissive-open-source
 public_spec_reimplementations:
   - Workflow IR public behavior described in local architecture docs
+  - MCP tool adapter boundary described by https://modelcontextprotocol.io/specification/2025-11-25
 excluded_references:
   - durable-agents source code
   - durable-agents schema definitions

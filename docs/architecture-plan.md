@@ -5,6 +5,7 @@
 M1의 세부 실행 의미와 오류 처리 규칙은 `docs/m1-implementation-contract.md`를 규범으로 사용한다.
 M2의 artifact, event, lineage 저장 의미는 `docs/m2-implementation-contract.md`를 규범으로 사용한다.
 M3의 Temporal workflow, activity, signal, retry와 side-effect 의미는 `docs/m3-implementation-contract.md`를 규범으로 사용한다.
+M4의 model, tool, capability, secret과 telemetry 의미는 `docs/m4-implementation-contract.md`를 규범으로 사용한다.
 
 ## M0 합의 사항
 

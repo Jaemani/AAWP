@@ -18,3 +18,4 @@
 | @types/node             | 26.1.1                | https://github.com/DefinitelyTyped/DefinitelyTyped | MIT            |
 | PGlite                  | 0.5.4                 | https://pglite.dev/                                | Apache-2.0     |
 | Temporal TypeScript SDK | 1.20.2                | https://docs.temporal.io/develop/typescript        | MIT            |
+| OpenTelemetry API       | 1.9.1                 | https://opentelemetry.io/docs/languages/js/        | Apache-2.0     |

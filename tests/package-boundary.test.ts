@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { digestWorkflow, WorkflowDefinitionSchema } from "@awf/ir";
-import { validateWorkflow } from "@awf/compiler";
-import { simulateDeterministic } from "@awf/runtime-core";
+import { ModelGateway } from "@awf/agent-gateway";
 import { LocalObjectCas } from "@awf/artifact-store";
+import { validateWorkflow } from "@awf/compiler";
+import { digestWorkflow, WorkflowDefinitionSchema } from "@awf/ir";
 import { InMemoryArtifactLineage } from "@awf/lineage";
+import { CapabilityAuthorizer } from "@awf/policy";
+import { simulateDeterministic } from "@awf/runtime-core";
 import { TemporalRuntimePort } from "@awf/runtime-temporal";
+import { GatewayTelemetry } from "@awf/telemetry";
+import { ToolGateway } from "@awf/tool-gateway";
 
 describe("package boundaries", () => {
   it("exposes core APIs through package exports", () => {
@@ -15,5 +19,9 @@ describe("package boundaries", () => {
     expect(LocalObjectCas).toBeTypeOf("function");
     expect(InMemoryArtifactLineage).toBeTypeOf("function");
     expect(TemporalRuntimePort).toBeTypeOf("function");
+    expect(CapabilityAuthorizer).toBeTypeOf("function");
+    expect(GatewayTelemetry).toBeTypeOf("function");
+    expect(ModelGateway).toBeTypeOf("function");
+    expect(ToolGateway).toBeTypeOf("function");
   });
 });

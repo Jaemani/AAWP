@@ -7,6 +7,10 @@
     { "path": "./packages/artifact-store" },
     { "path": "./packages/lineage" },
     { "path": "./packages/runtime-temporal" },
+    { "path": "./packages/policy" },
+    { "path": "./packages/telemetry" },
+    { "path": "./packages/agent-gateway" },
+    { "path": "./packages/tool-gateway" },
     { "path": "./apps/cli" },
     { "path": "./benchmarks/direct-v0" }
   ]
