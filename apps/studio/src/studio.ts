@@ -1,38 +1,20 @@
-import {
-  projectWorkflowGraph,
-  type ArtifactLineageProjection,
-  type EvidenceProjection,
-  type RevisionImpactPreview,
-  type RunControlProjection,
-  type WorkflowEditorDocument,
-  type WorkflowSemanticDiff
-} from "@awf/control-plane";
+import { projectWorkflowGraph, type WorkflowEditorDocument } from "@awf/control-plane";
 import { canonicalize } from "@awf/ir";
 
 export interface StudioViewModel {
   document: WorkflowEditorDocument;
   graph: ReturnType<typeof projectWorkflowGraph>;
   initialInputJson: string;
-  semanticDiff?: WorkflowSemanticDiff;
-  impactPreview?: RevisionImpactPreview;
-  run?: RunControlProjection;
-  lineage?: ArtifactLineageProjection;
-  evidence?: EvidenceProjection[];
 }
 
 export function createStudioView(input: {
   document: WorkflowEditorDocument;
   initialInputs?: unknown;
-  semanticDiff?: WorkflowSemanticDiff;
-  impactPreview?: RevisionImpactPreview;
-  run?: RunControlProjection;
-  lineage?: ArtifactLineageProjection;
-  evidence?: EvidenceProjection[];
 }): StudioViewModel {
   return {
-    ...input,
-    initialInputJson: canonicalize(input.initialInputs ?? {}),
-    graph: projectWorkflowGraph(input.document.workflow)
+    document: input.document,
+    graph: projectWorkflowGraph(input.document.workflow),
+    initialInputJson: canonicalize(input.initialInputs ?? {})
   };
 }
 
@@ -45,301 +27,165 @@ function escapeHtml(value: unknown): string {
     .replaceAll("'", "&#39;");
 }
 
-function list(items: string[], empty: string): string {
-  return items.length === 0
-    ? `<p class="muted">${escapeHtml(empty)}</p>`
-    : `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-}
-
-function renderDiff(diff: WorkflowSemanticDiff | undefined): string {
-  if (diff === undefined) return '<p class="muted">비교할 workflow version이 없습니다.</p>';
-  return list(
-    diff.changes.map(
-      (change) =>
-        `${change.impact.toUpperCase()} · ${change.entityType}/${change.entityId} · ${change.kind} · ${change.changedPaths.join(", ")}`
-    ),
-    "semantic change가 없습니다."
-  );
-}
-
-function renderImpact(preview: RevisionImpactPreview | undefined): string {
-  if (preview === undefined) return '<p class="muted">revision 후보가 없습니다.</p>';
-  return `<div class="metrics">
-    <span><b>${preview.summary.changedRoots}</b> roots</span>
-    <span><b>${preview.summary.rerunNodes}</b> rerun</span>
-    <span><b>${preview.summary.reusedNodes}</b> reuse</span>
-    <span class="${preview.summary.unsafe ? "danger" : "ok"}">${preview.summary.unsafe ? "unsafe" : "safe"}</span>
-  </div>${list(
-    preview.impact.decisions.map(
-      (item) =>
-        `${item.nodeId}: ${item.action} (${item.reasons.map((reason) => reason.code).join(", ") || "unchanged"})`
-    ),
-    "impact decision이 없습니다."
-  )}`;
-}
-
-function renderRun(run: RunControlProjection | undefined): string {
-  if (run === undefined) return '<p class="muted">선택한 run이 없습니다.</p>';
-  return `<div class="metrics">
-    <span><b>${escapeHtml(run.status)}</b> status</span>
-    <span><b>$${run.budget.costUsd.toFixed(4)}</b> cost</span>
-    <span><b>${run.budget.tokens}</b> tokens</span>
-    <span><b>${run.approvals.filter((item) => item.status === "pending").length}</b> pending approvals</span>
-  </div>
-  <ol class="timeline">${run.timeline
-    .map(
-      (item) =>
-        `<li><time>${escapeHtml(item.occurredAt)}</time><span>${escapeHtml(item.label)}</span></li>`
-    )
-    .join("")}</ol>
-  <h3>Operator intents</h3>
-  ${list(
-    run.availableCommands.map(
-      (item) => `${item.command}${item.approvalId === undefined ? "" : ` · ${item.approvalId}`}`
-    ),
-    "현재 실행 가능한 command가 없습니다."
-  )}`;
-}
-
-function renderLineage(lineage: ArtifactLineageProjection | undefined): string {
-  if (lineage === undefined) return '<p class="muted">lineage를 선택하지 않았습니다.</p>';
-  return `<div class="artifact-grid">${lineage.artifacts
-    .map(
-      (artifact) => `<article>
-        <strong>${escapeHtml(artifact.artifactId)}</strong>
-        <small>${escapeHtml(artifact.semanticType)} · ${escapeHtml(artifact.sensitivity)}</small>
-        <code>${escapeHtml(artifact.contentHash)}</code>
-      </article>`
-    )
-    .join("")}</div>
-    <h3>Edges</h3>
-    ${list(
-      lineage.edges.map(
-        (edge) => `${edge.parentArtifactId} → ${edge.childArtifactId} (${edge.edgeType})`
-      ),
-      "lineage edge가 없습니다."
-    )}`;
-}
-
-function renderEvidence(evidence: EvidenceProjection[] | undefined): string {
-  if (evidence === undefined) return '<p class="muted">evidence bundle을 선택하지 않았습니다.</p>';
-  return evidence
-    .map(
-      (bundle) => `<article class="evidence ${bundle.redacted ? "redacted" : ""}">
-        <strong>${escapeHtml(bundle.verifierId)}</strong>
-        <span>${escapeHtml(bundle.outcome)}</span>
-        <small>${bundle.redacted ? "hidden details redacted" : `${bundle.findings?.length ?? 0} findings`}</small>
-      </article>`
-    )
-    .join("");
-}
-
 export function renderStudioHtml(view: StudioViewModel): string {
   const graphNodes = view.graph.nodes
     .map(
-      (node) => `<button class="node" type="button" data-node-id="${escapeHtml(node.id)}">
-        <strong>${escapeHtml(node.id)}</strong>
-        <span>${escapeHtml(node.kind)} · ${escapeHtml(node.owner.role)}</span>
-        <small>$${node.worstCaseCostUsd.toFixed(4)} worst case</small>
-      </button>`
+      (node, index) => `${index === 0 ? "" : '<span class="arrow" aria-hidden="true">→</span>'}
+        <div class="workflow-node" data-node-id="${escapeHtml(node.id)}">
+          <span class="node-state"></span>
+          <div><strong>${escapeHtml(node.id)}</strong><small>${escapeHtml(node.kind)}</small></div>
+        </div>`
     )
     .join("");
+
   return `<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AWF Studio · ${escapeHtml(view.graph.workflowId)}</title>
+  <title>AWF · ${escapeHtml(view.graph.workflowId)}</title>
   <style>
-    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; background:#0a0f1d; color:#e8edf8; }
+    :root { font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#171717; background:#f6f7f8; font-synthesis:none; }
     * { box-sizing:border-box; }
-    body { margin:0; }
-    header { position:sticky; top:0; z-index:2; display:flex; justify-content:space-between; gap:1rem; padding:1rem 1.5rem; background:#10182aee; border-bottom:1px solid #25314a; backdrop-filter:blur(12px); }
-    header h1 { margin:0; font-size:1.1rem; } header p { margin:.2rem 0 0; color:#9cabc6; }
-    .digest { max-width:38vw; overflow:hidden; text-overflow:ellipsis; font:12px ui-monospace, monospace; color:#7dd3fc; }
-    main { display:grid; grid-template-columns:minmax(0, 1.35fr) minmax(320px, .65fr); gap:1rem; padding:1rem; }
-    section { min-width:0; padding:1rem; border:1px solid #25314a; border-radius:12px; background:#111a2c; }
-    h2 { margin:0 0 .8rem; font-size:.95rem; color:#bfdbfe; } h3 { font-size:.8rem; color:#9cabc6; text-transform:uppercase; letter-spacing:.08em; }
-    .span-2 { grid-column:1 / -1; } .graph { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.7rem; }
-    .node { display:flex; flex-direction:column; gap:.35rem; padding:.8rem; text-align:left; color:inherit; background:#17233a; border:1px solid #31415f; border-radius:9px; cursor:pointer; }
-    .node:hover,.node:focus-visible { border-color:#38bdf8; outline:none; } .node span,.node small,.muted { color:#9cabc6; }
-    .node[data-run-status="completed"] { border-color:#22c55e; } .node[data-run-status="running"] { border-color:#38bdf8; } .node[data-run-status="failed"] { border-color:#ef4444; }
-    textarea { width:100%; min-height:260px; resize:vertical; padding:.8rem; color:#dbeafe; background:#09111f; border:1px solid #31415f; border-radius:8px; font:12px/1.5 ui-monospace, monospace; }
-    #contract-editor { min-height:180px; } #run-input { min-height:150px; } .actions { display:flex; gap:.5rem; margin-top:.6rem; }
-    .actions button { padding:.55rem .8rem; color:#08111f; background:#7dd3fc; border:0; border-radius:7px; font-weight:700; cursor:pointer; }
-    .actions button.secondary { color:#dbeafe; background:#24334f; }
-    .metrics { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.8rem; } .metrics span { padding:.4rem .6rem; background:#17233a; border-radius:6px; }
-    .ok { color:#86efac; } .danger { color:#fca5a5; } ul { padding-left:1.2rem; } li { margin:.35rem 0; }
-    .timeline { list-style:none; padding:0; } .timeline li { display:grid; grid-template-columns:190px 1fr; gap:.7rem; border-left:2px solid #31415f; padding:.2rem 0 .7rem .7rem; } time { color:#7c8aa4; font:11px ui-monospace,monospace; }
-    .artifact-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:.6rem; } .artifact-grid article,.evidence { display:flex; flex-direction:column; gap:.3rem; padding:.7rem; background:#17233a; border-radius:8px; }
-    code { overflow:hidden; text-overflow:ellipsis; color:#7dd3fc; } .evidence.redacted { border:1px dashed #b45309; }
-    #editor-status { min-height:1.2rem; color:#9cabc6; }
-    .execution { display:grid; grid-template-columns:minmax(260px,.7fr) minmax(220px,.55fr) minmax(360px,1.4fr); gap:1rem; }
-    .run-history { display:flex; flex-direction:column; gap:.5rem; max-height:360px; overflow:auto; }
-    .run-history button { display:flex; flex-direction:column; gap:.2rem; padding:.65rem; text-align:left; color:inherit; background:#17233a; border:1px solid #31415f; border-radius:8px; cursor:pointer; }
-    .run-history button:hover,.run-history button:focus-visible { border-color:#38bdf8; outline:none; }
-    .node-states { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.5rem; margin-bottom:.8rem; }
-    .node-states article { display:flex; justify-content:space-between; gap:.5rem; padding:.55rem; background:#17233a; border-radius:7px; }
-    .run-output { max-height:240px; overflow:auto; padding:.7rem; background:#09111f; border-radius:8px; font:11px/1.5 ui-monospace,monospace; white-space:pre-wrap; }
-    .mode-notice { padding:.65rem; border:1px solid #b45309; border-radius:8px; color:#fdba74; background:#43140755; }
-    @media (max-width:900px) { main { grid-template-columns:1fr; } .span-2 { grid-column:auto; } .digest { display:none; } }
-    @media (max-width:1100px) { .execution { grid-template-columns:1fr; } }
+    body { margin:0; min-width:320px; }
+    button,textarea { font:inherit; }
+    header { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .identity { display:flex; align-items:center; gap:14px; min-width:0; }
+    .logo { display:grid; place-items:center; width:32px; height:32px; color:#fff; background:#171717; border-radius:8px; font-size:12px; font-weight:800; }
+    h1 { margin:0; font-size:15px; font-weight:650; } .subtitle { margin-top:2px; color:#737373; font-size:12px; }
+    .mode { flex:none; padding:5px 9px; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:999px; font-size:11px; font-weight:650; }
+    .toolbar { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; padding:22px 28px; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .toolbar-copy h2 { margin:0 0 5px; font-size:20px; letter-spacing:-.02em; } .toolbar-copy p { margin:0; color:#737373; font-size:13px; }
+    .run-control { display:flex; align-items:flex-start; gap:10px; }
+    .run-button { min-width:140px; padding:10px 17px; color:#fff; background:#171717; border:1px solid #171717; border-radius:8px; font-weight:650; cursor:pointer; }
+    .run-button:hover { background:#333; } .run-button:focus-visible { outline:3px solid #bfdbfe; outline-offset:2px; } .run-button:disabled { cursor:wait; opacity:.55; }
+    details.input { position:relative; } details.input summary { padding:10px 12px; color:#525252; background:#fff; border:1px solid #d4d4d4; border-radius:8px; font-size:13px; cursor:pointer; list-style:none; }
+    details.input[open] summary { border-radius:8px 8px 0 0; } details.input textarea { position:absolute; z-index:5; right:0; width:420px; height:180px; padding:12px; color:#e5e7eb; background:#171717; border:0; border-radius:8px 0 8px 8px; resize:vertical; font:12px/1.5 ui-monospace,SFMono-Regular,monospace; }
+    #run-message { min-height:18px; margin:8px 28px 0; color:#737373; font-size:12px; }
+    .workflow-strip { display:flex; align-items:center; gap:12px; margin:18px 28px; padding:14px 16px; overflow-x:auto; background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
+    .workflow-node { display:flex; align-items:center; gap:9px; min-width:max-content; padding:6px 9px; border-radius:7px; }
+    .workflow-node strong,.workflow-node small { display:block; } .workflow-node strong { font-size:12px; } .workflow-node small { margin-top:2px; color:#a3a3a3; font-size:10px; }
+    .node-state { width:8px; height:8px; background:#d4d4d4; border-radius:50%; }
+    .workflow-node[data-run-status="completed"] .node-state { background:#16a34a; } .workflow-node[data-run-status="failed"] .node-state { background:#dc2626; } .workflow-node[data-run-status="running"] .node-state { background:#2563eb; box-shadow:0 0 0 4px #dbeafe; }
+    .arrow { color:#d4d4d4; }
+    main { display:grid; grid-template-columns:310px minmax(0,1fr); min-height:calc(100vh - 238px); margin:0 28px 28px; overflow:hidden; background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
+    aside { border-right:1px solid #e5e7eb; } .panel-title { display:flex; align-items:center; justify-content:space-between; height:48px; padding:0 16px; border-bottom:1px solid #e5e7eb; font-size:12px; font-weight:650; }
+    #run-count { color:#a3a3a3; font-weight:500; } .history { max-height:calc(100vh - 287px); overflow:auto; }
+    .history-empty { padding:40px 20px; color:#a3a3a3; text-align:center; font-size:13px; }
+    .run-row { display:grid; grid-template-columns:10px minmax(0,1fr); gap:10px; width:100%; padding:13px 16px; text-align:left; color:inherit; background:#fff; border:0; border-bottom:1px solid #f0f0f0; cursor:pointer; }
+    .run-row:hover { background:#fafafa; } .run-row.active { background:#f5f5f5; box-shadow:inset 3px 0 #171717; } .run-row:focus-visible { outline:2px solid #93c5fd; outline-offset:-2px; }
+    .status-dot { width:8px; height:8px; margin-top:4px; background:#16a34a; border-radius:50%; } .status-dot.failed { background:#dc2626; }
+    .run-row strong,.run-row small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .run-row strong { font:11px ui-monospace,SFMono-Regular,monospace; } .run-row small { margin-top:5px; color:#a3a3a3; font-size:10px; }
+    .detail { min-width:0; } .empty-detail { display:grid; min-height:420px; place-items:center; color:#a3a3a3; font-size:13px; }
+    #run-detail[hidden] { display:none; }
+    .detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:20px 22px; border-bottom:1px solid #e5e7eb; }
+    .detail-head h2 { margin:0; font:14px ui-monospace,SFMono-Regular,monospace; } .detail-head p { margin:5px 0 0; color:#a3a3a3; font-size:11px; }
+    .status-label { padding:4px 8px; color:#166534; background:#f0fdf4; border-radius:999px; font-size:11px; font-weight:650; } .status-label.failed { color:#991b1b; background:#fef2f2; }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-bottom:1px solid #e5e7eb; } .summary div { padding:15px 22px; border-right:1px solid #f0f0f0; } .summary div:last-child { border:0; }
+    .summary span,.summary strong { display:block; } .summary span { color:#a3a3a3; font-size:10px; text-transform:uppercase; letter-spacing:.06em; } .summary strong { margin-top:5px; font-size:13px; }
+    .detail-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,.7fr); }
+    section { min-width:0; padding:20px 22px; border-bottom:1px solid #e5e7eb; } section:nth-child(odd) { border-right:1px solid #e5e7eb; } section h3 { margin:0 0 13px; color:#737373; font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+    .nodes { display:flex; flex-wrap:wrap; gap:8px; } .node-record { display:flex; align-items:center; gap:7px; padding:7px 9px; background:#f5f5f5; border-radius:6px; font-size:11px; } .node-record i { width:7px; height:7px; background:#16a34a; border-radius:50%; } .node-record.failed i { background:#dc2626; }
+    .timeline { margin:0; padding:0; list-style:none; } .timeline li { display:grid; grid-template-columns:34px 90px minmax(0,1fr); gap:10px; padding:7px 0; border-bottom:1px solid #f5f5f5; font-size:11px; } .timeline li:last-child { border:0; } .sequence,.time { color:#a3a3a3; font:10px ui-monospace,SFMono-Regular,monospace; }
+    .artifacts { display:flex; flex-direction:column; gap:8px; } .artifact { min-width:0; padding:9px 10px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:6px; } .artifact strong,.artifact small,.artifact code { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .artifact strong { font-size:11px; } .artifact small { margin:3px 0 6px; color:#a3a3a3; font-size:10px; } .artifact code { color:#737373; font-size:9px; }
+    pre { max-height:300px; margin:0; overflow:auto; padding:12px; color:#e5e7eb; background:#171717; border-radius:7px; font:11px/1.5 ui-monospace,SFMono-Regular,monospace; white-space:pre-wrap; }
+    @media (max-width:850px) { header,.toolbar { padding-left:16px; padding-right:16px; } .toolbar { align-items:stretch; flex-direction:column; } .run-control { justify-content:space-between; } #run-message,.workflow-strip,main { margin-left:16px; margin-right:16px; } main { grid-template-columns:1fr; } aside { border-right:0; border-bottom:1px solid #e5e7eb; } .history { max-height:230px; } .detail-grid { grid-template-columns:1fr; } section:nth-child(odd) { border-right:0; } .summary { grid-template-columns:repeat(2,1fr); } details.input textarea { right:auto; left:0; width:min(420px,calc(100vw - 32px)); } }
   </style>
 </head>
 <body>
   <header>
-    <div><h1>Adaptive Artifact Workflow Studio</h1><p>${escapeHtml(view.graph.workflowId)} · ${escapeHtml(view.graph.version)} · ${escapeHtml(view.graph.mode)}</p></div>
-    <div class="digest" title="${escapeHtml(view.document.digest)}">WIR ${escapeHtml(view.document.digest)}</div>
+    <div class="identity"><div class="logo">AWF</div><div><h1>${escapeHtml(view.graph.workflowId)}</h1><div class="subtitle">v${escapeHtml(view.graph.version)} · ${escapeHtml(view.graph.mode)}</div></div></div>
+    <span class="mode">Local simulation</span>
   </header>
+  <div class="toolbar">
+    <div class="toolbar-copy"><h2>Workflow runs</h2><p>실행하고, 결과를 기록으로 확인합니다.</p></div>
+    <div class="run-control">
+      <details class="input"><summary>Input</summary><textarea id="run-input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea></details>
+      <button id="run-workflow" class="run-button" type="button">Run workflow</button>
+    </div>
+  </div>
+  <p id="run-message" aria-live="polite">외부 tool과 model을 호출하지 않는 deterministic simulation입니다.</p>
+  <div class="workflow-strip" aria-label="Workflow nodes">${graphNodes}</div>
   <main>
-    <section class="span-2"><h2>Workflow graph</h2><div class="graph">${graphNodes}</div><h3>Edges</h3>${list(
-      view.graph.edges.map((edge) => edge.label),
-      "edge가 없습니다."
-    )}</section>
-    <section class="span-2">
-      <h2>Workflow dry-run & history</h2>
-      <p class="mode-notice">현재 WIR에는 executable binding이 없습니다. 아래 실행은 실제 Temporal·tool·model 호출이 아닌 <b>DETERMINISTIC_SIMULATION</b>이며 기록은 로컬 append-only JSONL에 보존됩니다.</p>
-      <div class="execution">
-        <div>
-          <h3>Run input</h3>
-          <textarea id="run-input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea>
-          <div class="actions"><button id="run-workflow" type="button">Run dry-run</button><button id="refresh-runs" class="secondary" type="button">Refresh</button></div>
-          <p id="run-status" class="muted" aria-live="polite">실행할 입력을 확인하세요.</p>
-        </div>
-        <div><h3>Run history</h3><div id="run-history" class="run-history"><p class="muted">기록을 불러오는 중입니다.</p></div></div>
-        <div>
-          <h3>Selected run</h3>
-          <div id="run-metrics" class="metrics"><span>선택한 run 없음</span></div>
-          <div id="node-states" class="node-states"></div>
-          <ol id="run-timeline" class="timeline"></ol>
-          <h3>Outputs</h3><pre id="run-output" class="run-output">{}</pre>
+    <aside><div class="panel-title"><span>Run history</span><span id="run-count">0</span></div><div id="run-history" class="history"><div class="history-empty">기록을 불러오는 중입니다.</div></div></aside>
+    <div class="detail">
+      <div id="empty-detail" class="empty-detail">Run workflow를 눌러 첫 기록을 만드세요.</div>
+      <div id="run-detail" hidden>
+        <div class="detail-head"><div><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><span id="selected-status" class="status-label"></span></div>
+        <div class="summary"><div><span>Mode</span><strong id="selected-mode"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Duration</span><strong id="selected-duration"></strong></div></div>
+        <div class="detail-grid">
+          <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
+          <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
+          <section><h3>Event timeline</h3><ol id="event-timeline" class="timeline"></ol></section>
+          <section><h3>Output</h3><pre id="run-output">{}</pre></section>
         </div>
       </div>
-    </section>
-    <section><h2>Canonical WIR editor</h2><textarea id="wir-editor" spellcheck="false">${escapeHtml(view.document.canonicalJson)}</textarea><div class="actions"><button id="canonicalize" type="button">Canonicalize candidate</button><button id="reset" class="secondary" type="button">Reset</button></div><p id="editor-status" aria-live="polite">편집 결과는 compiler 검증 전까지 publish되지 않습니다.</p></section>
-    <section><h2>Node contract editor</h2><p class="muted">graph node를 선택하세요. 적용 시 canonical WIR 후보만 변경됩니다.</p><textarea id="contract-editor" spellcheck="false" disabled></textarea><div class="actions"><button id="apply-contract" type="button" disabled>Apply to candidate</button></div></section>
-    <section><h2>Semantic diff</h2>${renderDiff(view.semanticDiff)}</section>
-    <section><h2>Revision impact preview</h2>${renderImpact(view.impactPreview)}</section>
-    <section><h2>Run artifacts</h2><div id="run-artifacts"><p class="muted">run을 선택하면 artifact 기록이 표시됩니다.</p></div></section>
-    <section><h2>Persisted lineage</h2>${renderLineage(view.lineage)}</section>
-    <section><h2>Verifier evidence</h2>${renderEvidence(view.evidence)}</section>
+    </div>
   </main>
   <script>
     (() => {
-      const original = ${JSON.stringify(view.document.canonicalJson).replaceAll("<", "\\u003c")};
-      const wir = document.getElementById("wir-editor");
-      const contract = document.getElementById("contract-editor");
-      const apply = document.getElementById("apply-contract");
-      const status = document.getElementById("editor-status");
+      const runButton = document.getElementById("run-workflow");
       const runInput = document.getElementById("run-input");
-      const runStatus = document.getElementById("run-status");
-      const runHistory = document.getElementById("run-history");
-      const runMetrics = document.getElementById("run-metrics");
-      const nodeStates = document.getElementById("node-states");
-      const runTimeline = document.getElementById("run-timeline");
-      const runOutput = document.getElementById("run-output");
-      const runArtifacts = document.getElementById("run-artifacts");
-      let selectedNodeId = null;
-      const stable = (value) => Array.isArray(value) ? value.map(stable) : value && typeof value === "object"
-        ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])])) : value;
-      const parse = () => JSON.parse(wir.value);
-      const clear = (element) => { while (element.firstChild) element.removeChild(element.firstChild); };
-      const element = (tag, text, className) => {
-        const item = document.createElement(tag);
-        if (text !== undefined) item.textContent = text;
-        if (className) item.className = className;
-        return item;
+      const message = document.getElementById("run-message");
+      const history = document.getElementById("run-history");
+      const runCount = document.getElementById("run-count");
+      const emptyDetail = document.getElementById("empty-detail");
+      const detail = document.getElementById("run-detail");
+      const nodeRecords = document.getElementById("node-records");
+      const artifactRecords = document.getElementById("artifact-records");
+      const timeline = document.getElementById("event-timeline");
+      let selectedRunId = null;
+
+      const clear = (target) => { while (target.firstChild) target.removeChild(target.firstChild); };
+      const make = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
+      const shortTime = (value) => new Date(value).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+      const markSelected = () => document.querySelectorAll("[data-run-id]").forEach((row) => row.classList.toggle("active", row.dataset.runId === selectedRunId));
+      const updateGraph = (states) => document.querySelectorAll("[data-node-id]").forEach((node) => { node.dataset.runStatus = states[node.dataset.nodeId] || "waiting"; });
+
+      const renderRun = (record) => {
+        selectedRunId = record.runId; markSelected(); updateGraph(record.nodeStates);
+        emptyDetail.hidden = true; detail.hidden = false;
+        document.getElementById("selected-run-id").textContent = record.runId;
+        document.getElementById("selected-run-time").textContent = record.createdAt;
+        const status = document.getElementById("selected-status"); status.textContent = record.status; status.className = "status-label" + (record.status === "failed" ? " failed" : "");
+        document.getElementById("selected-mode").textContent = record.executionMode;
+        document.getElementById("selected-events").textContent = String(record.events.length);
+        document.getElementById("selected-artifacts").textContent = String(record.artifacts.length);
+        document.getElementById("selected-duration").textContent = String(Math.max(0, new Date(record.completedAt) - new Date(record.createdAt))) + " ms";
+        clear(nodeRecords);
+        Object.entries(record.nodeStates).sort(([a],[b]) => a.localeCompare(b)).forEach(([nodeId,state]) => { const card = make("div", undefined, "node-record" + (state === "failed" ? " failed" : "")); card.appendChild(make("i")); card.appendChild(make("span", nodeId + " · " + state)); nodeRecords.appendChild(card); });
+        clear(artifactRecords);
+        if (!record.artifacts.length) artifactRecords.appendChild(make("div", "No artifacts", "history-empty"));
+        record.artifacts.forEach((artifact) => { const card = make("div", undefined, "artifact"); card.appendChild(make("strong", artifact.artifactId)); card.appendChild(make("small", artifact.nodeId + " / " + artifact.port)); card.appendChild(make("code", artifact.contentHash)); artifactRecords.appendChild(card); });
+        clear(timeline);
+        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(make("time", shortTime(event.occurredAt), "time")); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : ""))); timeline.appendChild(row); });
+        document.getElementById("run-output").textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
       };
-      const renderSelectedRun = (record) => {
-        clear(runMetrics);
-        [record.status, record.executionMode, String(record.events.length) + " events", String(record.artifacts.length) + " artifacts"]
-          .forEach((value) => { const span = element("span"); const strong = element("b", value); span.appendChild(strong); runMetrics.appendChild(span); });
-        clear(nodeStates);
-        Object.entries(record.nodeStates).sort(([left], [right]) => left.localeCompare(right)).forEach(([nodeId, state]) => {
-          const card = element("article"); card.appendChild(element("strong", nodeId)); card.appendChild(element("span", state)); nodeStates.appendChild(card);
-          const graphNode = document.querySelector('[data-node-id="' + CSS.escape(nodeId) + '"]');
-          if (graphNode) graphNode.dataset.runStatus = state;
-        });
-        clear(runTimeline);
-        record.events.forEach((event) => {
-          const row = element("li"); row.appendChild(element("time", event.occurredAt));
-          const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
-          row.appendChild(element("span", String(event.sequence) + ". " + event.type + (payload.nodeId ? " · " + payload.nodeId : "")));
-          runTimeline.appendChild(row);
-        });
-        runOutput.textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
-        clear(runArtifacts);
-        if (record.artifacts.length === 0) runArtifacts.appendChild(element("p", "artifact 기록이 없습니다.", "muted"));
-        record.artifacts.forEach((artifact) => {
-          const card = element("article", undefined, "evidence"); card.appendChild(element("strong", artifact.artifactId));
-          card.appendChild(element("span", artifact.nodeId + " / " + artifact.port)); card.appendChild(element("code", artifact.contentHash)); runArtifacts.appendChild(card);
-        });
-      };
+
       const selectRun = async (runId) => {
-        runStatus.textContent = runId + " 기록을 불러오는 중입니다.";
         const response = await fetch("/api/runs/" + encodeURIComponent(runId));
-        if (!response.ok) throw new Error("run record request failed: " + response.status);
-        const record = await response.json(); renderSelectedRun(record); runStatus.textContent = runId + " · " + record.status;
+        if (!response.ok) throw new Error("기록을 불러오지 못했습니다.");
+        renderRun(await response.json());
       };
-      const loadRuns = async (selectLatest) => {
+
+      const loadHistory = async (selectLatest) => {
         const response = await fetch("/api/runs");
-        if (!response.ok) throw new Error("run history request failed: " + response.status);
-        const payload = await response.json(); clear(runHistory);
-        if (payload.runs.length === 0) runHistory.appendChild(element("p", "아직 실행 기록이 없습니다.", "muted"));
-        payload.runs.forEach((run) => {
-          const button = element("button"); button.type = "button"; button.appendChild(element("strong", run.runId));
-          button.appendChild(element("span", run.status + " · " + run.eventCount + " events"));
-          button.appendChild(element("small", run.createdAt)); button.addEventListener("click", () => selectRun(run.runId).catch((error) => runStatus.textContent = error.message));
-          runHistory.appendChild(button);
-        });
-        if (selectLatest && payload.runs[0]) await selectRun(payload.runs[0].runId);
+        if (!response.ok) throw new Error("실행 기록을 불러오지 못했습니다.");
+        const payload = await response.json(); clear(history); runCount.textContent = String(payload.runs.length);
+        if (!payload.runs.length) history.appendChild(make("div", "아직 실행 기록이 없습니다.", "history-empty"));
+        payload.runs.forEach((run) => { const row = make("button", undefined, "run-row"); row.type = "button"; row.dataset.runId = run.runId; const dot = make("span", undefined, "status-dot" + (run.status === "failed" ? " failed" : "")); const copy = make("span"); copy.appendChild(make("strong", run.runId)); copy.appendChild(make("small", run.status + " · " + shortTime(run.createdAt))); row.appendChild(dot); row.appendChild(copy); row.addEventListener("click", () => selectRun(run.runId).catch((error) => message.textContent = error.message)); history.appendChild(row); });
+        markSelected(); if (selectLatest && payload.runs[0]) await selectRun(payload.runs[0].runId);
       };
-      const showNode = () => {
-        if (!selectedNodeId) return;
-        const node = parse().nodes.find((item) => item.id === selectedNodeId);
-        contract.value = JSON.stringify(stable(node), null, 2);
-        contract.disabled = !node;
-        apply.disabled = !node;
-      };
-      document.querySelectorAll("[data-node-id]").forEach((button) => button.addEventListener("click", () => {
-        selectedNodeId = button.dataset.nodeId;
-        try { showNode(); status.textContent = selectedNodeId + " contract selected"; }
-        catch (error) { status.textContent = error.message; }
-      }));
-      document.getElementById("canonicalize").addEventListener("click", () => {
-        try {
-          wir.value = JSON.stringify(stable(parse()));
-          showNode();
-          status.textContent = "Canonical candidate created; server-side compiler validation is still required.";
-          window.dispatchEvent(new CustomEvent("awf:workflow-candidate", { detail: { canonicalJson: wir.value } }));
-        } catch (error) { status.textContent = error.message; }
+
+      runButton.addEventListener("click", async () => {
+        runButton.disabled = true; message.textContent = "Workflow 실행 중…";
+        try { const inputs = JSON.parse(runInput.value); const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({inputs}) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(false); message.textContent = record.runId + " 기록 완료"; }
+        catch (error) { message.textContent = error.message; }
+        finally { runButton.disabled = false; }
       });
-      document.getElementById("reset").addEventListener("click", () => {
-        wir.value = original; selectedNodeId = null; contract.value = ""; contract.disabled = true; apply.disabled = true;
-        status.textContent = "Candidate reset to source WIR.";
-      });
-      apply.addEventListener("click", () => {
-        try {
-          const workflow = parse();
-          const replacement = JSON.parse(contract.value);
-          if (replacement.id !== selectedNodeId) throw new Error("node id cannot change in contract editor");
-          workflow.nodes = workflow.nodes.map((item) => item.id === selectedNodeId ? replacement : item);
-          wir.value = JSON.stringify(stable(workflow));
-          status.textContent = "Node contract applied to candidate; compiler validation is still required.";
-        } catch (error) { status.textContent = error.message; }
-      });
-      document.getElementById("run-workflow").addEventListener("click", async () => {
-        const button = document.getElementById("run-workflow"); button.disabled = true; runStatus.textContent = "Dry-run 실행 중…";
-        try {
-          const inputs = JSON.parse(runInput.value);
-          const response = await fetch("/api/runs", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ inputs }) });
-          const record = await response.json(); if (!response.ok) throw new Error(record.message || "run failed");
-          renderSelectedRun(record); await loadRuns(false); runStatus.textContent = record.runId + " · " + record.status;
-        } catch (error) { runStatus.textContent = error.message; }
-        finally { button.disabled = false; }
-      });
-      document.getElementById("refresh-runs").addEventListener("click", () => loadRuns(false).catch((error) => runStatus.textContent = error.message));
-      loadRuns(true).catch((error) => runStatus.textContent = error.message);
+
+      loadHistory(true).catch((error) => message.textContent = error.message);
+      setInterval(() => loadHistory(false).catch(() => {}), 5000);
     })();
   </script>
 </body>

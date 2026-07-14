@@ -51,17 +51,18 @@ const workflow: WorkflowDefinition = {
 };
 
 describe("Studio HTML", () => {
-  it("renders the WIR graph and non-authoritative contract editor", () => {
+  it("renders one run action with history and run details", () => {
     const document = createWorkflowEditorDocument(workflow);
     const html = renderStudioHtml(createStudioView({ document }));
 
-    expect(html).toContain("Adaptive Artifact Workflow Studio");
+    expect(html).toContain("Workflow runs");
     expect(html).toContain('data-node-id="execute"');
-    expect(html).toContain("Canonical WIR editor");
-    expect(html).toContain("Workflow dry-run & history");
-    expect(html).toContain("DETERMINISTIC_SIMULATION");
+    expect(html).toContain("Run workflow");
+    expect(html).toContain("Run history");
+    expect(html).toContain("Event timeline");
     expect(html).toContain("/api/runs");
-    expect(html).toContain(document.digest);
-    expect(html).toContain("compiler validation is still required");
+    expect(html.match(/<button/g)).toHaveLength(1);
+    expect(html).not.toContain("Canonical WIR editor");
+    expect(html).not.toContain("Semantic diff");
   });
 });

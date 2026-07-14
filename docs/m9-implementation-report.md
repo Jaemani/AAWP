@@ -16,8 +16,9 @@
 
 ### Studio
 
-- graph, edge, canonical WIR와 node contract editor
-- semantic diff, revision impact, run timeline, lineage와 evidence panel
+- `Run workflow` 단일 action과 자동 갱신 run history
+- 선택한 run의 node 상태, event timeline, artifact와 output panel
+- WIR editor, semantic diff, impact, lineage와 evidence는 control-plane API에 유지하고 기본 실행 화면에서는 제거
 - 반응형·keyboard-focus 가능한 dependency-free HTML
 - YAML/JSON source를 읽는 local-only server
 - read-only source API와 2 MiB 제한 compiler check API
@@ -71,4 +72,4 @@ M9 코드가 증명한 범위는 portable control-plane metadata와 local Studio
 - quota enforcement와 operator override event 연결
 - 반복 cohort 기반 direct baseline dashboard
 
-canvas drag/drop layout은 workflow 의미를 오염시키지 않도록 제외했다. 현재 Studio는 graph 선택과 canonical contract 편집에 집중한 caveman 구현이며, 이후 layout metadata가 필요하면 WIR 밖의 비권위적 user preference로 저장해야 한다.
+canvas drag/drop layout은 workflow 의미를 오염시키지 않도록 제외했다. 현재 Studio는 실행과 기록 확인에 집중한 caveman 구현이다. WIR 편집 기능이 별도 화면으로 다시 필요해지면 실행 console과 섞지 않고 독립된 관리 경로로 제공해야 한다.
