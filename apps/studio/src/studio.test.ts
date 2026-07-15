@@ -55,7 +55,9 @@ describe("Studio HTML", () => {
     const document = createWorkflowEditorDocument(workflow);
     const html = renderStudioHtml(createStudioView({ document }));
 
-    expect(html).toContain("Adaptive Workflow Studio");
+    expect(html).toContain("AAWP Studio");
+    expect(html).toContain("Adaptive Artifact Workflow Platform");
+    expect(html).not.toContain("Adaptive Workflow Studio");
     expect(html).toContain("Run and inspect");
     expect(html).toContain('data-node-id="execute"');
     expect(html).toContain("Run workflow");

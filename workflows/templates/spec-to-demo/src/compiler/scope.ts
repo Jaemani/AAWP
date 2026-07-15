@@ -4,6 +4,7 @@ import {
   parseSpecDocument,
   parseSpecToDemoInput,
   type SpecDocument,
+  type SpecScreenGroup,
   type SpecToDemoInput
 } from "./schema.js";
 
@@ -12,8 +13,12 @@ export class ScopeCompilationError extends Error {
     readonly code:
       | "SPEC_ARTIFACT_MISMATCH"
       | "DUPLICATE_SCREEN_ID"
+      | "DUPLICATE_SCREEN_GROUP_ID"
       | "DUPLICATE_REQUIREMENT_KEY"
+      | "INVALID_SCREEN_GROUP_REFERENCE"
       | "UNKNOWN_SCOPE_SELECTOR"
+      | "UNKNOWN_SCREEN_GROUP"
+      | "UNRESOLVED_SCOPE_REQUEST"
       | "MAX_SCREENS_EXCEEDED",
     message: string
   ) {
@@ -40,6 +45,7 @@ export function compileScopeContract(
   }
 
   const screenIds = new Set<string>();
+  const screenGroups = new Map<string, SpecScreenGroup>();
   const requirementKeys = new Set<string>();
   const selectorToRequirement = new Map<string, string>();
   for (const screen of document.screens) {
@@ -60,9 +66,53 @@ export function compileScopeContract(
     }
   }
 
-  const selectors = input.selectedScope ?? [...screenIds];
+  for (const group of document.screenGroups ?? []) {
+    if (screenGroups.has(group.id)) {
+      throw new ScopeCompilationError(
+        "DUPLICATE_SCREEN_GROUP_ID",
+        `duplicate screen group id ${group.id}`
+      );
+    }
+    for (const screenId of group.screenIds) {
+      if (!screenIds.has(screenId)) {
+        throw new ScopeCompilationError(
+          "INVALID_SCREEN_GROUP_REFERENCE",
+          `screen group ${group.id} references unknown screen ${screenId}`
+        );
+      }
+    }
+    screenGroups.set(group.id, group);
+  }
+
+  const structuredSelection = input.scopeSelection;
+  const hasStructuredSelectors =
+    (structuredSelection?.screenIds?.length ?? 0) > 0 ||
+    (structuredSelection?.requirementKeys?.length ?? 0) > 0 ||
+    (structuredSelection?.groupIds?.length ?? 0) > 0;
+  if (structuredSelection?.requestText !== undefined && !hasStructuredSelectors) {
+    throw new ScopeCompilationError(
+      "UNRESOLVED_SCOPE_REQUEST",
+      "scope request text must be resolved to screen, requirement, or group ids before compilation"
+    );
+  }
+  const hasExplicitSelection = input.selectedScope !== undefined || hasStructuredSelectors;
+  const selectors = [
+    ...(input.selectedScope ?? []),
+    ...(structuredSelection?.screenIds ?? []),
+    ...(structuredSelection?.requirementKeys ?? [])
+  ];
   const selectedScreens = new Set<string>();
   const selectedRequirements = new Set<string>();
+  const selectedGroups = new Set<string>();
+  for (const groupId of structuredSelection?.groupIds ?? []) {
+    const group = screenGroups.get(groupId);
+    if (group === undefined) {
+      throw new ScopeCompilationError("UNKNOWN_SCREEN_GROUP", `unknown screen group ${groupId}`);
+    }
+    selectedGroups.add(groupId);
+    for (const screenId of group.screenIds) selectors.push(screenId);
+  }
+  if (!hasExplicitSelection) selectors.push(...screenIds);
   for (const selector of selectors) {
     if (screenIds.has(selector)) {
       selectedScreens.add(selector);
@@ -100,6 +150,10 @@ export function compileScopeContract(
     includedScreenIds: [...selectedScreens].sort(utf16),
     excludedScreenIds: [...screenIds].filter((id) => !selectedScreens.has(id)).sort(utf16),
     selectedRequirementKeys: [...selectedRequirements].sort(utf16),
+    selectedGroupIds: [...selectedGroups].sort(utf16),
+    ...(structuredSelection?.requestText === undefined
+      ? {}
+      : { requestText: structuredSelection.requestText }),
     allowedWrites: ["src/**", "public-tests/**"],
     forbiddenWrites: ["package.json", "verifier-hidden/**", "runtime/**"],
     forbiddenDependencies: [...(input.constraints?.forbiddenDependencies ?? [])].sort(utf16),

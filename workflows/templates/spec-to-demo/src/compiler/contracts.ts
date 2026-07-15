@@ -7,6 +7,8 @@ export interface ScopeContract {
   includedScreenIds: string[];
   excludedScreenIds: string[];
   selectedRequirementKeys: string[];
+  selectedGroupIds: string[];
+  requestText?: string;
   allowedWrites: string[];
   forbiddenWrites: string[];
   forbiddenDependencies: string[];

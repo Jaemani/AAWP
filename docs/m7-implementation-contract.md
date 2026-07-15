@@ -6,10 +6,15 @@
 
 - 입력은 `specArtifactId`, 선택 scope, `web-react` profile, viewport와 screen/dependency/accessibility constraint를 가진다.
 - Spec document는 stable document, screen, requirement source key와 원문 source span을 가진 구조화 artifact다.
+- Spec document는 optional `screenGroups`로 topic/flow ID, alias와 포함 screen ID를 선언할 수 있다.
 - Input artifact ID와 document source artifact ID가 다르거나 screen/requirement key가 중복되면 compile을 거부한다.
 - Scope selector는 screen ID, requirement key 또는 `screen/requirement`를 사용하며 unknown selector와 `maxScreens` 초과를 거부한다.
+- `scopeSelection`은 사용자 원문과 screen, requirement, group ID를 함께 기록한다. 원문만 있고 explicit ID가 없으면 `UNRESOLVED_SCOPE_REQUEST`로 거부한다.
+- Group은 compiler가 exact screen set으로 확장하며 unknown group과 존재하지 않는 screen reference를 거부한다.
 - Requirement ID는 `documentId + screenId + sourceKey`의 digest로 만들고 원문 변경과 분리한다.
 - Scope, requirement와 acceptance contract는 canonical content digest를 가진다.
+
+자연어를 group/screen 후보로 바꾸는 resolver는 template 앞단에 둘 수 있지만 platform core나 builder prompt가 최종 범위를 암묵적으로 결정하지 않는다. 최종 포함·제외 screen은 scope contract가 소유한다.
 
 ## Acceptance와 visibility
 

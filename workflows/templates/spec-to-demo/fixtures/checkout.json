@@ -45,5 +45,21 @@
         }
       ]
     }
+  ],
+  "screenGroups": [
+    {
+      "id": "purchase-entry",
+      "title": "Purchase entry pages",
+      "kind": "topic",
+      "aliases": ["checkout", "order"],
+      "screenIds": ["checkout"]
+    },
+    {
+      "id": "checkout-flow",
+      "title": "Checkout flow",
+      "kind": "flow",
+      "aliases": ["purchase flow"],
+      "screenIds": ["checkout", "confirmation"]
+    }
   ]
 }

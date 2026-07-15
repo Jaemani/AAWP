@@ -44,7 +44,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AWF · ${escapeHtml(view.graph.workflowId)}</title>
+  <title>AAWP Studio · ${escapeHtml(view.graph.workflowId)}</title>
   <style>
     :root {
       font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
@@ -79,7 +79,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .topbar { position:sticky; z-index:20; top:0; border-bottom:1px solid rgb(223 228 234 / 90%); background:rgb(255 255 255 / 92%); backdrop-filter:blur(14px); }
     .topbar-inner { display:flex; width:min(1600px,100%); min-height:68px; align-items:center; justify-content:space-between; gap:24px; margin:0 auto; padding:0 32px; }
     .identity { display:flex; min-width:0; align-items:center; gap:12px; }
-    .logo { display:grid; width:36px; height:36px; flex:0 0 auto; place-items:center; border-radius:10px; color:#fff; background:#172033; box-shadow:inset 0 0 0 1px rgb(255 255 255 / 8%); font-size:11px; font-weight:800; letter-spacing:.04em; }
+    .logo { display:grid; width:42px; height:36px; flex:0 0 auto; place-items:center; border-radius:10px; color:#fff; background:#172033; box-shadow:inset 0 0 0 1px rgb(255 255 255 / 8%); font-size:10px; font-weight:800; letter-spacing:.04em; }
     .product-name,.product-context { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .product-name { font-size:13px; font-weight:720; letter-spacing:-.01em; }
     .product-context { margin-top:3px; color:var(--muted); font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
@@ -233,7 +233,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="identity"><div class="logo">AWF</div><div><span class="product-name">Adaptive Workflow Studio</span><span class="product-context">${escapeHtml(view.graph.workflowId)} · v${escapeHtml(view.graph.version)}</span></div></div>
+      <div class="identity"><div class="logo">AAWP</div><div><span class="product-name">AAWP Studio</span><span class="product-context">Adaptive Artifact Workflow Platform</span></div></div>
       <span class="mode">Local simulation</span>
     </div>
   </header>

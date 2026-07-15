@@ -1,11 +1,13 @@
 # M7 `spec-to-demo` 구현 결과
 
-기준일은 2026년 7월 14일이다. M7은 다섯 구조의 spec fixture를 scope/requirement/acceptance contract로 compile하고, public brief와 hidden executable source를 분리하며, React/Vite scaffold·coherent builder·verification/repair/delivery·revision benchmark를 하나의 template package로 연결했다.
+기준일은 2026년 7월 15일이다. M7은 다섯 구조의 spec fixture를 scope/requirement/acceptance contract로 compile하고, public brief와 hidden executable source를 분리하며, React/Vite scaffold·coherent builder·verification/repair/delivery·revision benchmark를 하나의 template package로 연결했다. 7월 15일에는 topic/flow 단위 scope selection을 보강했다.
 
 ## 완료 범위
 
 - TypeBox 기반 spec document와 spec-to-demo input schema
 - artifact/scope/duplicate/max-screen fail-closed validation
+- topic/flow `screenGroups`, 사용자 원문 provenance와 structured `scopeSelection`
+- unresolved 자연어, unknown group과 invalid group screen reference fail-closed validation
 - stable requirement ID, source span과 immutable contract digest
 - DOM, navigation, state, network, visual과 a11y acceptance obligation
 - public implementation brief와 hidden Playwright source package 분리
@@ -34,6 +36,8 @@
 - 다섯 fixture의 deterministic contract/acceptance/scaffold 준비
 - 문구 변경 뒤 stable requirement ID 유지와 contract digest 변경
 - requirement-only scope selection
+- topic/flow group expansion과 사용자 요청 원문 provenance
+- unknown·invalid group, unresolved request와 group 확장 후 max-screen fail-closed
 - hidden source와 oracle이 builder prompt에 포함되지 않음
 - single model invocation과 runtime file write 차단
 - fixture protocol completeness
@@ -44,9 +48,9 @@
 
 ## 검증 결과
 
-- M7 focused Vitest: 4개 test file, 16개 test 통과
+- M7 focused Vitest: 4개 test file, 18개 test 통과
 - package export boundary에서 `compileSpecContracts` 확인
-- 전체 Vitest: 31개 test file, 190개 test 통과
+- 전체 Vitest: 43개 test file, 222개 test 통과
 - `npm ci`, build, typecheck, lint, format check, schema generation과 whitespace 검사 통과
 - 기존 `spec-to-demo` WIR check 성공, simulate 2회 출력 byte-identical
 

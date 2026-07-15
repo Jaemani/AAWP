@@ -1,4 +1,4 @@
-generated_at: "2026-07-14"
+generated_at: "2026-07-15"
 clean_room_policy:
   durable_agents_attached_source: excluded
   excluded_material:
@@ -79,6 +79,31 @@ dependencies:
 public_spec_reimplementations:
   - Workflow IR public behavior described in local architecture docs
   - MCP tool adapter boundary described by https://modelcontextprotocol.io/specification/2025-11-25
+design_references:
+  - name: Anthropic Building effective agents
+    source_url: https://www.anthropic.com/engineering/building-effective-agents
+    used_for: workflow versus agent patterns and simplicity principle
+  - name: Anthropic Effective harnesses for long-running agents
+    source_url: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
+    used_for: progress artifacts and long-running handoff patterns
+  - name: Temporal Workflow execution
+    source_url: https://docs.temporal.io/workflow-execution
+    used_for: durable runtime behavior
+  - name: Bazel Remote caching
+    source_url: https://bazel.build/remote/caching
+    used_for: declared inputs, content-addressed results and cache semantics
+  - name: Inspect AI
+    source_url: https://inspect.aisi.org.uk/
+    used_for: evaluation dataset, agent, tool and scorer composition
+  - name: n8n AI Workflow Builder
+    source_url: https://docs.n8n.io/advanced-ai/ai-workflow-builder/
+    used_for: natural-language authoring and graph UX comparison only
+  - name: OpenTelemetry Generative AI conventions
+    source_url: https://opentelemetry.io/docs/specs/semconv/gen-ai/
+    used_for: telemetry vocabulary
+  - name: OWASP GenAI Security Project
+    source_url: https://genai.owasp.org/
+    used_for: agentic threat modeling baseline
 excluded_references:
   - durable-agents source code
   - durable-agents schema definitions

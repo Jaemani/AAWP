@@ -1,30 +1,36 @@
 # Adaptive Artifact Workflow Platform
 
-AAWP는 typed workflow compiler, durable runtime port, content-addressed artifact graph와 독립 verifier를 결합하는 workflow platform이다. 여러 agent를 호출하는 것 자체보다 실행 가능성, 복구, 증분 재실행과 검증 가능한 결과를 우선한다.
+AAWP는 AI 작업을 **typed workflow compiler, durable runtime, incremental artifact graph, independent verifier**로 실행·복구·검증하는 플랫폼이다. 목표는 agent 수를 늘리는 것이 아니라, 어떤 입력과 권한으로 무엇을 만들었고 변경 시 어디까지 다시 실행해야 하는지를 증명하는 것이다.
 
-현재 저장소에는 WIR 타입·스키마와 compiler, artifact/event plane, local runtime, tool·verifier gateway, revision impact engine, `spec-to-demo` vertical slice, benchmark harness와 local Studio가 구현되어 있다.
+## 핵심
 
-## Quick start
+- 모든 작성 방식은 versioned Workflow IR(WIR)로 수렴하며 실행 전에 타입, 권한, 예산과 그래프 오류를 검사한다.
+- 실행 결과는 대화 문자열이 아니라 content-addressed artifact와 append-only event로 남는다.
+- revision은 영향받은 downstream node만 다시 실행하고 나머지는 fingerprint cache로 재사용한다.
+- builder와 release verifier의 소유권·실행 경계를 분리한다.
+- 작은 작업은 `DIRECT`, 닫힌 계약은 `CONTRACT`, 열린 조사는 `EXPLORER`로 실행한다.
+- workflow는 동일 조건의 direct baseline보다 품질, 비용·지연 또는 내구성·통제에서 이득을 입증해야 승격한다.
 
-요구 사항은 Node.js 24 이상과 npm 11 이상이다.
+AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration catalog가 아니다. 외부 connector는 adapter로 재사용하고, 코어는 typed contracts, artifact lineage, revision impact, durable recovery와 evidence-owned release에 집중한다. `spec-to-demo`는 이 코어를 검증하는 첫 vertical workflow일 뿐 플랫폼의 정체성이 아니다.
+
+## 현재 구현
+
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, `spec-to-demo` template, direct benchmark harness와 local AAWP Studio가 있다. Production 인증 gateway, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+
+## 시작하기
+
+Node.js 24 이상과 npm 11 이상이 필요하다.
 
 ```bash
 npm ci
 npm run build
 npm test
-```
-
-WIR을 model 호출 없이 검사하고 simulation하려면 CLI를 사용한다.
-
-```bash
 node apps/cli/dist/index.js check examples/spec-to-demo.wir.yaml
 node apps/cli/dist/index.js simulate examples/spec-to-demo.wir.yaml \
   --input examples/spec-to-demo.input.json
 ```
 
-## Studio
-
-Studio는 workflow 실행, append-only run 기록과 run별 결과 preview에 집중한 local console이다.
+AAWP Studio 실행:
 
 ```bash
 node apps/studio/dist/server.js \
@@ -36,30 +42,31 @@ node apps/studio/dist/server.js \
   --port 4173
 ```
 
-브라우저에서 `http://127.0.0.1:4173/`을 연다. 선택한 실행의 dashboard 주소는 `/?run=<runId>`, 독립 결과 주소는 `/runs/<runId>/demo/`다. 결과 snapshot을 삭제해도 run과 event 기록은 보존된다.
+`http://127.0.0.1:4173/`에서 workflow, run 기록과 결과를 확인한다. 현재 Studio의 run은 실제 model/tool 실행이 아닌 `DETERMINISTIC_SIMULATION`이다.
 
-현재 Studio 실행은 `DETERMINISTIC_SIMULATION`이다. 실제 model, tool이나 Temporal activity를 호출하지 않으며 production 권한·승인·취소 제어도 제공하지 않는다.
+## 문서
 
-## Documentation
+- [사용자 가이드](docs/user-guide.md): 설치, Studio, 실행, 결과 관리, 화면·플로우 선택과 version 사용법
+- [핵심 개념과 구조](docs/core-concepts.md): 다른 workflow 방식과의 차이, 구조와 선택 이유
+- [Architecture decisions](docs/adr/README.md): 대안, 결정과 trade-off
+- [변경 기록](CHANGELOG.md): 사용자·운영자 관점의 update notes
+- [오류·교정 기록](docs/lessons-and-corrections.md): 유의미한 실수, 영향과 재발 방지
+- [운영 문서](docs/operations/studio.md): local Studio API와 운영 경계
+- [구현 계획](agentic_workflow_framework_implementation_plan_ko.md)과 [starter backlog](agentic_workflow_framework_starter_backlog.yaml)
+- [공개 참고 자료](docs/references.md), [dependency snapshot](docs/dependency-sources.md), [clean-room provenance](docs/provenance-matrix.yaml)
 
-- [Architecture plan](docs/architecture-plan.md)
-- [Studio operations](docs/operations/studio.md)
-- [M9 implementation report](docs/m9-implementation-report.md)
-- [Implementation plan (Korean)](agentic_workflow_framework_implementation_plan_ko.md)
-- [Starter backlog](agentic_workflow_framework_starter_backlog.yaml)
+Milestone별 계약과 증거는 `docs/m*-implementation-contract.md`, `docs/m*-implementation-report.md`에 있다.
 
-각 milestone의 구현 계약과 결과는 `docs/m*-implementation-contract.md`, `docs/m*-implementation-report.md`에 있다. 기술 출처와 clean-room provenance는 [provenance matrix](docs/provenance-matrix.yaml)에 기록한다.
-
-## Repository layout
+## 저장소 구조
 
 - `apps/cli`, `apps/studio`: CLI와 local run console
-- `packages/*`: IR, compiler, runtime, storage, gateway와 control-plane packages
-- `workflows/templates/*`: reusable workflow templates
-- `examples/*`: 실행 가능한 WIR과 input fixture
+- `packages/*`: IR, compiler, runtime, storage, gateway와 control plane
+- `workflows/templates/*`: domain workflow template
+- `examples/*`: WIR, input과 결과 fixture
 - `benchmarks/*`: direct baseline과 workflow 비교 harness
-- `docs/adr`, `docs/operations`: architecture decisions와 runbooks
+- `docs/adr`, `docs/operations`: 의사결정과 runbook
 
-## Quality gates
+## 품질 게이트
 
 ```bash
 npm run typecheck
@@ -68,4 +75,4 @@ npm run format:check
 npm test
 ```
 
-workflow template은 동일한 verifier와 자원 상한을 사용하는 direct baseline보다 품질, 비용·지연 또는 내구성·감사·통제에서 측정 가능한 이득을 보여야 승격할 수 있다.
+테스트 통과는 구현 일관성의 증거이지 workflow 품질 우위의 증거는 아니다. Template 승격에는 동일 verifier·환경·예산을 사용한 direct baseline 비교가 별도로 필요하다.

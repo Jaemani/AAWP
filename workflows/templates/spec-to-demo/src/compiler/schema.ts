@@ -75,13 +75,25 @@ const SpecScreenSchema = Type.Object(
   { additionalProperties: false }
 );
 
+const SpecScreenGroupSchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }),
+    title: Type.String({ minLength: 1 }),
+    kind: Type.Union([Type.Literal("topic"), Type.Literal("flow")]),
+    aliases: Type.Optional(Type.Array(Type.String({ minLength: 1 }), { uniqueItems: true })),
+    screenIds: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, uniqueItems: true })
+  },
+  { additionalProperties: false }
+);
+
 export const SpecDocumentSchema = Type.Object(
   {
     apiVersion: Type.Literal("awf/spec-document/v1"),
     documentId: Type.String({ minLength: 1 }),
     title: Type.String({ minLength: 1 }),
     sourceArtifactId: Type.String({ minLength: 1 }),
-    screens: Type.Array(SpecScreenSchema, { minItems: 1 })
+    screens: Type.Array(SpecScreenSchema, { minItems: 1 }),
+    screenGroups: Type.Optional(Type.Array(SpecScreenGroupSchema, { uniqueItems: true }))
   },
   { additionalProperties: false }
 );
@@ -90,6 +102,23 @@ export const SpecToDemoInputSchema = Type.Object(
   {
     specArtifactId: Type.String({ minLength: 1 }),
     selectedScope: Type.Optional(Type.Array(Type.String({ minLength: 1 }), { minItems: 1 })),
+    scopeSelection: Type.Optional(
+      Type.Object(
+        {
+          requestText: Type.Optional(Type.String({ minLength: 1 })),
+          screenIds: Type.Optional(
+            Type.Array(Type.String({ minLength: 1 }), { minItems: 1, uniqueItems: true })
+          ),
+          requirementKeys: Type.Optional(
+            Type.Array(Type.String({ minLength: 1 }), { minItems: 1, uniqueItems: true })
+          ),
+          groupIds: Type.Optional(
+            Type.Array(Type.String({ minLength: 1 }), { minItems: 1, uniqueItems: true })
+          )
+        },
+        { additionalProperties: false }
+      )
+    ),
     demoProfile: Type.Literal("web-react"),
     targetViewports: Type.Array(
       Type.Object(
@@ -120,6 +149,7 @@ export const SpecToDemoInputSchema = Type.Object(
 export type SourceSpan = Static<typeof SourceSpanSchema>;
 export type SpecRequirement = Static<typeof SpecRequirementSchema>;
 export type SpecScreen = Static<typeof SpecScreenSchema>;
+export type SpecScreenGroup = Static<typeof SpecScreenGroupSchema>;
 export type SpecDocument = Static<typeof SpecDocumentSchema>;
 export type SpecToDemoInput = Static<typeof SpecToDemoInputSchema>;
 

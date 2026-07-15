@@ -16,6 +16,8 @@
 
 ### Studio
 
+- `AAWP Studio / Adaptive Artifact Workflow Platform`으로 product identity 통일
+- workflow ID는 실행 context로만 표시하고 제품 subtitle에서 제거
 - `Run workflow` 단일 action과 자동 갱신 run history
 - workflow 실행, 기록 선택, 선택 결과 검토가 한 방향으로 이어지는 운영 console 정보 구조
 - 실행 즉시 표시되는 node `Running` 상태, 완료·실패 feedback과 접근 가능한 busy/current 상태
@@ -61,7 +63,7 @@ Studio 후보는 source 파일, production runtime 또는 database를 직접 변
 
 - 기존 M9 focused Vitest: 8개 test file, 18개 test 통과
 - 현재 Studio focused Vitest: 4개 test file, 5개 test 통과
-- 전체 Vitest: 43개 test file, 220개 test 통과
+- 전체 Vitest: 43개 test file, 222개 test 통과
 - `npm install`, build, typecheck, lint, format check, schema generation, whitespace 검사 통과
 - Studio HTTP source·valid candidate·invalid candidate integration test 통과
 - Studio run API의 event sequence와 JSONL restart persistence test 통과

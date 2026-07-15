@@ -239,7 +239,7 @@ async function main(): Promise<void> {
   });
   const host = "127.0.0.1";
   createStudioServer({ document, runStore, demoStore, initialInputs }).listen(port, host, () => {
-    process.stdout.write(`AWF Studio loaded at http://${host}:${port}\n`);
+    process.stdout.write(`AAWP Studio loaded at http://${host}:${port}\n`);
   });
 }
 

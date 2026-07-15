@@ -47,6 +47,33 @@ describe("spec-to-demo contract compilers", () => {
     ]);
   });
 
+  it("expands a resolved topic or flow group into an explicit screen scope", async () => {
+    const document = await loadFixture("checkout");
+    const topic = compileSpecContracts(
+      inputFor(document, {
+        scopeSelection: {
+          requestText: "구매 시작 화면만 만들어줘",
+          groupIds: ["purchase-entry"]
+        }
+      }),
+      document
+    );
+    expect(topic.scope.includedScreenIds).toEqual(["checkout"]);
+    expect(topic.scope.selectedGroupIds).toEqual(["purchase-entry"]);
+    expect(topic.scope.requestText).toBe("구매 시작 화면만 만들어줘");
+
+    const flow = compileSpecContracts(
+      inputFor(document, {
+        scopeSelection: {
+          requestText: "구매 플로우 전체를 만들어줘",
+          groupIds: ["checkout-flow"]
+        }
+      }),
+      document
+    );
+    expect(flow.scope.includedScreenIds).toEqual(["checkout", "confirmation"]);
+  });
+
   it("fails closed on unknown scope and artifact mismatch", async () => {
     const document = await loadFixture("settings");
     expect(() =>
@@ -55,5 +82,41 @@ describe("spec-to-demo contract compilers", () => {
     expect(() =>
       compileSpecContracts(inputFor(document, { specArtifactId: "another-artifact" }), document)
     ).toThrowError(expect.objectContaining({ code: "SPEC_ARTIFACT_MISMATCH" }));
+    expect(() =>
+      compileSpecContracts(
+        inputFor(document, { scopeSelection: { requestText: "정책 화면을 만들어줘" } }),
+        document
+      )
+    ).toThrowError(expect.objectContaining({ code: "UNRESOLVED_SCOPE_REQUEST" }));
+  });
+
+  it("fails closed when a group is unknown, invalid, or expands beyond the screen budget", async () => {
+    const document = await loadFixture("checkout");
+    expect(() =>
+      compileSpecContracts(
+        inputFor(document, { scopeSelection: { groupIds: ["unknown-flow"] } }),
+        document
+      )
+    ).toThrowError(expect.objectContaining({ code: "UNKNOWN_SCREEN_GROUP" }));
+    expect(() =>
+      compileSpecContracts(
+        inputFor(document, {
+          scopeSelection: { groupIds: ["checkout-flow"] },
+          constraints: { maxScreens: 1 }
+        }),
+        document
+      )
+    ).toThrowError(expect.objectContaining({ code: "MAX_SCREENS_EXCEEDED" }));
+
+    const invalidDocument = structuredClone(document);
+    invalidDocument.screenGroups!.push({
+      id: "broken-flow",
+      title: "Broken flow",
+      kind: "flow",
+      screenIds: ["missing-screen"]
+    });
+    expect(() => compileSpecContracts(inputFor(invalidDocument), invalidDocument)).toThrowError(
+      expect.objectContaining({ code: "INVALID_SCREEN_GROUP_REFERENCE" })
+    );
   });
 });
