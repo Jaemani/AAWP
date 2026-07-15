@@ -65,6 +65,10 @@ function utf16(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function roundMilliseconds(value: number): number {
+  return Math.round(Math.max(0, value) * 1000) / 1000;
+}
+
 function snapshot<T>(value: T): T {
   return JSON.parse(canonicalize(value)) as T;
 }
@@ -232,7 +236,9 @@ function materializeTrace(input: {
       nodeStates[traceEvent.nodeId] = "completed";
       add("NodeCompleted", timing.occurredAt, timing.elapsedMs, {
         nodeId: traceEvent.nodeId,
-        durationMs: Math.max(0, timing.elapsedMs - (nodeStartedAt.get(traceEvent.nodeId) ?? 0)),
+        durationMs: roundMilliseconds(
+          timing.elapsedMs - (nodeStartedAt.get(traceEvent.nodeId) ?? 0)
+        ),
         outputDigests: traceEvent.outputDigests
       });
     }
@@ -276,8 +282,7 @@ export async function executeStudioRun(input: {
   const now = input.now ?? (() => new Date().toISOString());
   const monotonicNow = input.monotonicNow ?? (() => performance.now());
   const monotonicStartedAt = monotonicNow();
-  const elapsed = (): number =>
-    Math.round(Math.max(0, monotonicNow() - monotonicStartedAt) * 1000) / 1000;
+  const elapsed = (): number => roundMilliseconds(monotonicNow() - monotonicStartedAt);
   const occurredAt = (elapsedMs: number): string =>
     new Date(new Date(createdAt).getTime() + elapsedMs).toISOString();
   const createdAt = now();
