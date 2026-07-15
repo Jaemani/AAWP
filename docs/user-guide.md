@@ -159,7 +159,13 @@ Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selec
 
 화면 위쪽/바깥의 bundle selector는 결과 collection을 탐색하는 AAWP UI이고, iframe 안의 240px rail은 source spec이 정의한 실제 제품 navigation이다. 제품 rail과 CTA가 현재 22-screen selection을 가리키면 연결된 화면으로 이동한다. 원본 spec에는 있지만 이번 selection 밖인 목적지는 `이번 데모 범위 밖`으로 안내한다. 목적지가 불명확한 affordance는 버튼을 유지한 채 Spec feedback을 표시하며 임의 screen을 만들거나 연결하지 않는다.
 
+Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에 있다. 제품 rail과 나란히 두 번째 좌측 panel을 만들지 않는다. `독립 화면 열기`는 현재 run snapshot의 절대 screen URL을 새 탭에서 열며, 독립 화면 안의 source CTA도 target 독립 화면으로 이어진다.
+
 필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
+
+`presentation-contract.yaml`은 source와 별도로 pinned된다. `generate-bundle.mjs`가 `design-tokens.css`를 만들며 screen artifact는 presentation digest와 surface adapter version을 기록한다. 현재 adapter는 selected source의 45개 component contract를 모두 명시적으로 지원하지 않으면 실행을 거부한다.
+
+정확성의 현재 경계도 구분한다. Source screen object, component reference, design token, navigation target과 interaction description은 byte/digest 또는 deep-equality test로 고정된다. 반면 각 component의 모든 prop이 화면 field로 노출되는지와 Figma 수준 pixel geometry는 아직 전수 acceptance가 없다. 따라서 현재 demo는 source-faithful structural prototype이지 22개 화면의 field-by-field 완전 구현이라고 주장하지 않는다. 예시 record도 source authority data가 아니다.
 
 ## 4. `spec-feedback-to-spec`
 

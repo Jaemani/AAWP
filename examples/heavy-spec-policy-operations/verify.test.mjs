@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 const root = new URL("./", import.meta.url);
 const expectedSourceDigest = "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33";
@@ -39,7 +40,9 @@ test("bundle keeps selected screens independent and preserves their source defin
     screenRuntime,
     styles,
     screenStyles,
-    sourceContractsSource
+    sourceContractsSource,
+    presentationSource,
+    tokenStyles
   ] = await Promise.all([
     readFile(new URL("selection-manifest.json", root), "utf8"),
     readFile(new URL("bundle-manifest.json", root), "utf8"),
@@ -49,7 +52,9 @@ test("bundle keeps selected screens independent and preserves their source defin
     readFile(new URL("screen-runtime.js", root), "utf8"),
     readFile(new URL("styles.css", root), "utf8"),
     readFile(new URL("screen.css", root), "utf8"),
-    readFile(new URL("source-contracts.json", root), "utf8")
+    readFile(new URL("source-contracts.json", root), "utf8"),
+    readFile(new URL("presentation-contract.yaml", root), "utf8"),
+    readFile(new URL("design-tokens.css", root), "utf8")
   ]);
   const selection = JSON.parse(selectionSource);
   const bundle = JSON.parse(bundleSource);
@@ -72,10 +77,24 @@ test("bundle keeps selected screens independent and preserves their source defin
   assert.equal(bundle.screens.length, 22);
   assert.equal(new Set(bundle.screens.map((screen) => screen.artifactPath)).size, 22);
   const sourceContracts = JSON.parse(sourceContractsSource);
+  const presentation = parseYaml(presentationSource);
+  const presentationDigest = createHash("sha256").update(presentationSource).digest("hex");
   const componentDefinitionByName = new Map(
     sourceContracts.components.map((component) => [component.name, component])
   );
   assert.equal(sourceContracts.schemaVersion, "aawp/demo-source-contracts/v1");
+  assert.deepEqual(sourceContracts.presentationContract, {
+    path: "presentation-contract.yaml",
+    contentDigest: presentationDigest,
+    schemaVersion: "aawp/presentation-contract/v1",
+    name: "Gyeonggi Integrated Wallet"
+  });
+  assert.equal(presentation.colors["primary-container"], "#2368d9");
+  assert.equal(presentation.spacing["nav-rail-width"], "240px");
+  assert.equal(presentation.typography.title.fontSize, "22px");
+  assert.match(tokenStyles, /--color-primary-container:\s*#2368d9/i);
+  assert.match(tokenStyles, /--spacing-nav-rail-width:\s*240px/i);
+  assert.match(tokenStyles, /--type-title-size:\s*22px/i);
   assert.ok(
     sourceContracts.designSystem.palette.some(
       (token) => token.name === "primary" && token.value === "#2368D9"
@@ -98,7 +117,8 @@ test("bundle keeps selected screens independent and preserves their source defin
     assert.equal(artifact.navigation.type, "nav-rail");
     assert.deepEqual(artifact.renderer, {
       adapterId: "aawp-console-surface",
-      adapterVersion: "0.1.0",
+      adapterVersion: "0.2.0",
+      presentationDigest,
       formFactor: "web"
     });
     assert.ok(artifact.navigation.items.length >= 7);
@@ -144,14 +164,26 @@ test("bundle keeps selected screens independent and preserves their source defin
   assert.match(screenRuntime, /unresolved-navigation/);
   assert.match(script, /aawp:demo-navigate/);
   assert.match(script, /event\.origin !== location\.origin/);
-  assert.match(styles, /--blue:\s*#2368d9/i);
-  assert.match(screenStyles, /grid-template-columns:\s*240px minmax\(0, 1fr\)/);
-  assert.match(screenStyles, /font-size:\s*22px/);
-  assert.match(screenStyles, /font-size:\s*14px/);
-  assert.doesNotMatch(
-    `${sourceHtml}\n${script}\n${screenHtml}\n${screenRuntime}\n${styles}\n${screenStyles}`,
-    /https?:\/\//i
-  );
+  assert.match(script, /new URL\(entry, location\.href\)/);
+  assert.doesNotMatch(sourceHtml, /class="navigator"/);
+  assert.doesNotMatch(styles, /\.navigator/);
+  assert.match(screenStyles, /grid-template-columns:\s*var\(--spacing-nav-rail-width\)/);
+  assert.match(screenStyles, /var\(--type-title-size\)/);
+  assert.match(screenStyles, /var\(--type-table-cell-size\)/);
+  assert.doesNotMatch(screenRuntime, /createElementNS/);
+  for (const iconName of ["check", "clock", "triangle-alert", "shield-check", "info"]) {
+    const iconSource = await readFile(new URL(`icons/${iconName}.svg`, root), "utf8");
+    assert.match(iconSource, /class="lucide /);
+  }
+  for (const component of sourceContracts.components) {
+    assert.match(screenRuntime, new RegExp(`${component.name}:`));
+  }
+  const networkFreeSources =
+    `${sourceHtml}\n${script}\n${screenHtml}\n${screenRuntime}\n${styles}\n${screenStyles}\n${tokenStyles}`.replaceAll(
+      "http://www.w3.org/2000/svg",
+      ""
+    );
+  assert.doesNotMatch(networkFreeSources, /https?:\/\//i);
 });
 
 test("source navigation and selected screen flows resolve without invented links", async () => {

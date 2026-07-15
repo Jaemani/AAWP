@@ -1,7 +1,6 @@
 const bundleList = document.getElementById("bundle-list");
-const surfaceList = document.getElementById("surface-list");
-const screenList = document.getElementById("screen-list");
-const search = document.getElementById("screen-search");
+const surfaceSelect = document.getElementById("surface-select");
+const screenSelect = document.getElementById("screen-select");
 const frame = document.getElementById("screen-frame");
 const deviceFrame = document.getElementById("device-frame");
 const errorMessage = document.getElementById("error-message");
@@ -55,70 +54,40 @@ function renderBundles() {
   for (const bundle of manifest.bundles) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `bundle-card${bundle.id === selectedBundleId ? " active" : ""}`;
+    button.className = `bundle-tab${bundle.id === selectedBundleId ? " active" : ""}`;
     button.setAttribute("role", "listitem");
-    button.append(text("span", String(bundle.screenIds.length).padStart(2, "0"), "bundle-count"));
-    const copy = document.createElement("span");
-    copy.append(
+    button.append(
       text("strong", bundle.title),
-      text("small", bundle.description ?? "독립 화면 묶음")
+      text("small", `${bundle.screenIds.length} screens`)
     );
-    button.append(copy);
     button.addEventListener("click", () => selectBundle(bundle.id));
     bundleList.append(button);
   }
 }
 
 function renderSurfaces() {
-  clear(surfaceList);
+  clear(surfaceSelect);
   const bundle = selectedBundle();
   for (const surface of availableSurfaces(bundle)) {
     const count = surface.screenIds.filter((id) => bundle.screenIds.includes(id)).length;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = surface.id === selectedSurfaceId ? "active" : "";
-    button.append(text("span", surface.label), text("small", `${surface.formFactor} · ${count}`));
-    button.addEventListener("click", () => {
-      selectedSurfaceId = surface.id;
-      const first = bundle.screenIds.find((id) => screenById(id)?.surfaceId === surface.id);
-      if (first) selectedScreenId = first;
-      render();
-    });
-    surfaceList.append(button);
+    const option = text("option", `${surface.label} · ${count}`);
+    option.value = surface.id;
+    option.selected = surface.id === selectedSurfaceId;
+    surfaceSelect.append(option);
   }
 }
 
 function renderScreens() {
-  clear(screenList);
-  const query = search.value.trim().toLowerCase();
+  clear(screenSelect);
   const bundle = selectedBundle();
-  const screens = bundle.screenIds
-    .map(screenById)
-    .filter((screen) => screen?.surfaceId === selectedSurfaceId)
-    .filter((screen) =>
-      `${screen.title} ${screen.route} ${screen.id}`.toLowerCase().includes(query)
-    );
-  const byGroup = new Map();
-  for (const screen of screens) {
-    const groupId = screen.groupIds[0];
-    byGroup.set(groupId, [...(byGroup.get(groupId) ?? []), screen]);
+  for (const screenId of bundle.screenIds) {
+    const screen = screenById(screenId);
+    if (!screen || screen.surfaceId !== selectedSurfaceId) continue;
+    const option = text("option", screen.title);
+    option.value = screen.id;
+    option.selected = screen.id === selectedScreenId;
+    screenSelect.append(option);
   }
-  for (const [groupId, groupScreens] of byGroup) {
-    const section = document.createElement("section");
-    section.className = "screen-group";
-    const label = manifest.groups.find((group) => group.id === groupId)?.label ?? groupId;
-    section.append(text("h3", label));
-    for (const screen of groupScreens) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = screen.id === selectedScreenId ? "active" : "";
-      button.append(text("strong", screen.title), text("small", screen.route));
-      button.addEventListener("click", () => selectScreen(screen.id));
-      section.append(button);
-    }
-    screenList.append(section);
-  }
-  if (!screens.length) screenList.append(text("p", "일치하는 화면이 없습니다.", "empty-search"));
 }
 
 function screenEntry(screen) {
@@ -135,7 +104,7 @@ function renderPreview() {
   document.getElementById("selected-screen-route").textContent = screen.route;
   const entry = screenEntry(screen);
   frame.src = entry;
-  document.getElementById("screen-open-link").href = entry;
+  document.getElementById("screen-open-link").href = new URL(entry, location.href).href;
   deviceFrame.dataset.formFactor = surface.formFactor;
   history.replaceState({}, "", `#${screen.id}`);
 }
@@ -156,7 +125,6 @@ function selectBundle(bundleId) {
   const surface = availableSurfaces(bundle)[0];
   selectedSurfaceId = surface.id;
   selectedScreenId = bundle.screenIds.find((id) => screenById(id)?.surfaceId === surface.id);
-  search.value = "";
   render();
 }
 
@@ -202,7 +170,14 @@ async function start() {
   render();
 }
 
-search.addEventListener("input", renderScreens);
+surfaceSelect.addEventListener("change", () => {
+  selectedSurfaceId = surfaceSelect.value;
+  selectedScreenId = selectedBundle().screenIds.find(
+    (id) => screenById(id)?.surfaceId === selectedSurfaceId
+  );
+  render();
+});
+screenSelect.addEventListener("change", () => selectScreen(screenSelect.value));
 window.addEventListener("hashchange", () => {
   const screen = screenById(location.hash.slice(1));
   if (screen && screen.id !== selectedScreenId) selectScreen(screen.id);

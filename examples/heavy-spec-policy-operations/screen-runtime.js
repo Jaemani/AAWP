@@ -3,6 +3,54 @@ const root = document.getElementById("screen-root");
 let artifact;
 let toastTimer;
 
+const componentAdapterKinds = Object.freeze({
+  AccessibleStatusRow: "status",
+  AdminAuthPanel: "authentication",
+  ApprovalChainStepper: "approval",
+  ApprovalPolicyPicker: "approval",
+  ApproverSelector: "approval",
+  AuditTrailRow: "audit",
+  AuthorityScopeBadge: "authority",
+  BurnSettlementPolicyEditor: "form",
+  CirculationPolicyComposer: "form",
+  CirculationUnitPicker: "selector",
+  CirculationWalletPanel: "wallet",
+  ConsoleNavRail: "navigation",
+  ConvertibilityRulePanel: "form",
+  CustomerFundsSafeguardingPanel: "governance",
+  EligibilityRuleBuilder: "builder",
+  InstrumentClassificationMappingPanel: "governance",
+  InternalLedgerStatusPanel: "ledger",
+  IssuanceExecutionPanel: "execution",
+  IssuanceLimitPanel: "form",
+  IssuancePlanForm: "form",
+  IssuancePlanTable: "table",
+  IssuerConsoleNavRail: "navigation",
+  JurisdictionExitPanel: "form",
+  LedgerTable: "table",
+  OnchainWalletProvisioningPanel: "wallet",
+  OperationPlanPanel: "form",
+  PermissionGate: "authority",
+  PolicyConditionBinder: "selector",
+  PolicyEffectMetricCard: "metric",
+  PolicyLifecycleTable: "table",
+  PooledAccountPanel: "account",
+  ProofOfReserveRegistry: "table",
+  ReconciliationPanel: "reconciliation",
+  RedeemBurnConsole: "execution",
+  ReserveAssetRegistry: "table",
+  ReserveBackingPanel: "governance",
+  ReserveIssuanceMatchPanel: "reconciliation",
+  RosterBuilderPanel: "builder",
+  SearchField: "search",
+  SessionActorBadge: "authority",
+  SettlementBatchRunPanel: "execution",
+  SignerIdentityBinder: "approval",
+  TopupPolicyPanel: "form",
+  TransactionTraceTable: "table",
+  VoucherPolicySetupPanel: "form"
+});
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -48,7 +96,9 @@ function navigate(resolution, interactionId) {
         location.origin
       );
     } else {
-      location.href = `./index.html#${encodeURIComponent(resolution.screenId)}`;
+      location.href = `./screen.html?artifact=${encodeURIComponent(
+        `screen-artifacts/${resolution.screenId}.json`
+      )}`;
     }
     return;
   }
@@ -146,8 +196,27 @@ function card(title, body, className = "") {
   return node;
 }
 
+function badgeIcon(tone) {
+  const iconNames = {
+    success: "check",
+    pending: "clock",
+    danger: "triangle-alert",
+    authority: "shield-check",
+    neutral: "info"
+  };
+  const icon = el("span", "badge-icon");
+  icon.setAttribute("aria-hidden", "true");
+  icon.style.setProperty(
+    "--badge-icon-source",
+    `url("./icons/${iconNames[tone] ?? iconNames.neutral}.svg")`
+  );
+  return icon;
+}
+
 function badge(text, tone = "neutral") {
-  return el("span", `badge ${tone}`, text);
+  const node = el("span", `badge ${tone}`);
+  node.append(badgeIcon(tone), el("span", "", text));
+  return node;
 }
 
 function metric(label, value, note, tone = "") {
@@ -1228,6 +1297,12 @@ function renderScreen() {
     el("span", "breadcrumb", artifact.screen.surface.replace("(웹)", "")),
     el("div", "chrome-badges")
   );
+  const missingAdapters = artifact.screen.components.filter(
+    (componentName) => componentAdapterKinds[componentName] === undefined
+  );
+  if (missingAdapters.length) {
+    throw new Error(`지원하지 않는 source component: ${missingAdapters.join(", ")}`);
+  }
   chrome
     .querySelector(".chrome-badges")
     .append(

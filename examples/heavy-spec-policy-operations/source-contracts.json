@@ -4,6 +4,12 @@
     "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
     "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33"
   },
+  "presentationContract": {
+    "path": "presentation-contract.yaml",
+    "contentDigest": "d30cba0a8866dbdf4834bcda5aa65a3e5f88d1444ed9bdb41017aae27ffaf1e5",
+    "schemaVersion": "aawp/presentation-contract/v1",
+    "name": "Gyeonggi Integrated Wallet"
+  },
   "designSystem": {
     "palette": [
       { "name": "primary", "value": "#2368D9", "usage": "결제/주요 CTA, 핵심 액션" },

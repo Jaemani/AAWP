@@ -64,7 +64,7 @@
   },
   "sourceContracts": {
     "path": "source-contracts.json",
-    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "contentDigest": "92c80c261404eea0da1bdb9b52a524ad88c9d5da2e715e1c29aa6fac7a6fde1c",
     "componentNames": [
       "IssuerConsoleNavRail",
       "SessionActorBadge",
@@ -80,7 +80,8 @@
   },
   "renderer": {
     "adapterId": "aawp-console-surface",
-    "adapterVersion": "0.1.0",
+    "adapterVersion": "0.2.0",
+    "presentationDigest": "d30cba0a8866dbdf4834bcda5aa65a3e5f88d1444ed9bdb41017aae27ffaf1e5",
     "formFactor": "web"
   },
   "navigation": {

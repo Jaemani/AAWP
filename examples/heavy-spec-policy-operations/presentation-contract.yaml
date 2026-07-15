@@ -1,0 +1,154 @@
+schemaVersion: aawp/presentation-contract/v1
+name: Gyeonggi Integrated Wallet
+source: Stitch export supplied by user on 2026-07-15
+colors:
+  surface: "#f8f9fb"
+  surface-dim: "#d8dadc"
+  surface-bright: "#f8f9fb"
+  surface-container-lowest: "#ffffff"
+  surface-container-low: "#f2f4f6"
+  surface-container: "#eceef0"
+  surface-container-high: "#e6e8ea"
+  surface-container-highest: "#e0e3e5"
+  on-surface: "#191c1e"
+  on-surface-variant: "#424753"
+  inverse-surface: "#2d3133"
+  inverse-on-surface: "#eff1f3"
+  outline: "#737785"
+  outline-variant: "#c2c6d6"
+  surface-tint: "#0059c8"
+  primary: "#0050b5"
+  on-primary: "#ffffff"
+  primary-container: "#2368d9"
+  on-primary-container: "#edefff"
+  inverse-primary: "#afc6ff"
+  secondary: "#595f69"
+  on-secondary: "#ffffff"
+  secondary-container: "#dae0ec"
+  on-secondary-container: "#5d636e"
+  tertiary: "#3f5774"
+  on-tertiary: "#ffffff"
+  tertiary-container: "#586f8e"
+  on-tertiary-container: "#eaf1ff"
+  error: "#ba1a1a"
+  on-error: "#ffffff"
+  error-container: "#ffdad6"
+  on-error-container: "#93000a"
+  primary-fixed: "#d9e2ff"
+  primary-fixed-dim: "#afc6ff"
+  on-primary-fixed: "#001944"
+  on-primary-fixed-variant: "#004299"
+  secondary-fixed: "#dde3ef"
+  secondary-fixed-dim: "#c1c7d3"
+  on-secondary-fixed: "#161c25"
+  on-secondary-fixed-variant: "#414751"
+  tertiary-fixed: "#d2e4ff"
+  tertiary-fixed-dim: "#b0c8eb"
+  on-tertiary-fixed: "#001c37"
+  on-tertiary-fixed-variant: "#314865"
+  background: "#f8f9fb"
+  on-background: "#191c1e"
+  surface-variant: "#e0e3e5"
+  primary-tint: "#EAF2FF"
+  ink-muted: "#566579"
+  ink-subtle: "#6B7684"
+  surface-strong: "#E5E8EB"
+  verified-fg: "#00796B"
+  verified-bg: "#E4F7F4"
+  pending-fg: "#9A4D00"
+  pending-bg: "#FFF2DE"
+  danger-fg: "#C02131"
+  danger-bg: "#FFE8EB"
+  decision-fg: "#4E5968"
+  decision-bg: "#EEF1F4"
+  approved-fg: "#0B7A53"
+  approved-bg: "#E7F7EF"
+  convertible-fg: "#174EA6"
+  convertible-bg: "#E8F0FE"
+  authority-fg: "#0A2540"
+  authority-bg: "#E6EDF5"
+  high-contrast-focus: "#111827"
+typography:
+  balance-display:
+    fontFamily: Hanken Grotesk
+    fontSize: 34px
+    fontWeight: "700"
+    lineHeight: "1.2"
+    letterSpacing: -0.02em
+  metric:
+    fontFamily: Hanken Grotesk
+    fontSize: 28px
+    fontWeight: "700"
+    lineHeight: "1.3"
+  title:
+    fontFamily: Hanken Grotesk
+    fontSize: 22px
+    fontWeight: "700"
+    lineHeight: "1.4"
+  body:
+    fontFamily: Hanken Grotesk
+    fontSize: 16px
+    fontWeight: "400"
+    lineHeight: "1.5"
+  label:
+    fontFamily: Hanken Grotesk
+    fontSize: 15px
+    fontWeight: "600"
+    lineHeight: "1"
+  table-cell:
+    fontFamily: Hanken Grotesk
+    fontSize: 14px
+    fontWeight: "400"
+    lineHeight: "1.4"
+  caption:
+    fontFamily: Hanken Grotesk
+    fontSize: 13px
+    fontWeight: "400"
+    lineHeight: "1.4"
+  mono:
+    fontFamily: JetBrains Mono
+    fontSize: 13px
+    fontWeight: "500"
+    lineHeight: "1"
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  base: 4px
+  gutter-mobile: 20px
+  padding-card: 16px
+  height-cta: 56px
+  height-row: 44px
+  padding-col: 12px
+  nav-rail-width: 240px
+  space-xs: 8px
+  space-sm: 12px
+  space-md: 16px
+  space-lg: 24px
+  space-xl: 32px
+guidance:
+  style: Corporate Minimalism
+  strategy: Dual-Context
+  consumerMerchant: Generous whitespace, high contrast, and human-readable projections.
+  adminIssuer: Dense governance grids, audit visibility, and explicit authority.
+  colorRules:
+    - Use primary-container #2368D9 for critical actions.
+    - Pair every semantic foreground token with its matching background token.
+    - Use high-contrast-focus for focus rings.
+  typographyRules:
+    - Use tabular lining figures for balances and metrics.
+    - Never truncate financial amounts.
+    - Permit two-line mobile labels in xlarge accessibility mode.
+  layoutRules:
+    - Mobile uses 20px gutters and 56px minimum CTA height.
+    - Web uses a 240px rail, 44px table rows, and 12px column padding.
+    - Collapse web navigation below 1280px while preserving 44px targets.
+  componentRules:
+    - Buttons use 12px radius; primary is solid and secondary is tinted.
+    - Status badges use semantic token pairs, label typography, icon, and text.
+    - Web panels use tonal layers and low-contrast outlines.
+    - Inputs use 12px radius and a 2px primary or high-contrast focus border.

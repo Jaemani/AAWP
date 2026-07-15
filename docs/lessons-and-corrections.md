@@ -58,6 +58,20 @@
 - 교정: Bundle selector는 바깥 collection UX로 유지하고 iframe 안에는 source surface의 240px rail, authority chrome과 screen별 composition을 복원했다. `interactionModel`의 navigate/local state/sheet/submit을 실행 projection으로 packaging하고 selected target만 연결했다. Selection 밖 목적지는 범위 안내, 불명확한 목적지는 Spec feedback으로 처리한다.
 - 재발 방지: Demo acceptance에 product shell 존재, source CTA resolution, local interaction과 screen별 renderer coverage를 포함한다. Artifact deep equality만으로 시각적 역할 보존을 통과시키지 않는다.
 
+## 결과 navigator와 제품 rail을 동시에 좌측 panel로 노출했다
+
+- 관찰: 여러 화면을 선택할 AAWP navigator를 제품의 `ConsoleNavRail` 옆에 배치해 두 개의 좌측 panel이 보였다.
+- 원인: Collection 탐색과 product navigation을 의미상 분리했지만 화면 배치까지 분리하지 않았다.
+- 교정: Bundle·surface·screen 선택은 preview 상단 horizontal switcher로 이동하고 제품 iframe에는 source-defined rail 하나만 남겼다.
+- 재발 방지: Web product가 자체 rail을 가진 경우 platform viewer는 같은 축에 persistent navigator를 추가하지 않는다.
+
+## Nested preview에서 독립 화면 popup이 차단됐다
+
+- 관찰: Demo viewer의 `독립 화면 열기`가 Studio iframe 안에서는 반응하지 않았다.
+- 원인: Studio preview sandbox에 popup capability가 없었고 link가 상대 주소에 의존했다.
+- 교정: Trusted local snapshot iframe에 self-origin popup과 sandbox 탈출 권한을 명시하고, 현재 run을 기준으로 절대 screen URL을 만든다.
+- 재발 방지: Demo lifecycle test에 independent screen address와 preview sandbox capability를 함께 검사한다.
+
 ## Local simulation이 production workflow처럼 오해될 수 있었다
 
 - 관찰: run과 event가 기록되므로 실제 model/tool workflow가 수행된 것으로 받아들일 여지가 있었다.

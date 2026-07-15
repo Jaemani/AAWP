@@ -71,6 +71,7 @@ describe("Studio HTML", () => {
     expect(html).not.toContain("Open demo");
     expect(html).not.toContain("Delete result");
     expect(html).toContain("demo-frame");
+    expect(html).toContain("allow-popups allow-popups-to-escape-sandbox");
     expect(html).toContain("Event timeline");
     expect(html).toContain("/api/runs");
     expect(html).toContain("URLSearchParams");

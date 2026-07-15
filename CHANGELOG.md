@@ -36,6 +36,11 @@
 - 정책 작성 CTA, 조건 빌더 이동, 발행 계획 → 상세, 발행 실행 → 원장, 준비자산 ↔ PoR 등 source에 명시된 screen transition을 실제로 연결했다.
 - Source target이 selection 밖이면 범위 안내를 표시하고, 불명확하면 임의 해석 대신 feedback으로 남긴다.
 - 22개 screen별 table, form, filter, stepper, drawer와 submit feedback을 demo interaction으로 구현했다. 표시 수치는 예시 데이터로 구분한다.
+- Stitch에서 전달된 `Gyeonggi Integrated Wallet` presentation contract를 pinned YAML과 생성 CSS token으로 추가하고 console adapter를 `0.2.0`으로 올렸다.
+- Bundle·surface·screen 선택을 상단 switcher로 옮겨 AAWP 결과 navigator와 제품의 240px console rail이 이중 좌측 패널로 보이던 문제를 제거했다.
+- Studio preview sandbox에 self-origin popup 권한을 제한적으로 추가하고 독립 화면 URL을 절대 주소로 만들어 `독립 화면 열기`가 nested preview에서도 동작하게 했다.
+- 독립 화면에서 source CTA를 누르면 bundle viewer로 돌아가지 않고 target screen의 독립 주소로 직접 전환한다.
+- 상태 배지는 semantic foreground/background token과 로컬에 포함한 Lucide 아이콘을 함께 사용한다.
 
 ### `spec-feedback-to-spec`
 

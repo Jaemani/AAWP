@@ -5,10 +5,15 @@ import { fileURLToPath } from "node:url";
 import { compileDemoBundleManifest } from "../../packages/demo-bundle/dist/index.js";
 import { canonicalize, sha256Hex } from "../../packages/ir/dist/index.js";
 import { format } from "prettier";
+import { parse as parseYaml } from "yaml";
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const selectionPath = join(directory, "selection-manifest.json");
+const presentationPath = join(directory, "presentation-contract.yaml");
 const selection = JSON.parse(await readFile(selectionPath, "utf8"));
+const presentationBytes = await readFile(presentationPath);
+const presentation = parseYaml(presentationBytes.toString("utf8"));
+const presentationDigest = createHash("sha256").update(presentationBytes).digest("hex");
 const sourceBytes = await readFile(selection.source);
 const sourceDigest = createHash("sha256").update(sourceBytes).digest("hex");
 if (sourceDigest !== selection.sourceSha256) {
@@ -35,6 +40,12 @@ const sourceContracts = {
   source: {
     artifactId: `refined-production-spec@sha256:${sourceDigest}`,
     contentDigest: sourceDigest
+  },
+  presentationContract: {
+    path: "presentation-contract.yaml",
+    contentDigest: presentationDigest,
+    schemaVersion: presentation.schemaVersion,
+    name: presentation.name
   },
   designSystem: source.designTokens,
   components: selectedComponentDefinitions
@@ -103,6 +114,45 @@ function formatJson(value) {
     singleQuote: false,
     trailingComma: "none"
   });
+}
+
+function cssName(value) {
+  return value.replaceAll(/[^A-Za-z0-9-]/g, "-").toLowerCase();
+}
+
+function cssFamily(value, fallbacks) {
+  const family = value.includes(" ") ? `"${value}"` : value;
+  return [family, ...fallbacks].join(", ");
+}
+
+function presentationCss(contract) {
+  const declarations = [];
+  for (const [name, value] of Object.entries(contract.colors)) {
+    declarations.push(`--color-${cssName(name)}: ${value};`);
+  }
+  for (const [role, token] of Object.entries(contract.typography)) {
+    const prefix = `--type-${cssName(role)}`;
+    const fallbacks =
+      role === "mono"
+        ? ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"]
+        : ["Inter", "Pretendard", "sans-serif"];
+    declarations.push(`${prefix}-family: ${cssFamily(token.fontFamily, fallbacks)};`);
+    declarations.push(`${prefix}-size: ${token.fontSize};`);
+    declarations.push(`${prefix}-weight: ${token.fontWeight};`);
+    declarations.push(`${prefix}-line-height: ${token.lineHeight};`);
+    if (token.letterSpacing) declarations.push(`${prefix}-letter-spacing: ${token.letterSpacing};`);
+  }
+  for (const [name, value] of Object.entries(contract.rounded)) {
+    declarations.push(`--radius-${cssName(name)}: ${value};`);
+  }
+  for (const [name, value] of Object.entries(contract.spacing)) {
+    declarations.push(`--spacing-${cssName(name)}: ${value};`);
+  }
+  declarations.push(
+    `--font-sans: ${cssFamily(contract.typography.body.fontFamily, ["Inter", "Pretendard", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "sans-serif"])};`,
+    `--font-mono: ${cssFamily(contract.typography.mono.fontFamily, ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"])};`
+  );
+  return format(`:root {\n${declarations.join("\n")}\n}`, { parser: "css" });
 }
 
 function surfaceId(label) {
@@ -197,7 +247,8 @@ for (const screen of selectedScreens) {
     },
     renderer: {
       adapterId: "aawp-console-surface",
-      adapterVersion: "0.1.0",
+      adapterVersion: "0.2.0",
+      presentationDigest,
       formFactor: formFactor(screen.surface)
     },
     navigation: navigationFor(screen),
@@ -211,3 +262,4 @@ for (const screen of selectedScreens) {
 }
 await writeFile(join(directory, "source-contracts.json"), await formatJson(sourceContracts));
 await writeFile(join(directory, "bundle-manifest.json"), await formatJson(manifest));
+await writeFile(join(directory, "design-tokens.css"), await presentationCss(presentation));
