@@ -103,6 +103,7 @@ async function pathExists(path: string): Promise<boolean> {
 export class LocalStudioDemoStore implements StudioDemoStore {
   private readonly rootDirectory: string;
   private readonly sourceDirectory: string | undefined;
+  private onboardingTail: Promise<void> = Promise.resolve();
 
   constructor(input: { rootDirectory: string; sourceDirectory?: string }) {
     this.rootDirectory = resolve(input.rootDirectory);
@@ -152,10 +153,35 @@ export class LocalStudioDemoStore implements StudioDemoStore {
 
   async onboard(runId: string): Promise<boolean> {
     if (!(await this.exists(runId))) return false;
-    const markerPath = join(this.runDirectory(runId), ONBOARD_MARKER);
-    if (await pathExists(markerPath)) return false;
-    await writeFile(markerPath, "onboarded\n", { encoding: "utf8", mode: 0o600 });
-    return true;
+    const previous = this.onboardingTail;
+    let release!: () => void;
+    this.onboardingTail = new Promise<void>((resolvePromise) => {
+      release = resolvePromise;
+    });
+    await previous;
+    try {
+      let changed = false;
+      const targetDirectory = this.runDirectory(runId);
+      const entries = await readdir(this.rootDirectory, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const entryDirectory = join(this.rootDirectory, entry.name);
+        if (entryDirectory === targetDirectory) continue;
+        const markerPath = join(entryDirectory, ONBOARD_MARKER);
+        if (await pathExists(markerPath)) {
+          await rm(markerPath, { force: true });
+          changed = true;
+        }
+      }
+      const markerPath = join(targetDirectory, ONBOARD_MARKER);
+      if (!(await pathExists(markerPath))) {
+        await writeFile(markerPath, "onboarded\n", { encoding: "utf8", mode: 0o600 });
+        changed = true;
+      }
+      return changed;
+    } finally {
+      release();
+    }
   }
 
   async offboard(runId: string): Promise<boolean> {

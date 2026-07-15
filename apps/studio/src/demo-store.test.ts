@@ -55,4 +55,26 @@ describe("local Studio demo store", () => {
     await expect(store.delete("run_demo-1")).resolves.toBe(false);
     await expect(store.onboard("run_demo-1")).resolves.toBe(false);
   });
+
+  it("keeps at most one demo onboarded", async () => {
+    directory = await mkdtemp(join(tmpdir(), "awf-demo-"));
+    const sourceDirectory = join(directory, "source");
+    await mkdir(sourceDirectory, { recursive: true });
+    await writeFile(join(sourceDirectory, "index.html"), "<h1>demo</h1>");
+    const store = new LocalStudioDemoStore({
+      rootDirectory: join(directory, "results"),
+      sourceDirectory
+    });
+    await store.createSnapshot("run_first");
+    await store.createSnapshot("run_second");
+
+    await expect(store.onboard("run_first")).resolves.toBe(true);
+    await expect(store.onboard("run_second")).resolves.toBe(true);
+    await expect(store.isOnboarded("run_first")).resolves.toBe(false);
+    await expect(store.isOnboarded("run_second")).resolves.toBe(true);
+    await expect(store.read("run_first", "index.html")).resolves.toBeUndefined();
+    await expect(store.read("run_second", "index.html")).resolves.toMatchObject({
+      mediaType: "text/html; charset=utf-8"
+    });
+  });
 });

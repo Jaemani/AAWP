@@ -42,7 +42,7 @@ node apps/studio/dist/server.js \
 
 선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`다.
 
-- `Onboard demo`: 저장된 snapshot을 URL과 preview에서 활성화한다.
+- `Onboard demo`: 저장된 snapshot을 URL과 preview에서 활성화하고 이전 active demo를 자동으로 offboard한다.
 - `Offboard demo`: URL 제공을 중단하지만 snapshot을 보존한다.
 - `Delete demo`: `.awf/demos/<runId>` snapshot만 삭제한다.
 

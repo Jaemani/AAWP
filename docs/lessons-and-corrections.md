@@ -93,6 +93,12 @@
 - 교정: Studio badge와 run record에 `DETERMINISTIC_SIMULATION`을 명시하고, simulator event callback에서 monotonic offset을 수집한다. Studio는 wall-clock event log가 아닌 `Simulation trace`로 표시하며 timing 계약이 없는 기존 기록은 `legacy`로 구분한다.
 - 남은 위험: production event source가 연결되기 전에는 demo 품질이나 workflow 우위를 Studio run 자체로 주장할 수 없다.
 
+## 여러 demo가 동시에 onboard될 수 있었다
+
+- 관찰: UI에 onboard/offboard lifecycle은 있었지만 store가 marker를 run별로 독립 관리해 여러 demo URL이 동시에 활성화됐다.
+- 원인: 버튼 의미만 구현하고 `active demo ≤ 1` 불변식을 저장 계층에 두지 않았다.
+- 교정: 새 run을 onboard할 때 동일 store의 기존 marker를 직렬화된 임계구역에서 제거하고, 두 snapshot을 순서대로 onboard하는 회귀 테스트를 추가했다.
+
 ## 검증 공백
 
 - 현재 자동화: build, typecheck, lint, format, unit/integration test와 HTTP deep-link 검증.
