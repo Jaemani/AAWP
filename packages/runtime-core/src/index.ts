@@ -34,6 +34,10 @@ export interface SimulationTrace {
   outputs: Record<string, unknown>;
 }
 
+export interface SimulationOptions {
+  onEvent?: (event: Readonly<SimulationEvent>) => void;
+}
+
 export interface RuntimeDiagnostic {
   code: string;
   path: string;
@@ -158,13 +162,18 @@ export function validateFixtureInput(
 
 export function simulateDeterministic(
   workflow: WorkflowDefinition,
-  fixtureInput: Record<string, unknown>
+  fixtureInput: Record<string, unknown>,
+  options: SimulationOptions = {}
 ): SimulationTrace {
   const events: SimulationEvent[] = [];
+  const addEvent = (event: SimulationEvent): void => {
+    events.push(event);
+    options.onEvent?.(event);
+  };
   const nodeOutputs = new Map<string, Record<string, unknown>>();
   const outputs: Record<string, unknown> = {};
   for (const [port, value] of sortedEntries(fixtureInput)) {
-    events.push({ type: "workflowInput", port, valueDigest: valueDigest(value) });
+    addEvent({ type: "workflowInput", port, valueDigest: valueDigest(value) });
   }
 
   const remaining = new Set(workflow.nodes.map((node) => node.id));
@@ -207,7 +216,7 @@ export function simulateDeterministic(
       }
       const rounds = node.kind === "loop" ? (node.loop?.maxRounds ?? 1) : 1;
       for (let round = 1; round <= rounds; round += 1) {
-        events.push({
+        addEvent({
           type: "nodeStarted",
           nodeId: node.id,
           ...(node.kind === "loop" ? { round } : {}),
@@ -217,7 +226,7 @@ export function simulateDeterministic(
         });
       }
       if (node.kind === "side_effect") {
-        events.push({
+        addEvent({
           type: "sideEffectSkipped",
           nodeId: node.id,
           operation: node.sideEffect?.operation ?? "unknown"
@@ -237,7 +246,7 @@ export function simulateDeterministic(
         ])
       );
       nodeOutputs.set(node.id, produced);
-      events.push({
+      addEvent({
         type: "nodeCompleted",
         nodeId: node.id,
         outputDigests: Object.fromEntries(
@@ -276,7 +285,7 @@ export function simulateDeterministic(
       throw new SimulationError("workflow output was not produced", { port });
     }
     outputs[edge.target.port] = value;
-    events.push({
+    addEvent({
       type: "workflowOutput",
       port: edge.target.port,
       valueDigest: valueDigest(value)

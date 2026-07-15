@@ -20,16 +20,27 @@ describe("Studio JSONL run history", () => {
     const inputs = await loadStudioInputs("examples/spec-to-demo.input.json");
     const firstStore = new JsonlStudioRunStore(path);
 
+    let monotonicTime = 100;
     const run = await executeStudioRun({
       workflow: document.workflow,
       inputs,
       store: firstStore,
       runId: "run-persisted",
-      now: () => "2026-07-14T00:00:00.000Z"
+      now: () => "2026-07-14T00:00:00.000Z",
+      monotonicNow: () => monotonicTime++
     });
     expect(run).toMatchObject({
       status: "completed",
       nodeStates: { "build-demo": "completed", "verify-release": "completed" }
+    });
+    expect(run.events.map((event) => event.elapsedMs)).toEqual([0, 2, 2, 3, 3, 4, 4, 5, 5, 7]);
+    expect(run.events.map((event) => event.occurredAt)).toEqual(
+      [...run.events]
+        .sort((left, right) => (left.elapsedMs ?? 0) - (right.elapsedMs ?? 0))
+        .map((event) => event.occurredAt)
+    );
+    expect(run.events.find((event) => event.type === "NodeCompleted")?.payload).toMatchObject({
+      durationMs: 1
     });
 
     const reopenedStore = new JsonlStudioRunStore(path);

@@ -36,6 +36,8 @@ export interface AppendRunEvent {
   eventKey: string;
   type: RunEventType;
   occurredAt: string;
+  /** Monotonic offset from run creation. Wall-clock timestamps alone are too coarse for fast runs. */
+  elapsedMs?: number;
   payload: unknown;
 }
 

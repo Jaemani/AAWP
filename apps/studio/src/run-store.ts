@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { performance } from "node:perf_hooks";
 import { canonicalize, digestWorkflow, type WorkflowDefinition } from "@awf/ir";
 import {
   simulateDeterministic,
@@ -158,7 +159,9 @@ function materializeTrace(input: {
   runId: string;
   createdAt: string;
   completedAt: string;
+  completedElapsedMs: number;
   inputDigest: string;
+  traceEventTimings: Array<{ occurredAt: string; elapsedMs: number }>;
   demo?: StudioDemoRecord;
 }): StudioRunRecord {
   const events: StoredRunEvent[] = [];
@@ -166,7 +169,12 @@ function materializeTrace(input: {
   const nodeStates = Object.fromEntries(
     input.workflow.nodes.map((node) => [node.id, "waiting" as StudioNodeStatus])
   );
-  const add = (type: StoredRunEvent["type"], occurredAt: string, payload: unknown): void => {
+  const add = (
+    type: StoredRunEvent["type"],
+    occurredAt: string,
+    elapsedMs: number,
+    payload: unknown
+  ): void => {
     const sequence = events.length + 1;
     events.push({
       tenantId: "local-studio",
@@ -175,27 +183,34 @@ function materializeTrace(input: {
       sequence,
       type,
       occurredAt,
+      elapsedMs,
       payload
     });
   };
-  add("RunCreated", input.createdAt, {
+  add("RunCreated", input.createdAt, 0, {
     executionMode: "DETERMINISTIC_SIMULATION",
     workflowDigest: digestWorkflow(input.workflow),
     inputDigest: input.inputDigest
   });
-  for (const traceEvent of input.trace.events) {
+  const nodeStartedAt = new Map<string, number>();
+  for (const [traceIndex, traceEvent] of input.trace.events.entries()) {
+    const timing = input.traceEventTimings[traceIndex] ?? {
+      occurredAt: input.createdAt,
+      elapsedMs: 0
+    };
     if (traceEvent.type === "nodeStarted") {
+      nodeStartedAt.set(traceEvent.nodeId, timing.elapsedMs);
       nodeStates[traceEvent.nodeId] = "scheduled";
-      add("NodeScheduled", input.createdAt, { nodeId: traceEvent.nodeId });
+      add("NodeScheduled", timing.occurredAt, timing.elapsedMs, { nodeId: traceEvent.nodeId });
       nodeStates[traceEvent.nodeId] = "running";
-      add("NodeStarted", input.createdAt, {
+      add("NodeStarted", timing.occurredAt, timing.elapsedMs, {
         nodeId: traceEvent.nodeId,
         inputDigests: traceEvent.inputDigests,
         ...(traceEvent.round === undefined ? {} : { round: traceEvent.round })
       });
     }
     if (traceEvent.type === "sideEffectSkipped") {
-      add("SideEffectPrepared", input.createdAt, {
+      add("SideEffectPrepared", timing.occurredAt, timing.elapsedMs, {
         nodeId: traceEvent.nodeId,
         operation: traceEvent.operation,
         skipped: true
@@ -212,16 +227,18 @@ function materializeTrace(input: {
           contentHash
         };
         artifacts.push(artifact);
-        add("ArtifactPublished", input.completedAt, artifact);
+        add("ArtifactPublished", timing.occurredAt, timing.elapsedMs, artifact);
       }
       nodeStates[traceEvent.nodeId] = "completed";
-      add("NodeCompleted", input.completedAt, {
+      add("NodeCompleted", timing.occurredAt, timing.elapsedMs, {
         nodeId: traceEvent.nodeId,
+        durationMs: Math.max(0, timing.elapsedMs - (nodeStartedAt.get(traceEvent.nodeId) ?? 0)),
         outputDigests: traceEvent.outputDigests
       });
     }
   }
-  add("RunCompleted", input.completedAt, {
+  add("RunCompleted", input.completedAt, input.completedElapsedMs, {
+    durationMs: input.completedElapsedMs,
     traceDigest: input.trace.digest,
     outputDigest: digestWorkflow(input.trace.outputs)
   });
@@ -252,29 +269,46 @@ export async function executeStudioRun(input: {
   store: StudioRunStore;
   runId?: string;
   now?: () => string;
+  monotonicNow?: () => number;
   createDemoSnapshot?: (runId: string) => Promise<StudioDemoRecord | undefined>;
 }): Promise<StudioRunRecord> {
   const runId = input.runId ?? `run_${randomUUID()}`;
   const now = input.now ?? (() => new Date().toISOString());
+  const monotonicNow = input.monotonicNow ?? (() => performance.now());
+  const monotonicStartedAt = monotonicNow();
+  const elapsed = (): number =>
+    Math.round(Math.max(0, monotonicNow() - monotonicStartedAt) * 1000) / 1000;
+  const occurredAt = (elapsedMs: number): string =>
+    new Date(new Date(createdAt).getTime() + elapsedMs).toISOString();
   const createdAt = now();
   const inputDigest = digestWorkflow(input.inputs);
   try {
     const fixture = validateFixtureInput(input.workflow, input.inputs);
-    const trace = simulateDeterministic(input.workflow, fixture);
+    const traceEventTimings: Array<{ occurredAt: string; elapsedMs: number }> = [];
+    const trace = simulateDeterministic(input.workflow, fixture, {
+      onEvent: () => {
+        const elapsedMs = elapsed();
+        traceEventTimings.push({ occurredAt: occurredAt(elapsedMs), elapsedMs });
+      }
+    });
     const demo = await input.createDemoSnapshot?.(runId);
+    const completedElapsedMs = elapsed();
     const record = materializeTrace({
       workflow: input.workflow,
       trace,
       runId,
       createdAt,
       completedAt: now(),
+      completedElapsedMs,
       inputDigest,
+      traceEventTimings,
       ...(demo === undefined ? {} : { demo })
     });
     await input.store.append(record);
     return record;
   } catch (error) {
     const completedAt = now();
+    const completedElapsedMs = elapsed();
     const events: StoredRunEvent[] = [
       {
         tenantId: "local-studio",
@@ -283,6 +317,7 @@ export async function executeStudioRun(input: {
         sequence: 1,
         type: "RunCreated",
         occurredAt: createdAt,
+        elapsedMs: 0,
         payload: { executionMode: "DETERMINISTIC_SIMULATION", inputDigest }
       },
       {
@@ -292,7 +327,12 @@ export async function executeStudioRun(input: {
         sequence: 2,
         type: "RunFailed",
         occurredAt: completedAt,
-        payload: { errorName: (error as Error).name, message: (error as Error).message }
+        elapsedMs: completedElapsedMs,
+        payload: {
+          durationMs: completedElapsedMs,
+          errorName: (error as Error).name,
+          message: (error as Error).message
+        }
       }
     ];
     const record: StudioRunRecord = snapshot({

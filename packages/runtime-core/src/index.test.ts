@@ -73,6 +73,19 @@ function workflow(overrides: Partial<WorkflowDefinition> = {}): WorkflowDefiniti
 }
 
 describe("runtime-core simulation", () => {
+  it("reports trace events without changing the deterministic trace", () => {
+    const definition = workflow();
+    const fixture = { brief: { title: "Demo" } };
+    const observed: string[] = [];
+    const traced = simulateDeterministic(definition, fixture, {
+      onEvent: (event) => observed.push(event.type)
+    });
+    const plain = simulateDeterministic(definition, fixture);
+
+    expect(traced).toEqual(plain);
+    expect(observed).toEqual(traced.events.map((event) => event.type));
+  });
+
   it("rejects missing, extra, and schema-invalid fixture inputs", () => {
     expect(() => validateFixtureInput(workflow(), {})).toThrow(FixtureValidationError);
     expect(() => validateFixtureInput(workflow(), { brief: { title: "ok" }, extra: true })).toThrow(

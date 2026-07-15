@@ -14,6 +14,8 @@
 - demo snapshot 삭제 후에도 append-only run/event 기록은 보존한다.
 - 새 demo snapshot을 기본 offboard 상태로 만들고 `Onboard demo`, `Offboard demo`, `Delete demo` lifecycle을 추가했다.
 - Offboard는 URL 제공만 중단하며 Delete도 input file, source와 run/event를 변경하지 않는다.
+- Simulation event에 run 시작 기준 monotonic `elapsedMs`와 node `durationMs`를 기록해 sequence와 시간이 역전되던 오류를 수정했다.
+- Studio의 `Event timeline`을 `Simulation trace`로 명확히 하고, timing 계약이 없던 과거 기록은 `legacy`로 표시한다.
 
 ### `spec-to-demo` 범위 선택
 

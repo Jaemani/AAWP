@@ -174,12 +174,15 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .detail-grid section { min-width:0; padding:20px 22px; border-bottom:1px solid var(--line); }
     .detail-grid section:nth-child(odd) { border-right:1px solid var(--line); }
     .detail-grid h3 { margin:0 0 13px; color:#667085; font-size:9px; font-weight:760; letter-spacing:.08em; text-transform:uppercase; }
+    .section-heading { margin-bottom:13px; }
+    .section-heading h3 { margin-bottom:4px; }
+    .section-heading p { margin:0; color:var(--subtle); font-size:8px; line-height:1.5; }
     .nodes { display:flex; flex-wrap:wrap; gap:7px; }
     .node-record { display:flex; align-items:center; gap:7px; padding:7px 9px; border:1px solid var(--line-soft); border-radius:7px; color:#475467; background:#fafbfc; font-size:9px; }
     .node-record i { width:6px; height:6px; border-radius:50%; background:var(--success); }
     .node-record.failed i { background:var(--danger); }
     .timeline { margin:0; padding:0; list-style:none; }
-    .timeline li { display:grid; grid-template-columns:30px 74px minmax(0,1fr); gap:8px; padding:8px 0; border-bottom:1px solid var(--line-soft); color:#475467; font-size:9px; }
+    .timeline li { display:grid; grid-template-columns:30px 70px minmax(0,1fr); gap:8px; padding:8px 0; border-bottom:1px solid var(--line-soft); color:#475467; font-size:9px; }
     .timeline li:last-child { border:0; }
     .sequence,.time { color:var(--subtle); font:8px ui-monospace,SFMono-Regular,Menlo,monospace; }
     .artifacts { display:flex; flex-direction:column; gap:7px; }
@@ -262,7 +265,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
           <div class="detail-grid">
             <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
             <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
-            <section><h3>Event timeline</h3><ol id="event-timeline" class="timeline"></ol></section>
+            <section><div class="section-heading"><h3>Simulation trace</h3><p>실제 wall-clock 로그가 아니라 결정적 WIR 실행 순서입니다. 경과 시간은 run 시작 기준 monotonic clock입니다.</p></div><ol id="event-timeline" class="timeline"></ol></section>
             <section><h3>Output</h3><pre id="run-output">{}</pre></section>
           </div>
         </div>
@@ -294,6 +297,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const make = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
       const shortTime = (value) => new Date(value).toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
       const fullDateTime = (value) => new Date(value).toLocaleString("ko-KR", { dateStyle:"medium", timeStyle:"medium" });
+      const formatMilliseconds = (value) => { const number = Number(value); if (!Number.isFinite(number)) return "—"; if (number === 0) return "0 ms"; if (number < 1) return number.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " ms"; return number.toFixed(number < 10 ? 2 : 1).replace(/\.0$/, "") + " ms"; };
+      const elapsedLabel = (value) => value === undefined ? "legacy" : "+" + formatMilliseconds(value);
       const shortRunId = (value) => value.length > 22 ? value.slice(0, 12) + "…" + value.slice(-6) : value;
       const statusLabel = (value) => ({ waiting:"Waiting", scheduled:"Scheduled", running:"Running", completed:"Completed", failed:"Failed" })[value] || value;
       const setMessage = (text, tone = "neutral") => { message.textContent = text; message.dataset.tone = tone; };
@@ -330,14 +335,15 @@ export function renderStudioHtml(view: StudioViewModel): string {
         document.getElementById("selected-mode").textContent = record.executionMode;
         document.getElementById("selected-events").textContent = String(record.events.length);
         document.getElementById("selected-artifacts").textContent = String(record.artifacts.length);
-        document.getElementById("selected-duration").textContent = String(Math.max(0, new Date(record.completedAt) - new Date(record.createdAt))) + " ms";
+        const finalElapsed = record.events.length ? record.events[record.events.length - 1].elapsedMs : undefined;
+        document.getElementById("selected-duration").textContent = formatMilliseconds(finalElapsed === undefined ? Math.max(0, new Date(record.completedAt) - new Date(record.createdAt)) : finalElapsed);
         clear(nodeRecords);
         Object.entries(record.nodeStates).sort(([a],[b]) => a.localeCompare(b)).forEach(([nodeId,state]) => { const card = make("div", undefined, "node-record" + (state === "failed" ? " failed" : "")); card.appendChild(make("i")); card.appendChild(make("span", nodeId + " · " + state)); nodeRecords.appendChild(card); });
         clear(artifactRecords);
         if (!record.artifacts.length) artifactRecords.appendChild(make("div", "No artifacts", "history-empty"));
         record.artifacts.forEach((artifact) => { const card = make("div", undefined, "artifact"); card.appendChild(make("strong", artifact.artifactId)); card.appendChild(make("small", artifact.nodeId + " / " + artifact.port)); card.appendChild(make("code", artifact.contentHash)); artifactRecords.appendChild(card); });
         clear(timeline);
-        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(make("time", shortTime(event.occurredAt), "time")); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : ""))); timeline.appendChild(row); });
+        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const timing = make("time", elapsedLabel(event.elapsedMs), "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : event.occurredAt; const duration = payload.durationMs === undefined ? "" : " · " + formatMilliseconds(payload.durationMs); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : "") + duration)); timeline.appendChild(row); });
         document.getElementById("run-output").textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
       };
 

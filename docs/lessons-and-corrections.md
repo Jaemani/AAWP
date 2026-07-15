@@ -89,7 +89,8 @@
 ## Local simulation이 production workflow처럼 오해될 수 있었다
 
 - 관찰: run과 event가 기록되므로 실제 model/tool workflow가 수행된 것으로 받아들일 여지가 있었다.
-- 교정: Studio badge, run record와 문서에 `DETERMINISTIC_SIMULATION`을 명시했다.
+- 추가 오류: trace를 실행 뒤 한꺼번에 materialize하면서 모든 start event에 run 시작 시각을, 모든 completion event에 run 종료 시각을 대입했다. 그 결과 sequence가 증가하는데 timestamp가 과거로 돌아가는 기록이 생겼다.
+- 교정: Studio badge와 run record에 `DETERMINISTIC_SIMULATION`을 명시하고, simulator event callback에서 monotonic offset을 수집한다. Studio는 wall-clock event log가 아닌 `Simulation trace`로 표시하며 timing 계약이 없는 기존 기록은 `legacy`로 구분한다.
 - 남은 위험: production event source가 연결되기 전에는 demo 품질이나 workflow 우위를 Studio run 자체로 주장할 수 없다.
 
 ## 검증 공백

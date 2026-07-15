@@ -38,7 +38,7 @@ node apps/studio/dist/server.js \
 2. `Run workflow`를 누른다.
 3. Workflow strip에서 node 상태를 확인한다.
 4. `Runs`에서 과거 run을 선택한다.
-5. Result preview, node, artifact, event와 output을 확인한다.
+5. Result preview, node, artifact, simulation trace와 output을 확인한다.
 
 선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`다.
 
@@ -48,7 +48,7 @@ node apps/studio/dist/server.js \
 
 새 snapshot은 기본 offboard 상태다. 어떤 lifecycle action도 Run input file, 원본 demo source, JSONL run/event와 lineage를 변경하지 않는다.
 
-현재 Studio server는 local-only이고 `DETERMINISTIC_SIMULATION`을 표시한다. 실제 Temporal·model·tool 실행, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+현재 Studio server는 local-only이고 `DETERMINISTIC_SIMULATION`을 표시한다. `Simulation trace`의 `elapsedMs`는 run 시작 기준 monotonic offset이며 node 완료에는 `durationMs`가 포함된다. 이는 결정적 WIR 실행 순서이지 실제 Temporal·model·tool activity log가 아니다. Timing 계약 추가 전의 기존 기록은 Studio에서 `legacy`로 표시한다. 실제 Temporal·model·tool 실행, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
 
 ## 3. `spec-to-demo` 입력 범위
 
