@@ -1,6 +1,6 @@
 # Studio local usage
 
-AAWP Studio는 WIR source를 읽어 workflow 실행, run 기록과 결과를 한 화면에 투영하는 local control console이다. 제품 identity는 workflow template ID와 분리하며 현재 선택한 workflow는 실행 context에서만 표시한다. 서버는 기본적으로 `127.0.0.1`에만 bind한다. Control console은 WIR source를 수정하지 않지만 등록된 executor process는 manifest와 WIR capability가 허용한 output을 쓸 수 있다.
+AAWP Studio는 WIR source를 읽어 workflow 실행, run 기록과 결과를 한 화면에 투영하는 local control console이다. 제품 identity는 workflow template ID와 분리하며 현재 선택한 workflow는 실행 context에서만 표시한다. 서버는 기본적으로 `127.0.0.1`에만 bind한다. Control console은 WIR source를 수정하지 않지만 등록된 executor process는 자체 sandbox 정책에 따라 파일을 쓸 수 있다. 현재 local executor는 WIR의 filesystem capability를 OS 수준으로 강제하지 않으므로 신뢰한 manifest만 등록한다.
 
 ```bash
 npm run build
