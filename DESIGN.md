@@ -1,7 +1,7 @@
 # AAWP Demo Design Standard
 
 - 상태: active
-- 버전: 1.1.0
+- 버전: 1.2.0
 - 기준일: 2026-07-15
 - 적용 범위: AAWP workflow가 생성하는 web/mobile demo artifact
 - 비적용 범위: AAWP Studio control console 자체
@@ -240,6 +240,15 @@ convertible-bg: "#e8f0fe"
 
 Canonical spacing token은 `base 4px`, `gutter-mobile 20px`, `padding-card 16px`, `height-cta 56px`, `height-row 44px`, `padding-col 12px`, `nav-rail-width 240px`다. Radius token은 `sm 4px`, `default 8px`, `md 12px`, `lg 16px`, `xl 24px`, `full 9999px`다.
 
+### 5.5 Form control geometry와 overflow
+
+- 같은 form row의 한 줄 `input`과 `select`는 `box-sizing: border-box`, 정확한 48px 높이, 24px line-height와 같은 상하 padding을 사용한다. Browser native select의 intrinsic 높이에 맡기지 않는다.
+- `select`는 `appearance: none`과 로컬 chevron을 사용하며 오른쪽 아이콘 영역을 포함해 최소 42px padding을 확보한다. 텍스트는 화살표 아래로 들어가지 않아야 한다.
+- `textarea`는 최소 96px이고 action 영역과 최소 16px 간격을 둔다. Sticky action을 쓸 경우 어떤 scroll 위치에서도 field, error, help text를 덮지 않아야 하며, 이를 보장하지 못하면 static flow로 둔다.
+- Form field의 label-control 간격은 8px, field 간격은 최소 16px, section content와 action group 간격은 최소 16px다. Button group 내부 간격은 최소 8px이고 mobile vertical action은 12px를 사용한다.
+- Flex/grid 자식에는 필요한 `min-width: 0`과 `overflow-wrap`을 선언한다. 금액·건수는 ellipsis로 자르지 않으며, 한 행에 맞지 않으면 grid를 reflow하거나 metric 글꼴을 18px 이상 범위에서 축소한다.
+- 긴 badge, table value, technical ID와 한국어 문장은 container 경계를 넘어가지 않아야 한다. 줄바꿈으로 높이가 늘어날 때 다음 row나 action을 밀어내고 겹치지 않아야 한다.
+
 ## 6. Responsive behavior
 
 - 1280px 미만: 240px rail을 72–76px icon rail로 축소한다.
@@ -303,6 +312,8 @@ Canonical spacing token은 `base 4px`, `gutter-mobile 20px`, `padding-card 16px`
 
 - 1440px desktop, 1024px collapsed rail, 390px mobile reflow를 확인한다.
 - Overflow, 잘린 금액, 겹친 panel과 이중 navigation이 없다.
+- Playwright에서 1440px·390px viewport의 visible `input`/`select` bounding box를 비교하고 같은 row의 높이 차이가 1px 미만인지 확인한다.
+- Playwright에서 control 간 겹침, viewport 밖 text와 `scrollWidth > clientWidth`인 비의도 overflow가 없는지 확인한다.
 - Keyboard focus, accessible name, semantic status를 확인한다.
 
 ## 11. Pilot pages

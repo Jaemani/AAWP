@@ -34,8 +34,9 @@ npm run studio:spec-to-demo -- --input runs/requests/<request-id>/request.json -
 4. `Runs`에서 과거 run을 선택한다.
 5. Result preview, node, 실제 artifact, execution timeline, token과 output을 확인한다.
 
-선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`다.
+선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`, 저장 snapshot 검사 주소는 `/runs/<runId>/demo-preview/`다.
 
+- `Open demo`: onboard/offboard 상태를 바꾸지 않고 저장된 snapshot을 새 탭의 local 검사 주소로 연다.
 - `Onboard demo`: 저장된 snapshot을 URL과 preview에서 활성화하고 이전 active demo를 자동으로 offboard한다.
 - `Offboard demo`: URL 제공을 중단하지만 snapshot을 보존한다.
 - `Delete demo`: `runs/<runId>/demo` snapshot만 삭제한다.
@@ -190,7 +191,18 @@ Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에
 
 필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
 
-`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. 새 `spec-to-demo` 0.3.0은 필요한 token, web/mobile composition, interaction과 접근성 기준을 `DESIGN.md` 1.1.0에 흡수했으며 demo manifest에는 이 파일의 path/version/digest만 기록한다.
+`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. 새 `spec-to-demo` 0.3.0은 필요한 token, web/mobile composition, interaction과 접근성 기준을 `DESIGN.md` 1.2.0에 흡수했으며 demo manifest에는 이 파일의 path/version/digest만 기록한다. 1.2.0은 native select와 input의 exact geometry, field/action spacing, text overflow와 Playwright viewport 검증 규칙을 추가했다.
+
+저장된 pilot의 desktop/mobile geometry와 overflow는 다음처럼 재검사할 수 있다. `--screen`은 반복할 수 있고 screenshot과 JSON report는 기본적으로 `tmp/demo-layout-qa/`에 생성된다.
+
+```bash
+npm run qa:demo-layout -- \
+  --url http://127.0.0.1:4173/runs/<runId>/demo-preview/ \
+  --screen admin-voucher-policy-setup \
+  --screen admin-payout-execution
+```
+
+검사는 1440×1100과 390×844에서 한 줄 input/select 높이 차이 1px 미만, 비의도 horizontal overflow 없음, field/action 겹침 없음, form과 action 사이 16px 이상을 요구한다.
 
 정확성의 현재 경계도 구분한다. Source screen object, component reference, design token, navigation target과 interaction description은 byte/digest 또는 deep-equality test로 고정된다. 반면 각 component의 모든 prop이 화면 field로 노출되는지와 Figma 수준 pixel geometry는 아직 전수 acceptance가 없다. 따라서 현재 demo는 source-faithful structural prototype이지 22개 화면의 field-by-field 완전 구현이라고 주장하지 않는다. 예시 record도 source authority data가 아니다.
 

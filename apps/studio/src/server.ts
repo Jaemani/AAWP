@@ -42,7 +42,15 @@ async function projectDemoLifecycle(
   if (record.demo === undefined) return record;
   const snapshotAvailable = (await demoStore?.exists(record.runId)) ?? false;
   const onboarded = snapshotAvailable && ((await demoStore?.isOnboarded(record.runId)) ?? false);
-  return { ...record, demo: { ...record.demo, snapshotAvailable, onboarded } };
+  return {
+    ...record,
+    demo: {
+      ...record.demo,
+      snapshotAvailable,
+      onboarded,
+      previewUrl: `/runs/${encodeURIComponent(record.runId)}/demo-preview/`
+    }
+  };
 }
 
 function sendJson(response: ServerResponse, status: number, payload: unknown): void {
@@ -96,7 +104,7 @@ export function createStudioServer(options: StudioServerOptions): Server {
   );
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
-    const demoRoute = url.pathname.match(/^\/runs\/([^/]+)\/demo(?:\/(.*))?$/);
+    const demoRoute = url.pathname.match(/^\/runs\/([^/]+)\/(demo|demo-preview)(?:\/(.*))?$/);
     if (["GET", "HEAD"].includes(request.method ?? "") && demoRoute !== null) {
       const runId = decodeURIComponent(demoRoute[1] ?? "");
       if (!/^run_[A-Za-z0-9-]+$/.test(runId)) {
@@ -107,7 +115,9 @@ export function createStudioServer(options: StudioServerOptions): Server {
       const asset =
         record?.demo === undefined || demoStore === undefined
           ? undefined
-          : await demoStore.read(runId, demoRoute[2] ?? "");
+          : demoRoute[2] === "demo-preview"
+            ? await demoStore.readPreview(runId, demoRoute[3] ?? "")
+            : await demoStore.read(runId, demoRoute[3] ?? "");
       if (asset === undefined) {
         sendJson(response, 404, { error: "demo_not_found" });
         return;

@@ -220,6 +220,18 @@ describe("Studio local server", () => {
     };
     expect(detail.demo).toMatchObject({ snapshotAvailable: true, onboarded: false });
     expect((await fetch(`${base}${detail.demo.entryUrl}`)).status).toBe(404);
+    await expect(
+      fetch(`${base}/runs/${run.runId}/demo-preview/`).then(async (response) => response.text())
+    ).resolves.toBe("<h1>run demo</h1>");
+    await expect(
+      fetch(`${base}/runs/${run.runId}/demo-preview/styles.css`).then(async (response) =>
+        response.text()
+      )
+    ).resolves.toBe("body{color:#191f28}");
+    expect((await fetch(`${base}/runs/${run.runId}/demo-preview/.aawp-onboarded`)).status).toBe(
+      404
+    );
+    expect((await fetch(`${base}/runs/${run.runId}/demo-preview/../outside.txt`)).status).toBe(404);
 
     const onboarded = await fetch(`${base}/api/runs/${run.runId}/demo/onboard`, {
       method: "POST"
@@ -246,6 +258,7 @@ describe("Studio local server", () => {
       onboarded: false
     });
     expect((await fetch(`${base}${detail.demo.entryUrl}`)).status).toBe(404);
+    expect((await fetch(`${base}/runs/${run.runId}/demo-preview/`)).status).toBe(200);
     detail = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
       response.json()
     )) as typeof detail;
@@ -254,6 +267,7 @@ describe("Studio local server", () => {
     const deleted = await fetch(`${base}/api/runs/${run.runId}/demo`, { method: "DELETE" });
     await expect(deleted.json()).resolves.toEqual({ ok: true, runId: run.runId, deleted: true });
     expect((await fetch(`${base}${detail.demo.entryUrl}`)).status).toBe(404);
+    expect((await fetch(`${base}/runs/${run.runId}/demo-preview/`)).status).toBe(404);
     const afterDelete = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
       response.json()
     )) as StudioRunRecord & {

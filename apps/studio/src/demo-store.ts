@@ -33,6 +33,7 @@ export interface StudioDemoStore {
   offboard(runId: string): Promise<boolean>;
   delete(runId: string): Promise<boolean>;
   read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined>;
+  readPreview(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined>;
 }
 
 const ONBOARD_MARKER = ".aawp-onboarded";
@@ -206,8 +207,10 @@ export class LocalStudioDemoStore implements StudioDemoStore {
     return true;
   }
 
-  async read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined> {
-    if (!(await this.isOnboarded(runId))) return undefined;
+  private async readSnapshot(
+    runId: string,
+    assetPath: string
+  ): Promise<StudioDemoAsset | undefined> {
     const runDirectory = this.runDirectory(runId);
     const requestedPath = assetPath.length === 0 ? "index.html" : decodeURIComponent(assetPath);
     if (requestedPath === ONBOARD_MARKER) return undefined;
@@ -233,5 +236,15 @@ export class LocalStudioDemoStore implements StudioDemoStore {
         return undefined;
       throw error;
     }
+  }
+
+  async read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined> {
+    if (!(await this.isOnboarded(runId))) return undefined;
+    return this.readSnapshot(runId, assetPath);
+  }
+
+  async readPreview(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined> {
+    if (!(await this.exists(runId))) return undefined;
+    return this.readSnapshot(runId, assetPath);
   }
 }

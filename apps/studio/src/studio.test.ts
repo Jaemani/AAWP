@@ -70,7 +70,8 @@ describe("Studio HTML", () => {
     expect(html).toContain("Onboard demo");
     expect(html).toContain("Offboard demo");
     expect(html).toContain("Delete demo");
-    expect(html).not.toContain("Open demo");
+    expect(html).toContain("Open demo");
+    expect(html).toContain("demo-preview");
     expect(html).not.toContain("Delete result");
     expect(html).toContain("demo-frame");
     expect(html).toContain("allow-popups allow-popups-to-escape-sandbox");

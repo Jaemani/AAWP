@@ -71,7 +71,7 @@ All URLs must be relative. `index.html` must run when served at `/runs/<runId>/d
   "sourceSpec": { "path": "...", "byteSha256": "..." },
   "designContract": {
     "path": "DESIGN.md",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "byteSha256": "..."
   },
   "designInputs": ["DESIGN.md"],

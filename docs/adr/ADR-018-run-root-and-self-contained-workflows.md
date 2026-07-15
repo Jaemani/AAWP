@@ -39,7 +39,7 @@ Studio instance마다 `.awf/studio-runs.jsonl`, 별도 pilot JSONL과 서로 다
 3. `WORKFLOW.md`: 입력 해석, 허용 지식, 출력 구조와 acceptance 절차
 4. 독립 verifier
 
-`spec-to-demo` 0.3.0은 source spec을 업무 의미에만 사용하고 `DESIGN.md` 1.1.0을 유일한 디자인 입력으로 사용한다. 필요한 presentation token, web/mobile shell, interaction과 접근성 규칙을 이 문서에 흡수한다. 기존 presentation contract, visual reference, 이전 demo/CSS와 대화 기억은 builder 입력에서 제외한다. Manifest는 source와 `DESIGN.md` byte digest를 기록하며 금지된 legacy design field를 포함하면 verifier가 실패한다.
+`spec-to-demo` 0.3.0은 source spec을 업무 의미에만 사용하고 `DESIGN.md` 1.2.0을 유일한 디자인 입력으로 사용한다. 필요한 presentation token, web/mobile shell, interaction, control geometry와 접근성 규칙을 이 문서에 흡수한다. 기존 presentation contract, visual reference, 이전 demo/CSS와 대화 기억은 builder 입력에서 제외한다. Manifest는 source와 `DESIGN.md` byte digest를 기록하며 금지된 legacy design field를 포함하면 verifier가 실패한다.
 
 ## 결과와 한계
 

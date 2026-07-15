@@ -28,6 +28,7 @@
     "generate:heavy-spec-role-comparison": "tsx scripts/generate-heavy-spec-role-comparison.ts",
     "request:spec-to-demo": "node scripts/create-spec-to-demo-request.mjs",
     "studio:spec-to-demo": "node apps/studio/dist/server.js --workflow workflows/templates/spec-to-demo/workflow.wir.yaml --executor workflows/templates/spec-to-demo/execution.manifest.json --runs runs/history.jsonl --execution-root runs --demo-root runs --demo-source runs/{runId}/artifacts/demo",
+    "qa:demo-layout": "node scripts/qa-demo-layout.mjs",
     "migrate:runs": "node scripts/migrate-runs-to-root.mjs",
     "bench:direct": "tsx benchmarks/direct-v0/harness/run-direct.ts",
     "bench:direct:reverify": "tsx benchmarks/direct-v0/harness/reverify.ts"
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",
+    "@playwright/test": "^1.61.1",
     "@temporalio/testing": "1.20.2",
     "@types/node": "26.1.1",
     "eslint": "10.7.0",

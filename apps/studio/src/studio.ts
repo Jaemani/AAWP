@@ -171,7 +171,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .detail-head h2 { margin:0; overflow:hidden; color:#273244; font:12px ui-monospace,SFMono-Regular,Menlo,monospace; text-overflow:ellipsis; white-space:nowrap; }
     .detail-head p { margin:6px 0 0; color:var(--muted); font-size:10px; }
     .detail-actions { display:flex; flex:none; align-items:center; gap:8px; }
-    .demo-lifecycle,.delete-result { display:inline-flex; min-height:34px; align-items:center; justify-content:center; padding:0 11px; border-radius:8px; font-size:10px; font-weight:680; }
+    .demo-open,.demo-lifecycle,.delete-result { display:inline-flex; min-height:34px; align-items:center; justify-content:center; padding:0 11px; border-radius:8px; font-size:10px; font-weight:680; text-decoration:none; }
+    .demo-open { border:1px solid var(--accent); color:#fff; background:var(--accent); }
+    .demo-open:hover { background:var(--accent-dark); }
     .demo-lifecycle { border:1px solid #b8c6eb; color:var(--accent); background:#fff; cursor:pointer; }
     .demo-lifecycle:hover { background:var(--accent-soft); }
     .delete-result { border:1px solid transparent; color:var(--danger); background:transparent; cursor:pointer; }
@@ -292,7 +294,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       <div class="detail">
         <div id="empty-detail" class="empty-detail"><div class="empty-state"><strong>No run selected</strong><span>Run workflow를 실행하면 node 상태와 결과 preview가 여기에 표시됩니다.</span></div></div>
         <div id="run-detail" hidden>
-          <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><button id="toggle-demo" class="demo-lifecycle" type="button" hidden>Onboard demo</button><button id="delete-demo" class="delete-result" type="button" hidden>Delete demo</button></div></div>
+          <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><a id="open-demo" class="demo-open" target="_blank" rel="noopener noreferrer" hidden>Open demo</a><button id="toggle-demo" class="demo-lifecycle" type="button" hidden>Onboard demo</button><button id="delete-demo" class="delete-result" type="button" hidden>Delete demo</button></div></div>
           <div class="summary"><div><span>End-to-end time</span><strong id="selected-duration"></strong></div><div><span>Snapshot</span><strong id="selected-build-duration"></strong></div><div><span>Tokens</span><strong id="selected-tokens"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Executor</span><strong id="selected-mode"></strong></div></div>
           <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe><div id="demo-empty" class="demo-empty" hidden></div></div></section>
           <div class="detail-grid">
@@ -319,6 +321,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const artifactRecords = document.getElementById("artifact-records");
       const timeline = document.getElementById("event-timeline");
       const demoResult = document.getElementById("demo-result");
+      const openDemo = document.getElementById("open-demo");
       const toggleDemo = document.getElementById("toggle-demo");
       const deleteDemo = document.getElementById("delete-demo");
       const demoAddress = document.getElementById("demo-address");
@@ -352,14 +355,16 @@ export function renderStudioHtml(view: StudioViewModel): string {
         if (label) label.textContent = statusLabel(state);
       });
       const renderDemo = (record) => {
-        if (!record.demo) { demoResult.hidden = true; toggleDemo.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; demoOnboarded = false; return; }
+        if (!record.demo) { demoResult.hidden = true; openDemo.hidden = true; openDemo.removeAttribute("href"); toggleDemo.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; demoOnboarded = false; return; }
         const snapshotAvailable = record.demo.snapshotAvailable === true;
         demoOnboarded = snapshotAvailable && record.demo.onboarded === true;
-        demoResult.hidden = false; toggleDemo.hidden = !snapshotAvailable; deleteDemo.hidden = !snapshotAvailable;
+        demoResult.hidden = false; openDemo.hidden = !snapshotAvailable; toggleDemo.hidden = !snapshotAvailable; deleteDemo.hidden = !snapshotAvailable;
+        if (snapshotAvailable) openDemo.href = record.demo.previewUrl || "/runs/" + encodeURIComponent(record.runId) + "/demo-preview/"; else openDemo.removeAttribute("href");
         toggleDemo.textContent = demoOnboarded ? "Offboard demo" : "Onboard demo";
         demoEmpty.hidden = demoOnboarded; demoFrame.hidden = !demoOnboarded;
         demoEmpty.textContent = snapshotAvailable ? "Demo가 offboard 상태입니다. Snapshot과 실행 기록은 보존되며 Onboard demo를 눌러 다시 활성화할 수 있습니다." : "Demo snapshot이 삭제되었습니다. Input, source와 실행 기록은 보존됩니다.";
-        demoAddress.textContent = record.demo.entryUrl + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (demoOnboarded ? "Onboarded" : snapshotAvailable ? "Offboarded" : "Deleted");
+        const inspectionUrl = record.demo.previewUrl || "/runs/" + encodeURIComponent(record.runId) + "/demo-preview/";
+        demoAddress.textContent = (demoOnboarded ? record.demo.entryUrl : inspectionUrl) + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (demoOnboarded ? "Onboarded" : snapshotAvailable ? "Stored inspection" : "Deleted");
         demoFrame.src = demoOnboarded ? record.demo.entryUrl : "about:blank";
       };
 

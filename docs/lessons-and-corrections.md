@@ -139,7 +139,7 @@
 - 관찰: `DESIGN.md` 기반 pilot이라고 보고했지만 실제 execution prompt가 기존 transport voucher demo, presentation contract와 pinned visual reference 보존을 명시했다.
 - 원인: 새 문서를 기존 가이드의 상위 요약으로 취급하고, 사용자가 요구한 입력 격리 실험으로 해석하지 않았다. Manifest에도 visual reference와 adapter version을 요구했다.
 - 영향: 결과 품질은 확인할 수 있어도 `DESIGN.md` 하나만으로 같은 디자인을 만들 수 있다는 증거가 아니었다.
-- 교정: 필요한 token, web/mobile composition, interaction과 접근성 규칙을 `DESIGN.md` 1.1.0에 흡수했다. `spec-to-demo` 0.3.0 builder는 이전 demo·CSS·presentation/visual contract 접근을 금지하고 manifest에 `designInputs: ["DESIGN.md"]`와 byte digest만 기록한다.
+- 교정: 필요한 token, web/mobile composition, interaction과 접근성 규칙을 `DESIGN.md`에 흡수했다. 현재 1.2.0은 native control geometry, form/action spacing과 overflow 검증까지 포함한다. `spec-to-demo` 0.3.0 builder는 이전 demo·CSS·presentation/visual contract 접근을 금지하고 manifest에 `designInputs: ["DESIGN.md"]`와 byte digest만 기록한다.
 - 재발 방지: 입력 격리 실험은 prompt와 artifact manifest 양쪽에 allowed/forbidden source를 선언하고 verifier가 forbidden field와 문자열을 검사한다.
 
 ## Model 호출 시작을 usage 수집 시점으로 기록했다

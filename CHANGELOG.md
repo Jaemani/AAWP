@@ -4,6 +4,13 @@
 
 ## 2026-07-15
 
+### 독립 demo 검사와 form layout QA
+
+- Snapshot이 있으면 onboard/offboard 상태를 변경하지 않고 새 탭에서 여는 `Open demo`와 `/runs/<runId>/demo-preview/` local inspection 경로를 추가했다.
+- 공개 `/demo/`의 onboard gate는 유지하고 preview에도 동일한 run 검증, path traversal·marker 차단과 delete lifecycle을 적용했다.
+- `DESIGN.md`를 1.2.0으로 올려 native select/input 48px geometry, field/action 간격, text·금액 overflow와 Playwright 1440px/390px 검증을 명시했다.
+- Pilot에서 확인된 select 45.33px 대 date input 48px 불일치, 금액 card overflow와 sticky action의 field 겹침을 교정했다.
+
 ### 단일 run root와 self-contained workflow
 
 - 모든 local history를 `runs/history.jsonl`, 최신 record·input·log·artifact·demo를 `runs/<runId>/`에 저장하도록 기본 경로를 통일했다.

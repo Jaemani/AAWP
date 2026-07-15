@@ -52,6 +52,10 @@ describe("local Studio demo store", () => {
     await expect(store.exists("run_demo-1")).resolves.toBe(true);
     await expect(store.isOnboarded("run_demo-1")).resolves.toBe(false);
     await expect(store.read("run_demo-1", "")).resolves.toBeUndefined();
+    await expect(store.readPreview("run_demo-1", "")).resolves.toMatchObject({
+      mediaType: "text/html; charset=utf-8",
+      content: Buffer.from("<h1>demo</h1>")
+    });
     await expect(store.onboard("run_demo-1")).resolves.toBe(true);
     await expect(store.onboard("run_demo-1")).resolves.toBe(false);
     await expect(store.isOnboarded("run_demo-1")).resolves.toBe(true);
@@ -64,14 +68,20 @@ describe("local Studio demo store", () => {
     });
     await expect(store.read("run_demo-1", "../outside.txt")).resolves.toBeUndefined();
     await expect(store.read("run_demo-1", ".aawp-onboarded")).resolves.toBeUndefined();
+    await expect(store.readPreview("run_demo-1", "../outside.txt")).resolves.toBeUndefined();
+    await expect(store.readPreview("run_demo-1", ".aawp-onboarded")).resolves.toBeUndefined();
 
     await expect(store.offboard("run_demo-1")).resolves.toBe(true);
     await expect(store.offboard("run_demo-1")).resolves.toBe(false);
     await expect(store.exists("run_demo-1")).resolves.toBe(true);
     await expect(store.read("run_demo-1", "")).resolves.toBeUndefined();
+    await expect(store.readPreview("run_demo-1", "")).resolves.toMatchObject({
+      content: Buffer.from("<h1>demo</h1>")
+    });
 
     await expect(store.delete("run_demo-1")).resolves.toBe(true);
     await expect(store.exists("run_demo-1")).resolves.toBe(false);
+    await expect(store.readPreview("run_demo-1", "")).resolves.toBeUndefined();
     await expect(store.delete("run_demo-1")).resolves.toBe(false);
     await expect(store.onboard("run_demo-1")).resolves.toBe(false);
   });
