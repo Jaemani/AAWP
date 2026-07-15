@@ -133,3 +133,32 @@
 - 현재 자동화: build, typecheck, lint, format, unit/integration test와 HTTP deep-link 검증.
 - 미수행: 연결 가능한 in-app browser가 없어 Studio 변경의 자동 screenshot 비교를 수행하지 못했다.
 - 대응: 시각 QA 완료라고 기록하지 않으며 browser surface가 제공되면 동일 viewport screenshot regression을 추가한다.
+
+## 디자인 MD 단독 검증에 기존 시각 가이드를 섞었다
+
+- 관찰: `DESIGN.md` 기반 pilot이라고 보고했지만 실제 execution prompt가 기존 transport voucher demo, presentation contract와 pinned visual reference 보존을 명시했다.
+- 원인: 새 문서를 기존 가이드의 상위 요약으로 취급하고, 사용자가 요구한 입력 격리 실험으로 해석하지 않았다. Manifest에도 visual reference와 adapter version을 요구했다.
+- 영향: 결과 품질은 확인할 수 있어도 `DESIGN.md` 하나만으로 같은 디자인을 만들 수 있다는 증거가 아니었다.
+- 교정: 필요한 token, web/mobile composition, interaction과 접근성 규칙을 `DESIGN.md` 1.1.0에 흡수했다. `spec-to-demo` 0.3.0 builder는 이전 demo·CSS·presentation/visual contract 접근을 금지하고 manifest에 `designInputs: ["DESIGN.md"]`와 byte digest만 기록한다.
+- 재발 방지: 입력 격리 실험은 prompt와 artifact manifest 양쪽에 allowed/forbidden source를 선언하고 verifier가 forbidden field와 문자열을 검사한다.
+
+## Model 호출 시작을 usage 수집 시점으로 기록했다
+
+- 관찰: 5분 17초 model node의 `ModelInvoked`가 node 시작이 아니라 종료 직전 `+317347.9 ms`에 표시됐다.
+- 원인: Child process 종료 후 stdout JSONL을 한 번에 파싱하면서 usage sample마다 `ModelInvoked` event를 생성했다.
+- 교정: LLM step 시작 callback에서 `ModelInvoked`를 기록하고 종료 usage는 `ModelCompleted`에 duration과 함께 기록한다.
+- 재발 방지: Timeline test가 model start elapsed가 completion elapsed보다 작은지 검증한다. Invocation과 telemetry collection을 같은 event로 재사용하지 않는다.
+
+## Studio마다 다른 run store를 사용해 기록이 사라진 것처럼 보였다
+
+- 관찰: 기본 Studio, smoke와 design pilot이 서로 다른 JSONL·execution·demo root를 사용해 한 Studio에서 이전 runs가 보이지 않았다.
+- 원인: Pilot을 별도 port로 띄우며 저장 경로도 함께 분기했고, local persistence root를 제품 invariant로 정하지 않았다.
+- 교정: 프로젝트 루트 `runs/history.jsonl`과 `runs/<runId>/{run.json,input.json,logs,artifacts,demo}`를 기본 경계로 정했다. 세 legacy history의 22개 run을 원본 삭제 없이 통합했다.
+- 재발 방지: 공식 Studio command는 `runs/` 기본값을 사용한다. 별도 store는 격리 test에서만 허용하고 사용자-facing Studio에는 사용하지 않는다.
+
+## Run metadata와 executor가 같은 directory 생성을 경쟁했다
+
+- 관찰: 통합 root 첫 실행이 `EEXIST: mkdir runs/<runId>`로 12 ms 만에 실패했다.
+- 원인: JSONL store가 `run.json`을 쓰기 위해 run directory를 먼저 만들었지만 executor는 directory가 존재하지 않아야 한다고 가정했다.
+- 교정: Executor는 run root의 사전 존재를 허용하고 `input.json`과 `logs/`의 독립 생성에서 충돌을 검출한다.
+- 재발 방지: Store가 `run.json`을 먼저 만든 상태에서 실제 local process artifact를 쓰는 회귀 test를 추가했다.

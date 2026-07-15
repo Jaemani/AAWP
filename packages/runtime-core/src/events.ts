@@ -11,6 +11,7 @@ export type RunEventType =
   | "NodeStarted"
   | "ToolInvoked"
   | "ModelInvoked"
+  | "ModelCompleted"
   | "ArtifactPublished"
   | "CacheHit"
   | "NodeCompleted"

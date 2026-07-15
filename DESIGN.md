@@ -1,7 +1,7 @@
 # AAWP Demo Design Standard
 
 - 상태: active
-- 버전: 1.0.0
+- 버전: 1.1.0
 - 기준일: 2026-07-15
 - 적용 범위: AAWP workflow가 생성하는 web/mobile demo artifact
 - 비적용 범위: AAWP Studio control console 자체
@@ -14,23 +14,22 @@ AAWP demo는 spec 내용을 보여주는 문서 viewer가 아니라 사용자가
 
 > 신뢰도 높은 공공 금융 서비스의 절제된 시각 언어와, 빠르게 판단하고 실행할 수 있는 고밀도 governance console.
 
-## 2. 진실원과 우선순위
+## 2. 진실원과 입력 격리
 
-충돌 시 아래 순서로 판단한다.
+Demo builder가 읽을 수 있는 디자인 입력은 이 문서 하나다. 충돌 시 아래 순서로 판단한다.
 
-1. Pinned source spec: 화면 의미, actor, authority, panel 종류, copy, state, data와 interaction
-2. 이 문서: demo 전반의 composition, hierarchy, interaction과 품질 기준
-3. Pinned presentation contract: 색상, typography, spacing, radius, responsive와 접근성 token
-4. Pinned visual reference contract: 승인된 화면의 shell, 밀도와 composition
-5. Versioned surface adapter default: 위 자료에 없는 pixel detail
+1. Pinned source spec: 화면의 업무 의미, actor, authority, route, copy, state, data와 interaction
+2. 이 문서: 색상, typography, spacing, shell, composition, responsive, interaction과 접근성
+3. Browser 기본 동작: 이 문서가 정의하지 않은 native control의 세부 rendering
 
-관련 계약:
+Source spec의 layout/component 이름은 필요한 업무 구조를 설명할 뿐 별도 디자인 시스템이 아니다. 다음 자료는 provenance와 과거 결과 비교용이며 demo builder 입력으로 사용하지 않는다.
 
-- `examples/heavy-spec-policy-operations/presentation-contract.yaml`
-- `examples/heavy-spec-policy-operations/visual-reference-contract.yaml`
-- `docs/adr/ADR-014-demo-bundle-is-a-platform-artifact.md`
+- 기존 `presentation-contract.yaml`, `visual-reference-contract.yaml`, `design-tokens.css`
+- 이전 run의 HTML, CSS, screenshot과 demo artifact
+- 대화에서만 전달된 디자인 설명이나 에이전트의 기억
+- source spec 밖의 제품 화면과 임의 example dashboard
 
-Presentation이나 visual reference는 source spec에 없는 업무 의미, record, 상태 또는 권한을 추가할 수 없다. Spec이 불명확하면 임의 UX로 메우지 않고 demo 밖의 `specFeedback`에 기록한다.
+Spec이 불명확하면 임의 UX로 메우지 않고 demo 밖의 `specFeedback`에 기록한다. Manifest는 `DESIGN.md`의 path, version, SHA-256 digest를 기록하고 다른 디자인 계약 digest를 기록하지 않는다.
 
 ## 3. 핵심 원칙
 
@@ -92,6 +91,15 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 
 제품 rail은 하나만 둔다. Bundle·surface·screen 선택기는 제품 rail 옆에 두 번째 좌측 panel로 배치하지 않고 preview 바깥의 상단 switcher가 소유한다.
 
+### 4.4 Mobile composition
+
+- Consumer/Merchant 화면은 20px side gutter와 16/24px vertical rhythm을 사용한다.
+- Primary CTA는 최소 56px, 모든 touch target은 최소 44×44px다.
+- 핵심 잔액·상태를 먼저 보여주고 ledger 세부 정보는 progressive disclosure로 제공한다.
+- Tablet에서는 독립 card를 최대 2-column으로 전환하되 transaction amount와 상태를 자르지 않는다.
+- Bottom sheet는 상단 20px radius와 명확한 modal elevation을 사용한다.
+- Mobile 화면에 web authority rail을 축소 삽입하지 않는다. Actor와 surface에 맞는 mobile navigation을 사용한다.
+
 ### 4.2 Page header
 
 - 왼쪽: 사용자용 제목과 한 줄 설명
@@ -131,15 +139,69 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 
 ## 5. Visual language
 
+이 절의 token이 canonical source다. 구현은 CSS custom property로 옮길 수 있지만 이름·값·semantic pairing을 임의 변경하지 않는다.
+
 ### 5.1 색상
 
-- Critical primary action: `#2368D9` 또는 presentation contract의 primary action token
+- Critical primary action: `primary-container #2368D9`
 - Authority surface: `#0A2540`
 - 일반 본문: `on-surface #191C1E`
 - Border: `surface-strong #E5E8EB` 또는 `outline-variant #C2C6D6`
 - 상태는 반드시 matching foreground/background token pair를 사용한다.
 
 상태를 색상만으로 표현하지 않는다. Badge는 icon, text와 semantic pair를 함께 사용한다.
+
+```yaml
+surface: "#f8f9fb"
+surface-dim: "#d8dadc"
+surface-bright: "#f8f9fb"
+surface-container-lowest: "#ffffff"
+surface-container-low: "#f2f4f6"
+surface-container: "#eceef0"
+surface-container-high: "#e6e8ea"
+surface-container-highest: "#e0e3e5"
+on-surface: "#191c1e"
+on-surface-variant: "#424753"
+inverse-surface: "#2d3133"
+inverse-on-surface: "#eff1f3"
+outline: "#737785"
+outline-variant: "#c2c6d6"
+primary: "#0050b5"
+on-primary: "#ffffff"
+primary-container: "#2368d9"
+on-primary-container: "#edefff"
+primary-tint: "#eaf2ff"
+secondary: "#595f69"
+on-secondary: "#ffffff"
+secondary-container: "#dae0ec"
+on-secondary-container: "#5d636e"
+tertiary: "#3f5774"
+on-tertiary: "#ffffff"
+tertiary-container: "#586f8e"
+on-tertiary-container: "#eaf1ff"
+error: "#ba1a1a"
+on-error: "#ffffff"
+error-container: "#ffdad6"
+on-error-container: "#93000a"
+ink-muted: "#566579"
+ink-subtle: "#6b7684"
+surface-strong: "#e5e8eb"
+authority-fg: "#0a2540"
+authority-bg: "#e6edf5"
+high-contrast-focus: "#111827"
+verified-fg: "#00796b"
+verified-bg: "#e4f7f4"
+pending-fg: "#9a4d00"
+pending-bg: "#fff2de"
+danger-fg: "#c02131"
+danger-bg: "#ffe8eb"
+decision-fg: "#4e5968"
+decision-bg: "#eef1f4"
+approved-fg: "#0b7a53"
+approved-bg: "#e7f7ef"
+convertible-fg: "#174ea6"
+convertible-bg: "#e8f0fe"
+```
 
 ### 5.2 Typography
 
@@ -148,6 +210,17 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 - 금액·건수: tabular figures
 - 금융 금액은 ellipsis로 자르지 않는다.
 - 대문자 eyebrow는 authority나 section label처럼 제한된 용도로만 사용한다.
+
+| Role            | Family         | Size | Weight | Line height |
+| --------------- | -------------- | ---: | -----: | ----------: |
+| balance-display | Hanken Grotesk | 34px |    700 |         1.2 |
+| metric          | Hanken Grotesk | 28px |    700 |         1.3 |
+| title           | Hanken Grotesk | 22px |    700 |         1.4 |
+| body            | Hanken Grotesk | 16px |    400 |         1.5 |
+| label           | Hanken Grotesk | 15px |    600 |         1.0 |
+| table-cell      | Hanken Grotesk | 14px |    400 |         1.4 |
+| caption         | Hanken Grotesk | 13px |    400 |         1.4 |
+| mono            | JetBrains Mono | 13px |    500 |         1.0 |
 
 ### 5.3 Shape와 depth
 
@@ -164,6 +237,8 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 - Card padding: 16–18px
 - 모든 pointer/touch target: 최소 44×44px
 - Desktop table row: 최소 44px
+
+Canonical spacing token은 `base 4px`, `gutter-mobile 20px`, `padding-card 16px`, `height-cta 56px`, `height-row 44px`, `padding-col 12px`, `nav-rail-width 240px`다. Radius token은 `sm 4px`, `default 8px`, `md 12px`, `lg 16px`, `xl 24px`, `full 9999px`다.
 
 ## 6. Responsive behavior
 
@@ -212,7 +287,8 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 ### Visual consistency
 
 - Authority rail, white governance header와 단일 shell을 유지한다.
-- Presentation contract token과 visual reference digest를 artifact에 기록한다.
+- `DESIGN.md` 1.1.0 path와 SHA-256 digest를 artifact에 기록한다.
+- Manifest에 legacy presentation/visual reference 입력을 기록하지 않는다.
 - Primary, status, danger와 authority color의 의미가 일관된다.
 - 4px grid, 최소 44px target과 radius 규칙을 지킨다.
 
@@ -231,7 +307,7 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 
 ## 11. Pilot pages
 
-이 문서 1.0.0의 첫 검증 화면은 다음 두 개다.
+이 문서 1.1.0의 첫 검증 화면은 다음 두 개다.
 
 1. `admin-voucher-policy-setup`: configuration/form hierarchy, validation과 submit state
 2. `admin-payout-execution`: authority, execution confirmation, running/result state와 cross-screen navigation
@@ -241,7 +317,7 @@ Presentation이나 visual reference는 source spec에 없는 업무 의미, reco
 ## 12. 변경 관리
 
 - 이 문서의 의미·composition 규칙 변경은 문서 version을 올린다.
-- Token 변경은 presentation contract version과 digest를 올린다.
-- Shell/composition 기준 변경은 visual reference contract와 adapter version을 올린다.
+- Token 또는 shell/composition 변경은 이 문서 version을 올린다.
 - 한 화면의 source 변경은 spec revision으로 처리하며 디자인 문서에 업무 예외를 추가하지 않는다.
-- Demo artifact는 source spec digest, design contract version, presentation digest, visual reference digest와 adapter version을 함께 기록해야 한다.
+- Demo artifact는 source spec digest와 design contract path/version/digest를 기록해야 한다.
+- Workflow 실행 manifest는 허용 디자인 입력을 `DESIGN.md` 하나로 선언하고 legacy 디자인 파일 접근을 금지해야 한다.

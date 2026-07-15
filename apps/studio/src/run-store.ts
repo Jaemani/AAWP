@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { appendFile, mkdir, readFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { appendFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { canonicalize, digestWorkflow, type WorkflowDefinition } from "@awf/ir";
 import {
@@ -185,8 +185,16 @@ export class JsonlStudioRunStore implements StudioRunStore {
   }
 
   async append(record: StudioRunRecord): Promise<void> {
-    await mkdir(dirname(this.path), { recursive: true });
+    const rootDirectory = dirname(this.path);
+    const runDirectory = join(rootDirectory, record.runId);
+    await mkdir(runDirectory, { recursive: true });
     await appendFile(this.path, `${canonicalize(record)}\n`, { encoding: "utf8", mode: 0o600 });
+    const temporaryPath = join(runDirectory, `.run-${randomUUID()}.tmp`);
+    await writeFile(temporaryPath, `${canonicalize(record)}\n`, {
+      encoding: "utf8",
+      mode: 0o600
+    });
+    await rename(temporaryPath, join(runDirectory, "run.json"));
   }
 
   async get(runId: string): Promise<StudioRunRecord | undefined> {
@@ -551,7 +559,7 @@ export async function executeStudioProcessRun(input: {
         : "partial";
   };
   const recordUsage = (
-    step: Pick<ExecutedStep, "nodeId" | "usage">,
+    step: Pick<ExecutedStep, "nodeId" | "usage" | "durationMs">,
     completedElapsed: number
   ): void => {
     if (step.usage.length > 0) usageNodeIds.add(step.nodeId);
@@ -561,10 +569,11 @@ export async function executeStudioProcessRun(input: {
       usageTotals.cachedInputTokens += sample.cachedInputTokens;
       usageTotals.outputTokens += sample.outputTokens;
       usageTotals.reasoningOutputTokens += sample.reasoningOutputTokens;
-      add("ModelInvoked", completedElapsed, {
+      add("ModelCompleted", completedElapsed, {
         nodeId: step.nodeId,
         provider: sample.provider,
         ...(sample.model === undefined ? {} : { model: sample.model }),
+        durationMs: step.durationMs,
         usage: {
           inputTokens: sample.inputTokens,
           cachedInputTokens: sample.cachedInputTokens,
@@ -699,7 +708,16 @@ export async function executeStudioProcessRun(input: {
             workingDirectory: event.workingDirectory,
             inputPath: executionInputPath
           });
-          if (nodeById.get(event.nodeId)?.kind === "judge") {
+          const nodeKind = nodeById.get(event.nodeId)?.kind;
+          if (nodeKind === "llm") {
+            add("ModelInvoked", startedElapsed, {
+              nodeId: event.nodeId,
+              tokenTracking:
+                input.executor.descriptor.steps.find((step) => step.nodeId === event.nodeId)
+                  ?.tokenTracking ?? "optional"
+            });
+          }
+          if (nodeKind === "judge") {
             add("VerifierStarted", startedElapsed, { nodeId: event.nodeId });
           }
         }
@@ -708,7 +726,10 @@ export async function executeStudioProcessRun(input: {
         }
         if (event.type === "stepFailed") {
           const failedElapsed = elapsed();
-          recordUsage({ nodeId: event.nodeId, usage: event.usage }, failedElapsed);
+          recordUsage(
+            { nodeId: event.nodeId, usage: event.usage, durationMs: event.durationMs },
+            failedElapsed
+          );
           nodeStates[event.nodeId] = "failed";
           add("NodeFailed", failedElapsed, {
             nodeId: event.nodeId,

@@ -1,3 +1,5 @@
 # Pinned source and reviewer-authored input artifacts must remain byte-identical.
 refined-production-spec.json
 refined-production-spec_담당자별_화면그룹_피드백_2026-07-15.md
+# User-owned temporary specs and generated workflow pilots are not repository source.
+tmp/

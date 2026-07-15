@@ -23,14 +23,7 @@ node apps/cli/dist/index.js simulate examples/spec-to-demo.wir.yaml \
 ## 2. AAWP Studio
 
 ```bash
-node apps/studio/dist/server.js \
-  --workflow examples/spec-to-demo.wir.yaml \
-  --executor path/to/execution-manifest.json \
-  --input examples/heavy-spec-slice.input.json \
-  --runs .awf/studio-runs.jsonl \
-  --demo-source examples/heavy-spec-slice \
-  --demo-root .awf/demos \
-  --port 4173
+npm run studio:spec-to-demo -- --input runs/requests/<request-id>/request.json --port 4173
 ```
 
 `http://127.0.0.1:4173/`을 연다.
@@ -45,19 +38,44 @@ node apps/studio/dist/server.js \
 
 - `Onboard demo`: 저장된 snapshot을 URL과 preview에서 활성화하고 이전 active demo를 자동으로 offboard한다.
 - `Offboard demo`: URL 제공을 중단하지만 snapshot을 보존한다.
-- `Delete demo`: `.awf/demos/<runId>` snapshot만 삭제한다.
+- `Delete demo`: `runs/<runId>/demo` snapshot만 삭제한다.
 
-새 snapshot은 기본 offboard 상태다. 어떤 lifecycle action도 Run input file, 원본 demo source, JSONL run/event와 lineage를 변경하지 않는다.
+새 snapshot은 기본 offboard 상태다. 어떤 lifecycle action도 `runs/<runId>/input.json`, `artifacts/`, node log, `run.json`, `runs/history.jsonl`과 lineage를 변경하지 않는다.
 
 Studio server는 local-only이다. `--executor`가 없으면 `Not executable`로 표시하고 Run을 비활성화하며, 몇 ms짜리 simulation 성공 record를 대신 만들지 않는다. 실행 manifest가 있으면 `Local process`로 표시하고 Run 상세의 `End-to-end time`은 입력 검증부터 실제 builder, verifier와 snapshot 완료까지의 monotonic 경과 시간이다. `Snapshot`은 application compiler 시간이 아니라 검증된 결과를 run별로 복사·digest하는 후처리 시간이며 없으면 `N/A`다.
 
 `Tokens`는 executor가 보존한 Codex JSONL `turn.completed.usage` 또는 표준 `AAWP_EVENT model_usage`의 합계다. `llm` WIR node는 usage evidence가 없으면 성공하지 않는다. `0 tokens · 0 calls`는 모든 node가 `tokenTracking: none`인 실제 비모델 workflow에서만 유효하다. `Not reported`는 0과 다르며 telemetry가 불완전하다는 뜻이다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 실제 execution event digest를 함께 표시한다.
 
-`Execution timeline`의 `elapsedMs`는 run 시작 기준 monotonic offset이며 node 완료에는 실제 child-process `durationMs`, exit code와 stdout/stderr log path가 포함된다. POST는 running record를 먼저 반환하고 Studio는 5초마다 갱신한다. Timing 계약 추가 전의 기존 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다. 현재 executor는 local process이고 Temporal worker 복구, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+`Execution timeline`의 `elapsedMs`는 run 시작 기준 monotonic offset이다. `ModelInvoked`는 model process 시작 시점, `ModelCompleted`는 duration과 usage가 확정된 종료 시점이다. Node 완료에는 실제 child-process `durationMs`, exit code와 stdout/stderr log path가 포함된다. POST는 running record를 먼저 반환하고 Studio는 5초마다 갱신한다. Timing 계약 추가 전의 기존 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다. 현재 executor는 local process이고 Temporal worker 복구, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+
+### Run 파일 구조
+
+모든 workflow는 대화와 무관하게 같은 구조를 사용한다.
+
+```text
+runs/history.jsonl
+runs/requests/<request-id>/{request.json,source-spec.json}
+runs/<runId>/{run.json,input.json,logs/,artifacts/,demo/}
+```
+
+이전 `.awf` 기록은 `npm run migrate:runs`로 원본을 삭제하지 않고 통합할 수 있다. 자세한 규약은 [`runs/README.md`](../runs/README.md)를 참고한다.
 
 명시적인 model 없는 dry-run이 필요하면 Studio Run이 아니라 `awf simulate`를 사용한다. 두 경로는 기록과 UI에서 합치지 않는다. Execution manifest 형식과 오류 코드는 [Studio 운영 문서](operations/studio.md)를 참고한다.
 
 ## 3. `spec-to-demo` 입력 범위
+
+새 실행은 먼저 source spec을 pinned request로 복사한다.
+
+```bash
+npm run request:spec-to-demo -- \
+  --source path/to/spec.json \
+  --screen admin-voucher-policy-setup \
+  --screen admin-payout-execution \
+  --request "정책 설정과 지급 실행 화면을 만들어줘" \
+  --id policy-payout-pilot
+```
+
+생성된 `request.json`에는 source spec과 `DESIGN.md`의 byte SHA-256이 들어간다. Builder는 [workflow WIR](../workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](../workflows/templates/spec-to-demo/execution.manifest.json), [실행 지침](../workflows/templates/spec-to-demo/WORKFLOW.md)만으로 동작한다. 업무 의미는 pinned source spec, 시각 디자인은 `DESIGN.md` 하나만 사용한다. 이전 demo, `presentation-contract.yaml`, `visual-reference-contract.yaml`, 기존 CSS와 대화 기억은 입력에서 제외된다.
 
 ### 특정 화면
 
@@ -154,9 +172,9 @@ npm test --prefix examples/heavy-spec-policy-operations
 node apps/studio/dist/server.js \
   --workflow examples/spec-to-demo.wir.yaml \
   --input examples/heavy-spec-policy-operations.input.json \
-  --runs .awf/studio-runs.jsonl \
+  --runs runs/history.jsonl \
   --demo-source examples/heavy-spec-policy-operations \
-  --demo-root .awf/demos \
+  --demo-root runs \
   --port 4173
 ```
 
@@ -172,9 +190,7 @@ Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에
 
 필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
 
-`presentation-contract.yaml`은 source와 별도로 pinned된다. `generate-bundle.mjs`가 `design-tokens.css`를 만들며 screen artifact는 presentation digest와 surface adapter version을 기록한다. 현재 adapter는 selected source의 45개 component contract를 모두 명시적으로 지원하지 않으면 실행을 거부한다.
-
-`visual-reference-contract.yaml`은 사용자가 승인한 화면 컨셉을 별도로 고정한다. 현재 web console baseline은 `run_bf24…`의 짙은 authority rail, 단일 console shell, 흰 governance header, 고밀도 filter/table과 detail drawer다. 구현은 legacy 색상값을 복사하지 않고 `presentation-contract.yaml` token으로 이 문법을 재현한다. Screen artifact는 visual reference digest를 기록하므로 이후 style 변경 원인을 run별로 추적할 수 있다.
+`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. 새 `spec-to-demo` 0.3.0은 필요한 token, web/mobile composition, interaction과 접근성 기준을 `DESIGN.md` 1.1.0에 흡수했으며 demo manifest에는 이 파일의 path/version/digest만 기록한다.
 
 정확성의 현재 경계도 구분한다. Source screen object, component reference, design token, navigation target과 interaction description은 byte/digest 또는 deep-equality test로 고정된다. 반면 각 component의 모든 prop이 화면 field로 노출되는지와 Figma 수준 pixel geometry는 아직 전수 acceptance가 없다. 따라서 현재 demo는 source-faithful structural prototype이지 22개 화면의 field-by-field 완전 구현이라고 주장하지 않는다. 예시 record도 source authority data가 아니다.
 
@@ -189,9 +205,9 @@ npm test --prefix examples/heavy-spec-role-comparison
 node apps/studio/dist/server.js \
   --workflow examples/spec-to-demo.wir.yaml \
   --input examples/heavy-spec-role-comparison.input.json \
-  --runs .awf/studio-runs.jsonl \
+  --runs runs/history.jsonl \
   --demo-source examples/heavy-spec-role-comparison \
-  --demo-root .awf/demos \
+  --demo-root runs \
   --port 4173
 ```
 

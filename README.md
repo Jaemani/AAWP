@@ -15,7 +15,7 @@ AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration cat
 
 ## 현재 구현
 
-WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio의 실행 버튼은 별도 execution manifest로 WIR node마다 실제 local process가 등록된 경우에만 활성화된다. 이 경로는 입력 검증부터 process, verifier와 snapshot까지의 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 run별로 보존한다. 원본/feedback child spec을 8개 담당 업무별로 비교하는 검토 fixture도 있다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio의 실행 버튼은 별도 execution manifest로 WIR node마다 실제 local process가 등록된 경우에만 활성화된다. 이 경로는 입력 검증부터 process, verifier와 snapshot까지의 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. 원본/feedback child spec을 8개 담당 업무별로 비교하는 검토 fixture도 있다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
 
 ## 시작하기
 
@@ -30,20 +30,24 @@ node apps/cli/dist/index.js simulate examples/spec-to-demo.wir.yaml \
   --input examples/spec-to-demo.input.json
 ```
 
-AAWP Studio 실행:
+실행 가능한 `spec-to-demo` 요청과 Studio:
 
 ```bash
-node apps/studio/dist/server.js \
-  --workflow examples/spec-to-demo.wir.yaml \
-  --executor path/to/execution-manifest.json \
-  --input examples/heavy-spec-slice.input.json \
-  --runs .awf/studio-runs.jsonl \
-  --demo-source examples/heavy-spec-slice \
-  --demo-root .awf/demos \
+npm run request:spec-to-demo -- \
+  --source path/to/spec.json \
+  --screen screen-id-one \
+  --screen screen-id-two \
+  --request "두 화면을 만들어줘" \
+  --id my-demo-request
+
+npm run studio:spec-to-demo -- \
+  --input runs/requests/my-demo-request/request.json \
   --port 4173
 ```
 
-`http://127.0.0.1:4173/`에서 workflow, 실행 위치·명령, live node 상태, run 기록과 결과를 확인한다. `--executor`가 없으면 Studio는 read-only이며 Run을 비활성화하고, simulation 성공 기록을 대신 만들지 않는다. 모델 node는 Codex JSONL 또는 `AAWP_EVENT` usage evidence가 없으면 실패한다. 모델 호출 없는 dry-run은 Studio Run이 아니라 위의 명시적 `awf simulate` 명령으로만 실행한다.
+`http://127.0.0.1:4173/`에서 workflow, 실행 위치·명령, live node 상태, 모든 run 기록과 결과를 확인한다. 실행 정의는 [WIR](workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](workflows/templates/spec-to-demo/execution.manifest.json), [자급식 실행 지침](workflows/templates/spec-to-demo/WORKFLOW.md)으로 구성된다. Demo의 유일한 디자인 입력은 [DESIGN.md](DESIGN.md)다. 이전 demo, presentation contract나 대화 기억을 사용하지 않는다.
+
+모든 실행은 `runs/history.jsonl`과 `runs/<runId>/`에 저장된다. `--executor`가 없으면 Studio는 read-only이며 Run을 비활성화하고, simulation 성공 기록을 대신 만들지 않는다. 모델 node는 Codex JSONL 또는 `AAWP_EVENT` usage evidence가 없으면 실패한다. 모델 호출 없는 dry-run은 Studio Run이 아니라 위의 명시적 `awf simulate` 명령으로만 실행한다.
 
 담당자별 원본/feedback candidate 비교 demo는 `examples/heavy-spec-role-comparison`에 있다. Candidate 실행 입력은 부모 내용을 모두 포함한 child JSON 한 파일이며 proposal·verdict는 감사 sidecar다.
 
@@ -58,7 +62,6 @@ node apps/studio/dist/server.js \
 - [변경 기록](CHANGELOG.md): 사용자·운영자 관점의 update notes
 - [오류·교정 기록](docs/lessons-and-corrections.md): 유의미한 실수, 영향과 재발 방지
 - [운영 문서](docs/operations/studio.md): local Studio API와 운영 경계
-- [구현 계획](agentic_workflow_framework_implementation_plan_ko.md)과 [starter backlog](agentic_workflow_framework_starter_backlog.yaml)
 - [공개 참고 자료](docs/references.md), [dependency snapshot](docs/dependency-sources.md), [clean-room provenance](docs/provenance-matrix.yaml)
 
 Milestone별 계약과 증거는 `docs/m*-implementation-contract.md`, `docs/m*-implementation-report.md`에 있다.
@@ -68,6 +71,7 @@ Milestone별 계약과 증거는 `docs/m*-implementation-contract.md`, `docs/m*-
 - `apps/cli`, `apps/studio`: CLI와 local run console
 - `packages/*`: IR, compiler, runtime, storage, gateway, demo bundle과 control plane
 - `workflows/templates/*`: domain workflow template
+- `runs/`: local request, append-only history, node log, artifact와 demo snapshot의 단일 영속 root
 - `examples/*`: WIR, input과 결과 fixture
 - `benchmarks/*`: direct baseline과 workflow 비교 harness
 - `docs/adr`, `docs/operations`: 의사결정과 runbook

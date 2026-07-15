@@ -113,27 +113,35 @@ export class LocalStudioDemoStore implements StudioDemoStore {
 
   private runDirectory(runId: string): string {
     assertRunId(runId);
-    return join(this.rootDirectory, runId);
+    return join(this.rootDirectory, runId, "demo");
+  }
+
+  private sourceDirectoryFor(runId: string): string | undefined {
+    if (this.sourceDirectory === undefined) return undefined;
+    assertRunId(runId);
+    return resolve(this.sourceDirectory.replaceAll("{runId}", runId));
   }
 
   async createSnapshot(runId: string): Promise<StudioDemoRecord | undefined> {
-    if (this.sourceDirectory === undefined) return undefined;
-    const entryPath = join(this.sourceDirectory, "index.html");
+    const sourceDirectory = this.sourceDirectoryFor(runId);
+    if (sourceDirectory === undefined) return undefined;
+    const entryPath = join(sourceDirectory, "index.html");
     const entry = await stat(entryPath).catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") throw new Error(`demo source has no index.html: ${entryPath}`);
       throw error;
     });
     if (!entry.isFile()) throw new Error(`demo source index is not a file: ${entryPath}`);
 
-    await mkdir(this.rootDirectory, { recursive: true });
-    const temporaryDirectory = await mkdtemp(join(this.rootDirectory, `.snapshot-${runId}-`));
+    const runRoot = join(this.rootDirectory, runId);
+    await mkdir(runRoot, { recursive: true });
+    const temporaryDirectory = await mkdtemp(join(runRoot, ".demo-snapshot-"));
     const targetDirectory = this.runDirectory(runId);
     try {
-      await cp(this.sourceDirectory, temporaryDirectory, { recursive: true, errorOnExist: true });
+      await cp(sourceDirectory, temporaryDirectory, { recursive: true, errorOnExist: true });
       const contentDigest = await directoryDigest(temporaryDirectory);
       await rename(temporaryDirectory, targetDirectory);
       return {
-        label: basename(this.sourceDirectory),
+        label: basename(sourceDirectory),
         entryUrl: `/runs/${encodeURIComponent(runId)}/demo/`,
         contentDigest
       };
@@ -165,7 +173,7 @@ export class LocalStudioDemoStore implements StudioDemoStore {
       const entries = await readdir(this.rootDirectory, { withFileTypes: true });
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
-        const entryDirectory = join(this.rootDirectory, entry.name);
+        const entryDirectory = join(this.rootDirectory, entry.name, "demo");
         if (entryDirectory === targetDirectory) continue;
         const markerPath = join(entryDirectory, ONBOARD_MARKER);
         if (await pathExists(markerPath)) {

@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, resolve, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 import { canonicalize, type WorkflowDefinition } from "@awf/ir";
 
@@ -11,6 +11,7 @@ export interface LocalExecutionOutput {
   port: string;
   source: "file" | "stdout";
   path?: string;
+  base?: "workingDirectory" | "executionDirectory";
 }
 
 export interface LocalExecutionStep {
@@ -170,11 +171,37 @@ function parseOutput(raw: unknown, index: number): LocalExecutionOutput {
   if (raw.source === "stdout" && raw.path !== undefined) {
     throw new StudioExecutionManifestError(`stdout output ${raw.port} cannot declare path`);
   }
+  if (raw.source === "stdout" && raw.base !== undefined) {
+    throw new StudioExecutionManifestError(`stdout output ${raw.port} cannot declare base`);
+  }
+  if (
+    raw.source === "file" &&
+    raw.base !== undefined &&
+    !["workingDirectory", "executionDirectory"].includes(String(raw.base))
+  ) {
+    throw new StudioExecutionManifestError(`file output ${raw.port} has invalid base`);
+  }
+  if (raw.source === "file" && raw.base === "executionDirectory" && isAbsolute(String(raw.path))) {
+    throw new StudioExecutionManifestError(
+      `execution-directory output ${raw.port} path must be relative`
+    );
+  }
   return {
     port: raw.port,
     source: raw.source as "file" | "stdout",
-    ...(raw.path === undefined ? {} : { path: String(raw.path) })
+    ...(raw.path === undefined ? {} : { path: String(raw.path) }),
+    ...(raw.base === undefined
+      ? {}
+      : { base: raw.base as "workingDirectory" | "executionDirectory" })
   };
+}
+
+function resolveExecutionOutput(root: string, path: string): string {
+  const absolutePath = resolve(root, path);
+  if (absolutePath !== root && !absolutePath.startsWith(`${root}${sep}`)) {
+    throw new StudioExecutionManifestError(`execution output escapes run directory: ${path}`);
+  }
+  return absolutePath;
 }
 
 export function parseLocalExecutionManifest(
@@ -434,7 +461,7 @@ export class LocalProcessWorkflowExecutor implements StudioWorkflowExecutor {
     const executionDirectory = resolve(this.executionRoot, input.runId);
     const inputPath = resolve(executionDirectory, "input.json");
     await mkdir(this.executionRoot, { recursive: true });
-    await mkdir(executionDirectory, { recursive: false });
+    await mkdir(executionDirectory, { recursive: true });
     const logDirectory = resolve(executionDirectory, "logs");
     await mkdir(logDirectory, { recursive: false });
     await writeFile(inputPath, `${canonicalize(input.inputs)}\n`, {
@@ -521,7 +548,10 @@ export class LocalProcessWorkflowExecutor implements StudioWorkflowExecutor {
             path: stdoutPath
           });
         } else {
-          const absolutePath = resolve(this.workingDirectory, output.path!);
+          const absolutePath =
+            output.base === "executionDirectory"
+              ? resolveExecutionOutput(executionDirectory, output.path!)
+              : resolve(this.workingDirectory, output.path!);
           artifacts.push({
             nodeId: step.nodeId,
             port: output.port,

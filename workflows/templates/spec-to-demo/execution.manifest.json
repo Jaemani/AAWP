@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "aawp/local-execution-manifest/v1",
+  "workflowId": "spec-to-demo",
+  "workingDirectory": ".",
+  "steps": [
+    {
+      "nodeId": "build-demo",
+      "command": [
+        "codex",
+        "-a",
+        "never",
+        "exec",
+        "--json",
+        "--ephemeral",
+        "--skip-git-repo-check",
+        "--sandbox",
+        "workspace-write",
+        "--model",
+        "gpt-5.5",
+        "-c",
+        "model_reasoning_effort=\"medium\"",
+        "--cd",
+        ".",
+        "Execute the registered spec-to-demo build-demo node. Read $AAWP_INPUT_PATH and workflows/templates/spec-to-demo/WORKFLOW.md completely, then follow them exactly. DESIGN.md is the only design input. Do not inspect legacy design contracts or any previous demo. Write only inside $AAWP_EXECUTION_DIR/artifacts/demo. Do not merely describe the work."
+      ],
+      "timeoutSec": 1800,
+      "tokenTracking": "required",
+      "outputs": [
+        {
+          "port": "output",
+          "source": "file",
+          "path": "artifacts/demo/manifest.json",
+          "base": "executionDirectory"
+        }
+      ]
+    },
+    {
+      "nodeId": "verify-release",
+      "command": ["node", "scripts/verify-spec-to-demo-run.mjs"],
+      "timeoutSec": 120,
+      "tokenTracking": "none",
+      "outputs": [{ "port": "output", "source": "stdout" }]
+    }
+  ]
+}

@@ -4,6 +4,9 @@ coverage/
 .turbo/
 .tokensave/
 .awf/
+runs/*
+!runs/.gitkeep
+!runs/README.md
 .DS_Store
 benchmarks/direct-v0/runs/
 benchmarks/direct-v0/workspaces/

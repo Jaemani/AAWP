@@ -1,0 +1,103 @@
+apiVersion: awf/v1
+id: spec-to-demo
+version: 0.3.0
+mode: CONTRACT
+artifactSchemas:
+  - type: artifact.brief
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+      required: [schemaVersion, sourceSpec, designContract, requestedScreens, demoArtifact]
+  - type: artifact.demo
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.verdict
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+inputs:
+  brief:
+    type: artifact.brief
+    schemaVersion: 1.0.0
+    visibility: public
+outputs:
+  demo:
+    type: artifact.verdict
+    schemaVersion: 1.0.0
+    visibility: public
+verifierDefinitions:
+  - id: release-check
+    owner: { id: verifier-team, role: verifier }
+    visibility: hidden
+scopePolicy:
+  allowedSecrets: []
+  allowedNetworkHosts: []
+  maxWorkflowCostUsd: 10
+nodes:
+  - id: build-demo
+    kind: llm
+    version: 1.0.0
+    owner: { id: builder-team, role: builder }
+    inputs:
+      input: { type: artifact.brief, schemaVersion: 1.0.0, visibility: public }
+    outputs:
+      output: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
+    reads:
+      - DESIGN.md
+      - workflows/templates/spec-to-demo/WORKFLOW.md
+      - runs/requests/**
+    writes: [runs/run_*/artifacts/demo/**]
+    capabilities:
+      filesystemRead:
+        - DESIGN.md
+        - workflows/templates/spec-to-demo/WORKFLOW.md
+        - runs/requests/**
+      filesystemWrite: [runs/run_*/artifacts/demo/**]
+      network: []
+      tools: [codex]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 1800, maxCostUsd: 9.5 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers: []
+    retryPolicy: { retryableClasses: [capacity], backoff: fixed }
+  - id: verify-release
+    kind: judge
+    version: 1.0.0
+    owner: { id: verifier-team, role: verifier }
+    inputs:
+      input: { type: artifact.demo, schemaVersion: 1.0.0, visibility: hidden }
+    outputs:
+      output: { type: artifact.verdict, schemaVersion: 1.0.0, visibility: public }
+    reads:
+      - DESIGN.md
+      - runs/requests/**
+      - runs/run_*/artifacts/demo/**
+    writes: []
+    capabilities:
+      filesystemRead:
+        - DESIGN.md
+        - runs/requests/**
+        - runs/run_*/artifacts/demo/**
+      filesystemWrite: []
+      network: []
+      tools: [node]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 120, maxCostUsd: 0 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers:
+      - verifierId: release-check
+        required: true
+        phase: release
+    retryPolicy: { retryableClasses: [], backoff: fixed }
+edges:
+  - source: { kind: workflowInput, port: brief }
+    target: { kind: nodeInput, nodeId: build-demo, port: input }
+  - source: { kind: nodeOutput, nodeId: build-demo, port: output }
+    target: { kind: nodeInput, nodeId: verify-release, port: input }
+  - source: { kind: nodeOutput, nodeId: verify-release, port: output }
+    target: { kind: workflowOutput, port: demo }
+releasePolicy:
+  requiredVerifiers: [release-check]
+  maxBlockingFindings: 0
+  requireDirectBaseline: true

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WorkflowDefinition } from "@awf/ir";
@@ -106,7 +106,8 @@ describe("local process workflow executor", () => {
     directory = await mkdtemp(join(tmpdir(), "aawp-executor-"));
     const source = [
       "const fs=require('node:fs')",
-      "fs.writeFileSync('artifact.json', JSON.stringify({ok:true,runId:process.env.AAWP_RUN_ID}))",
+      "const path=require('node:path')",
+      "fs.writeFileSync(path.join(process.env.AAWP_EXECUTION_DIR,'artifact.json'), JSON.stringify({ok:true,runId:process.env.AAWP_RUN_ID}))",
       "console.log('AAWP_EVENT '+JSON.stringify({type:'model_usage',provider:'fixture',model:'fixture-1',inputTokens:11,cachedInputTokens:3,outputTokens:7,reasoningOutputTokens:2}))"
     ].join(";");
     const definition = workflow("llm");
@@ -121,7 +122,14 @@ describe("local process workflow executor", () => {
             command: [process.execPath, "-e", source],
             timeoutSec: 10,
             tokenTracking: "required",
-            outputs: [{ port: "output", source: "file", path: "artifact.json" }]
+            outputs: [
+              {
+                port: "output",
+                source: "file",
+                path: "artifact.json",
+                base: "executionDirectory"
+              }
+            ]
           }
         ]
       },
@@ -130,6 +138,8 @@ describe("local process workflow executor", () => {
     const executor = new LocalProcessWorkflowExecutor(manifest, {
       executionRoot: join(directory, "executions")
     });
+    await mkdir(join(directory, "executions", "run_executor_test"), { recursive: true });
+    await writeFile(join(directory, "executions", "run_executor_test", "run.json"), "{}\n");
 
     const result = await executor.execute({
       workflow: definition,
@@ -155,6 +165,9 @@ describe("local process workflow executor", () => {
       artifacts: [{ nodeId: "execute", port: "output", source: "file" }]
     });
     await expect(readFile(result.inputPath, "utf8")).resolves.toContain('"message":"hello"');
+    expect(result.steps[0]?.artifacts[0]?.path).toBe(
+      join(directory, "executions", "run_executor_test", "artifact.json")
+    );
     await expect(readFile(result.steps[0]!.stdoutPath, "utf8")).resolves.toContain("model_usage");
   });
 

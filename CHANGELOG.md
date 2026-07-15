@@ -4,6 +4,18 @@
 
 ## 2026-07-15
 
+### 단일 run root와 self-contained workflow
+
+- 모든 local history를 `runs/history.jsonl`, 최신 record·input·log·artifact·demo를 `runs/<runId>/`에 저장하도록 기본 경로를 통일했다.
+- 세 legacy `.awf` history의 22개 run과 15개 demo snapshot을 원본 삭제 없이 통합하는 importer를 추가했다.
+- `spec-to-demo` 0.3.0을 WIR, execution manifest, `WORKFLOW.md`, 독립 verifier가 한 bundle을 이루는 대화 비의존 실행 단위로 만들었다.
+- Request 생성 command가 source spec을 `runs/requests/<id>`에 고정하고 source와 `DESIGN.md` byte SHA-256을 기록한다.
+- `DESIGN.md` 1.1.0에 기존 presentation token, web/mobile composition, interaction과 접근성 규칙을 흡수했다.
+- 새 demo builder의 디자인 입력을 `DESIGN.md` 하나로 제한하고 이전 demo/CSS, presentation contract와 visual reference 사용을 verifier에서 거부한다.
+- File artifact가 `base: executionDirectory`를 선언해 `runs/<runId>` 내부에 저장될 수 있도록 하고 root 탈출을 거부한다.
+- `ModelInvoked`를 실제 LLM process 시작 시점에, usage와 duration은 새 `ModelCompleted` 종료 event에 기록한다.
+- Metadata store가 먼저 run directory를 만든 경우 executor가 `EEXIST`로 실패하던 통합 root 충돌을 수정했다.
+
 ### AAWP Studio identity와 실행 console
 
 - 제품 표기를 `AAWP Studio`와 `Adaptive Artifact Workflow Platform`으로 통일했다.
@@ -21,7 +33,7 @@
 - Run별 end-to-end wall clock, input validation, 실제 process 실행과 결과 snapshot materialization 시간을 분리해 측정한다.
 - Codex JSONL과 `AAWP_EVENT model_usage`에서 input/cached/output/reasoning token을 합산하고, LLM node의 usage 누락을 실패 처리한다.
 - 모든 node가 비모델로 명시된 실제 execution에서만 `0 tokens · 0 calls`를 measured로 허용한다.
-- Run별 input, stdout/stderr 로그, 실제 file/stdout artifact hash와 executor 경로를 `.awf/executions/<runId>`에 보존한다.
+- Run별 input, stdout/stderr 로그, 실제 file/stdout artifact hash와 executor 경로를 `runs/<runId>`에 보존한다.
 - Run ID를 trace ID로 사용하고 workflow, input, trace digest를 한곳에서 역추적할 수 있게 했다.
 
 ### `spec-to-demo` 범위 선택

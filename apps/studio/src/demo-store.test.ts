@@ -12,6 +12,26 @@ afterEach(async () => {
 });
 
 describe("local Studio demo store", () => {
+  it("materializes a run-scoped builder artifact under the same run root", async () => {
+    directory = await mkdtemp(join(tmpdir(), "awf-demo-run-root-"));
+    const runRoot = join(directory, "runs");
+    const sourceDirectory = join(runRoot, "run_scoped", "artifacts", "demo");
+    await mkdir(sourceDirectory, { recursive: true });
+    await writeFile(join(sourceDirectory, "index.html"), "<h1>scoped demo</h1>");
+    const store = new LocalStudioDemoStore({
+      rootDirectory: runRoot,
+      sourceDirectory: join(runRoot, "{runId}", "artifacts", "demo")
+    });
+
+    await expect(store.createSnapshot("run_scoped")).resolves.toMatchObject({
+      entryUrl: "/runs/run_scoped/demo/"
+    });
+    await expect(store.onboard("run_scoped")).resolves.toBe(true);
+    await expect(store.read("run_scoped", "index.html")).resolves.toMatchObject({
+      content: Buffer.from("<h1>scoped demo</h1>")
+    });
+  });
+
   it("creates an offboarded snapshot, controls serving, and deletes only the snapshot", async () => {
     directory = await mkdtemp(join(tmpdir(), "awf-demo-"));
     const sourceDirectory = join(directory, "source");

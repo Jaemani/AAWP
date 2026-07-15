@@ -305,7 +305,7 @@ async function main(): Promise<void> {
   const workflowPath = argument("--workflow");
   if (workflowPath === undefined) {
     throw new Error(
-      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--executor execution.json] [--input fixture.json] [--runs .awf/studio-runs.jsonl] [--demo-source directory] [--demo-root .awf/demos] [--execution-root .awf/executions] [--port 4173]"
+      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--executor execution.json] [--input fixture.json] [--runs runs/history.jsonl] [--demo-source runs/{runId}/artifacts/demo] [--demo-root runs] [--execution-root runs] [--port 4173]"
     );
   }
   const portValue = argument("--port") ?? "4173";
@@ -321,12 +321,12 @@ async function main(): Promise<void> {
       ? undefined
       : new LocalProcessWorkflowExecutor(
           await loadLocalExecutionManifest(executorPath, document.workflow),
-          { executionRoot: resolve(argument("--execution-root") ?? ".awf/executions") }
+          { executionRoot: resolve(argument("--execution-root") ?? "runs") }
         );
-  const runStore = new JsonlStudioRunStore(resolve(argument("--runs") ?? ".awf/studio-runs.jsonl"));
+  const runStore = new JsonlStudioRunStore(resolve(argument("--runs") ?? "runs/history.jsonl"));
   const demoSource = argument("--demo-source");
   const demoStore = new LocalStudioDemoStore({
-    rootDirectory: resolve(argument("--demo-root") ?? ".awf/demos"),
+    rootDirectory: resolve(argument("--demo-root") ?? "runs"),
     ...(demoSource === undefined ? {} : { sourceDirectory: resolve(demoSource) })
   });
   const host = "127.0.0.1";
