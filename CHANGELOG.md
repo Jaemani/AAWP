@@ -19,6 +19,7 @@
 - 정규화된 spec의 `screenGroups`가 `topic`과 `flow` 묶음을 선언할 수 있다.
 - 사용자 요청 원문, 선택한 group과 최종 screen/requirement 집합을 scope contract에 기록한다.
 - 자연어 요청이 명시적 ID로 해소되지 않았거나 group이 잘못된 경우 compile을 fail-closed한다.
+- Selection 누락을 전체 화면 요청으로 해석하지 않고 명시적 all selection을 요구한다.
 
 ### 문서
 

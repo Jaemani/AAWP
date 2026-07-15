@@ -13,8 +13,11 @@ export function inputFor(
   document: SpecDocument,
   overrides: Partial<SpecToDemoInput> = {}
 ): SpecToDemoInput {
+  const hasSelectionOverride =
+    Object.hasOwn(overrides, "selectedScope") || Object.hasOwn(overrides, "scopeSelection");
   return {
     specArtifactId: document.sourceArtifactId,
+    ...(hasSelectionOverride ? {} : { selectedScope: document.screens.map((screen) => screen.id) }),
     demoProfile: "web-react",
     targetViewports: [
       { width: 390, height: 844 },

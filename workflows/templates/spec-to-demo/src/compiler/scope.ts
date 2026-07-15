@@ -18,6 +18,7 @@ export class ScopeCompilationError extends Error {
       | "INVALID_SCREEN_GROUP_REFERENCE"
       | "UNKNOWN_SCOPE_SELECTOR"
       | "UNKNOWN_SCREEN_GROUP"
+      | "MISSING_SCOPE_SELECTION"
       | "UNRESOLVED_SCOPE_REQUEST"
       | "MAX_SCREENS_EXCEEDED",
     message: string
@@ -96,6 +97,12 @@ export function compileScopeContract(
     );
   }
   const hasExplicitSelection = input.selectedScope !== undefined || hasStructuredSelectors;
+  if (!hasExplicitSelection) {
+    throw new ScopeCompilationError(
+      "MISSING_SCOPE_SELECTION",
+      "spec-to-demo requires an explicit screen, requirement, or group selection"
+    );
+  }
   const selectors = [
     ...(input.selectedScope ?? []),
     ...(structuredSelection?.screenIds ?? []),
@@ -112,7 +119,6 @@ export function compileScopeContract(
     selectedGroups.add(groupId);
     for (const screenId of group.screenIds) selectors.push(screenId);
   }
-  if (!hasExplicitSelection) selectors.push(...screenIds);
   for (const selector of selectors) {
     if (screenIds.has(selector)) {
       selectedScreens.add(selector);

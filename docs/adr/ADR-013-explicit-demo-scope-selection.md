@@ -20,6 +20,7 @@
 - Resolver는 사용자 원문을 `scopeSelection.screenIds`, `requirementKeys`, `groupIds`로 변환한다.
 - `spec-to-demo` compiler는 source artifact 일치, ID 존재, duplicate, group reference와 `maxScreens`를 검사한다.
 - Scope contract는 요청 원문, 선택 group, 포함·제외 screen과 선택 requirement를 immutable digest에 포함한다.
+- Selection이 없을 때 전체 화면을 암묵적으로 선택하지 않는다. 전체 생성도 모든 screen ID 또는 명시적인 all group으로 요청해야 한다.
 - 요청 원문만 있고 explicit selector가 없으면 `UNRESOLVED_SCOPE_REQUEST`로 중단한다.
 - Builder는 public scope contract만 받고 verifier는 같은 contract와 mandatory broad regression으로 판정한다.
 

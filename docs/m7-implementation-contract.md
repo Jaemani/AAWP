@@ -10,6 +10,7 @@
 - Input artifact ID와 document source artifact ID가 다르거나 screen/requirement key가 중복되면 compile을 거부한다.
 - Scope selector는 screen ID, requirement key 또는 `screen/requirement`를 사용하며 unknown selector와 `maxScreens` 초과를 거부한다.
 - `scopeSelection`은 사용자 원문과 screen, requirement, group ID를 함께 기록한다. 원문만 있고 explicit ID가 없으면 `UNRESOLVED_SCOPE_REQUEST`로 거부한다.
+- Selection 생략을 전체 화면 요청으로 해석하지 않으며 `MISSING_SCOPE_SELECTION`으로 거부한다. 전체 생성도 explicit screen/group selection이 필요하다.
 - Group은 compiler가 exact screen set으로 확장하며 unknown group과 존재하지 않는 screen reference를 거부한다.
 - Requirement ID는 `documentId + screenId + sourceKey`의 digest로 만들고 원문 변경과 분리한다.
 - Scope, requirement와 acceptance contract는 canonical content digest를 가진다.

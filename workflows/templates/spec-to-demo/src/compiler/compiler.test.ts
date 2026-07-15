@@ -88,6 +88,11 @@ describe("spec-to-demo contract compilers", () => {
         document
       )
     ).toThrowError(expect.objectContaining({ code: "UNRESOLVED_SCOPE_REQUEST" }));
+    const inputWithoutScope = inputFor(document);
+    delete inputWithoutScope.selectedScope;
+    expect(() => compileSpecContracts(inputWithoutScope, document)).toThrowError(
+      expect.objectContaining({ code: "MISSING_SCOPE_SELECTION" })
+    );
   });
 
   it("fails closed when a group is unknown, invalid, or expands beyond the screen budget", async () => {
