@@ -1,0 +1,22 @@
+schemaVersion: aawp/visual-reference-contract/v1
+name: Policy console visual baseline
+source:
+  runId: run_bf24da5f-35d3-4df9-ba8a-d6cbcb182838
+  repositoryExample: ../heavy-spec-slice
+  files:
+    index.html: 245c0f2695fcf05a675b9e81c94c83d63add3a80ebc991db3f4c50c8fc4dbe5e
+    styles.css: f75d8b3452274e56604396ce792882e348f0853b86127f2e5e8d2c943d4541fe
+scope:
+  - 관리 콘솔(웹)
+  - 발행사 콘솔(웹)
+preserve:
+  - Centered single console shell over a quiet gray workspace.
+  - Dark authority navigation rail with a clear active destination.
+  - White governance header containing breadcrumb, product title, and compact authority state.
+  - Dense filter, table, status, and right-side detail drawer patterns.
+  - Product navigation inside the console and collection navigation outside it.
+adaptWith:
+  - Use presentation-contract.yaml tokens instead of copying legacy color literals.
+  - Keep the 240px rail, 44px minimum targets, semantic token pairs, and accessible focus ring.
+  - Use the source-defined screen, component, copy, state, and navigation contracts.
+  - Never expose route, purpose, dataNeeds, component names, or feedback diagnostics in product UI.

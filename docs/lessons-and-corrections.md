@@ -79,6 +79,13 @@
 - 교정: 제품 화면은 `screen.copy.title`과 실제 업무 UI만 렌더링하고 route, purpose, dataNeeds, component 이름과 feedback 진단은 Studio의 artifact inspector가 소유한다.
 - 재발 방지: Surface adapter 검증에서 `artifact.screen.route`와 `artifact.screen.purpose`의 제품 DOM 투영을 금지한다.
 
+## Generic adapter 전환 중 검증된 시각 문법까지 교체했다
+
+- 관찰: 3화면 slice의 정책 콘솔은 자연스러웠지만 22화면 adapter로 확장하면서 light rail, full-bleed workspace와 여러 겹의 panel로 바뀌어 제품 정체성과 정보 밀도가 약해졌다.
+- 원인: 기능 구조를 일반화하는 작업과 visual baseline 교체를 하나의 변경으로 취급했다.
+- 교정: `run_bf24…`와 동일한 repository fixture의 HTML/CSS digest를 `visual-reference-contract.yaml`에 고정하고, 시각 문법은 유지한 채 Stitch presentation token으로 색과 크기만 재매핑했다.
+- 재발 방지: Screen artifact가 presentation digest와 visual reference digest를 함께 기록하며, adapter visual version을 독립적으로 올린다.
+
 ## Local simulation이 production workflow처럼 오해될 수 있었다
 
 - 관찰: run과 event가 기록되므로 실제 model/tool workflow가 수행된 것으로 받아들일 여지가 있었다.

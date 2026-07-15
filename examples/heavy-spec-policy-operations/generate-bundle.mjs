@@ -10,10 +10,14 @@ import { parse as parseYaml } from "yaml";
 const directory = dirname(fileURLToPath(import.meta.url));
 const selectionPath = join(directory, "selection-manifest.json");
 const presentationPath = join(directory, "presentation-contract.yaml");
+const visualReferencePath = join(directory, "visual-reference-contract.yaml");
 const selection = JSON.parse(await readFile(selectionPath, "utf8"));
 const presentationBytes = await readFile(presentationPath);
 const presentation = parseYaml(presentationBytes.toString("utf8"));
 const presentationDigest = createHash("sha256").update(presentationBytes).digest("hex");
+const visualReferenceBytes = await readFile(visualReferencePath);
+const visualReference = parseYaml(visualReferenceBytes.toString("utf8"));
+const visualReferenceDigest = createHash("sha256").update(visualReferenceBytes).digest("hex");
 const sourceBytes = await readFile(selection.source);
 const sourceDigest = createHash("sha256").update(sourceBytes).digest("hex");
 if (sourceDigest !== selection.sourceSha256) {
@@ -46,6 +50,13 @@ const sourceContracts = {
     contentDigest: presentationDigest,
     schemaVersion: presentation.schemaVersion,
     name: presentation.name
+  },
+  visualReferenceContract: {
+    path: "visual-reference-contract.yaml",
+    contentDigest: visualReferenceDigest,
+    schemaVersion: visualReference.schemaVersion,
+    name: visualReference.name,
+    sourceRunId: visualReference.source.runId
   },
   designSystem: source.designTokens,
   components: selectedComponentDefinitions
@@ -247,8 +258,9 @@ for (const screen of selectedScreens) {
     },
     renderer: {
       adapterId: "aawp-console-surface",
-      adapterVersion: "0.2.0",
+      adapterVersion: "0.3.0",
       presentationDigest,
+      visualReferenceDigest,
       formFactor: formFactor(screen.surface)
     },
     navigation: navigationFor(screen),

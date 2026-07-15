@@ -10,6 +10,13 @@
     "schemaVersion": "aawp/presentation-contract/v1",
     "name": "Gyeonggi Integrated Wallet"
   },
+  "visualReferenceContract": {
+    "path": "visual-reference-contract.yaml",
+    "contentDigest": "f398ce292255ea672e740ad3393264aad15ca5d15254a78da3a9b93aa040ca5c",
+    "schemaVersion": "aawp/visual-reference-contract/v1",
+    "name": "Policy console visual baseline",
+    "sourceRunId": "run_bf24da5f-35d3-4df9-ba8a-d6cbcb182838"
+  },
   "designSystem": {
     "palette": [
       { "name": "primary", "value": "#2368D9", "usage": "결제/주요 CTA, 핵심 액션" },

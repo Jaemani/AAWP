@@ -42,6 +42,8 @@
 - 독립 화면에서 source CTA를 누르면 bundle viewer로 돌아가지 않고 target screen의 독립 주소로 직접 전환한다.
 - 상태 배지는 semantic foreground/background token과 로컬에 포함한 Lucide 아이콘을 함께 사용한다.
 - 제품 화면에서 route, purpose와 spec feedback count 같은 authoring metadata를 제거하고 `screen.copy.title`을 사용자용 제목으로 사용한다.
+- 사용자가 선택한 `run_bf24…` 정책 콘솔을 pinned visual reference contract로 추가하고, generic console adapter `0.3.0`에 짙은 authority rail, 단일 shell, 흰 governance header와 고밀도 업무 패턴을 복원했다.
+- Navigation의 문자 placeholder를 source icon name과 대응하는 로컬 Lucide asset으로 교체했다.
 
 ### `spec-feedback-to-spec`
 

@@ -167,6 +167,8 @@ Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에
 
 `presentation-contract.yaml`은 source와 별도로 pinned된다. `generate-bundle.mjs`가 `design-tokens.css`를 만들며 screen artifact는 presentation digest와 surface adapter version을 기록한다. 현재 adapter는 selected source의 45개 component contract를 모두 명시적으로 지원하지 않으면 실행을 거부한다.
 
+`visual-reference-contract.yaml`은 사용자가 승인한 화면 컨셉을 별도로 고정한다. 현재 web console baseline은 `run_bf24…`의 짙은 authority rail, 단일 console shell, 흰 governance header, 고밀도 filter/table과 detail drawer다. 구현은 legacy 색상값을 복사하지 않고 `presentation-contract.yaml` token으로 이 문법을 재현한다. Screen artifact는 visual reference digest를 기록하므로 이후 style 변경 원인을 run별로 추적할 수 있다.
+
 정확성의 현재 경계도 구분한다. Source screen object, component reference, design token, navigation target과 interaction description은 byte/digest 또는 deep-equality test로 고정된다. 반면 각 component의 모든 prop이 화면 field로 노출되는지와 Figma 수준 pixel geometry는 아직 전수 acceptance가 없다. 따라서 현재 demo는 source-faithful structural prototype이지 22개 화면의 field-by-field 완전 구현이라고 주장하지 않는다. 예시 record도 source authority data가 아니다.
 
 ## 4. `spec-feedback-to-spec`

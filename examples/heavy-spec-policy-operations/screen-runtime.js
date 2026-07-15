@@ -1248,14 +1248,16 @@ const renderers = {
 function renderRail() {
   const rail = el("aside", "console-rail");
   const brand = el("div", "console-brand");
-  brand.append(
-    el("span", "console-brand-mark", "G"),
+  const brandCopy = el("div", "console-brand-copy");
+  brandCopy.append(
     el(
-      "div",
+      "strong",
       "",
-      artifact.screen.surface === "발행사 콘솔(웹)" ? "경기 월렛 발행사" : "경기 통합월렛"
-    )
+      artifact.screen.surface === "발행사 콘솔(웹)" ? "경기 월렛 발행관리" : "경기 정책관리"
+    ),
+    el("small", "", artifact.screen.surface === "발행사 콘솔(웹)" ? "발행사 콘솔" : "관리 콘솔")
   );
+  brand.append(el("span", "console-brand-mark", "G"), brandCopy);
   rail.append(
     brand,
     el(
@@ -1268,19 +1270,28 @@ function renderRail() {
   for (const item of artifact.navigation?.items ?? []) {
     const button = el("button", item.target === artifact.screen.id ? "active" : "");
     button.type = "button";
-    button.append(
-      el("span", "nav-icon", item.icon.slice(0, 1).toUpperCase()),
-      el("span", "", item.label)
-    );
+    const navIcon = el("span", "nav-icon");
+    navIcon.setAttribute("aria-hidden", "true");
+    navIcon.style.setProperty("--nav-icon-source", `url("./icons/${item.icon}.svg")`);
+    button.append(navIcon, el("span", "", item.label));
     if (item.resolution.kind === "out-of-scope-screen") button.append(el("small", "", "범위 밖"));
     button.addEventListener("click", () => navigate(item.resolution, `nav.${item.target}`));
     nav.append(button);
   }
   rail.append(nav);
   const actor = el("div", "rail-actor");
+  const actorCopy = el("div", "rail-actor-copy");
+  actorCopy.append(
+    el("strong", "", artifact.screen.surface === "발행사 콘솔(웹)" ? "발행 관리자" : "김정책"),
+    el(
+      "small",
+      "",
+      artifact.screen.surface === "발행사 콘솔(웹)" ? "발행 권한 · 경기도" : "정책총괄 · 경기도"
+    )
+  );
   actor.append(
     el("span", "avatar", artifact.screen.surface === "발행사 콘솔(웹)" ? "발" : "관"),
-    el("div", "", artifact.screen.surface === "발행사 콘솔(웹)" ? "발행 관리자" : "정책 운영자")
+    actorCopy
   );
   rail.append(actor);
   return rail;
@@ -1294,10 +1305,12 @@ function renderScreen() {
   shell.append(renderRail());
   const workspace = el("div", "console-workspace");
   const chrome = el("header", "console-chrome");
-  chrome.append(
+  const chromeCopy = el("div", "chrome-copy");
+  chromeCopy.append(
     el("span", "breadcrumb", artifact.screen.surface.replace("(웹)", "")),
-    el("div", "chrome-badges")
+    el("h1", "chrome-title", productTitle)
   );
+  chrome.append(chromeCopy, el("div", "chrome-badges"));
   const missingAdapters = artifact.screen.components.filter(
     (componentName) => componentAdapterKinds[componentName] === undefined
   );
@@ -1309,14 +1322,12 @@ function renderScreen() {
     .append(
       badge("예시 데이터"),
       badge("세션 확인됨", "success"),
-      badge(artifact.screen.audience, "authority")
+      badge(
+        artifact.screen.surface === "발행사 콘솔(웹)" ? "발행 권한 영역" : "경기도 전역",
+        "authority"
+      )
     );
   const page = el("main", "console-page");
-  const head = el("div", "page-head");
-  const title = el("div");
-  title.append(el("h1", "", productTitle));
-  head.append(title);
-  page.append(head);
   const actionStatus = el("div", "status-banner success", "");
   actionStatus.id = "action-status";
   actionStatus.hidden = true;

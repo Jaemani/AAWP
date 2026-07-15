@@ -44,6 +44,8 @@ Pixel specification이 별도로 제공되면 source spec을 수정하지 않고
 
 `Gyeonggi Integrated Wallet` Stitch export는 `aawp/presentation-contract/v1` YAML로 보존하고 생성기가 CSS custom property와 digest를 만든다. Source의 primary `#2368D9`와 presentation guidance의 critical-action 규칙을 우선해 주요 CTA에 `#2368D9`를 적용한다. Presentation contract는 예시 record나 새로운 product semantics를 추가할 권한이 없다.
 
+사용자가 특정 run의 화면 컨셉을 기준으로 지정하면 별도 visual reference contract가 source run ID, repository fixture와 file digest를 고정한다. Presentation contract가 token과 접근성 규칙을 소유하고 visual reference가 composition과 density를 소유한다. Screen artifact는 두 digest와 adapter version을 함께 기록해야 하며, 기능 일반화가 visual baseline 교체를 암묵적으로 허용하지 않는다.
+
 ## 책임 경계
 
 - Resolver: 자연어 요청을 group/screen 후보로 해석

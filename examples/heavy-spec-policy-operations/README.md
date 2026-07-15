@@ -17,7 +17,7 @@ Platform navigation은 제품 rail 옆의 두 번째 panel이 아니라 preview 
 
 각 screen artifact의 route, surface, title, purpose, layout, components, states, copy와 dataNeeds는 source screen object와 일치한다. 공통 `source-contracts.json`이 pinned design token과 선택 화면이 사용하는 component purpose·props·variants·states를 중복 없이 보존한다. 화면에 보이는 운영 수치와 record는 상호작용 확인용 예시 데이터이며 권위값이 아니다. 외부 network는 호출하지 않는다.
 
-`presentation-contract.yaml`은 사용자 제공 Stitch token과 style guidance를 보존한다. Generator가 `design-tokens.css`를 만들며 screen artifact에는 presentation digest와 `aawp-console-surface@0.2.0`이 기록된다. Hanken Grotesk와 JetBrains Mono가 실행 환경에 없으면 외부 font network 요청 없이 system fallback을 사용한다. 상태 배지 아이콘은 [Lucide](https://lucide.dev/)의 ISC 라이선스 자산을 snapshot에 포함해 외부 요청 없이 표시한다.
+`presentation-contract.yaml`은 사용자 제공 Stitch token과 style guidance를 보존한다. `visual-reference-contract.yaml`은 사용자가 기준으로 선택한 `run_bf24da5f-35d3-4df9-ba8a-d6cbcb182838` 정책 콘솔의 시각 문법과 원본 file digest를 고정한다. Generator가 `design-tokens.css`를 만들며 screen artifact에는 presentation digest, visual reference digest와 `aawp-console-surface@0.3.0`이 기록된다. Hanken Grotesk와 JetBrains Mono가 실행 환경에 없으면 외부 font network 요청 없이 system fallback을 사용한다. 상태 배지와 navigation 아이콘은 [Lucide](https://lucide.dev/)의 ISC 라이선스 자산을 snapshot에 포함해 외부 요청 없이 표시한다.
 
 자동 검증은 source screen deep equality, 45개 component adapter coverage, design/presentation digest와 source-defined navigation resolution을 확인한다. 모든 component prop의 field-level 노출과 Figma pixel geometry 전수 검증은 아직 포함하지 않으므로 이 결과를 22개 화면의 완전한 production UI라고 부르지 않는다.
 

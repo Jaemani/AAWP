@@ -42,6 +42,7 @@ test("bundle keeps selected screens independent and preserves their source defin
     screenStyles,
     sourceContractsSource,
     presentationSource,
+    visualReferenceSource,
     tokenStyles
   ] = await Promise.all([
     readFile(new URL("selection-manifest.json", root), "utf8"),
@@ -54,6 +55,7 @@ test("bundle keeps selected screens independent and preserves their source defin
     readFile(new URL("screen.css", root), "utf8"),
     readFile(new URL("source-contracts.json", root), "utf8"),
     readFile(new URL("presentation-contract.yaml", root), "utf8"),
+    readFile(new URL("visual-reference-contract.yaml", root), "utf8"),
     readFile(new URL("design-tokens.css", root), "utf8")
   ]);
   const selection = JSON.parse(selectionSource);
@@ -79,6 +81,8 @@ test("bundle keeps selected screens independent and preserves their source defin
   const sourceContracts = JSON.parse(sourceContractsSource);
   const presentation = parseYaml(presentationSource);
   const presentationDigest = createHash("sha256").update(presentationSource).digest("hex");
+  const visualReference = parseYaml(visualReferenceSource);
+  const visualReferenceDigest = createHash("sha256").update(visualReferenceSource).digest("hex");
   const componentDefinitionByName = new Map(
     sourceContracts.components.map((component) => [component.name, component])
   );
@@ -89,6 +93,17 @@ test("bundle keeps selected screens independent and preserves their source defin
     schemaVersion: "aawp/presentation-contract/v1",
     name: "Gyeonggi Integrated Wallet"
   });
+  assert.deepEqual(sourceContracts.visualReferenceContract, {
+    path: "visual-reference-contract.yaml",
+    contentDigest: visualReferenceDigest,
+    schemaVersion: "aawp/visual-reference-contract/v1",
+    name: "Policy console visual baseline",
+    sourceRunId: "run_bf24da5f-35d3-4df9-ba8a-d6cbcb182838"
+  });
+  assert.equal(
+    visualReference.source.files["styles.css"],
+    "f75d8b3452274e56604396ce792882e348f0853b86127f2e5e8d2c943d4541fe"
+  );
   assert.equal(presentation.colors["primary-container"], "#2368d9");
   assert.equal(presentation.spacing["nav-rail-width"], "240px");
   assert.equal(presentation.typography.title.fontSize, "22px");
@@ -106,8 +121,10 @@ test("bundle keeps selected screens independent and preserves their source defin
     )
   );
   assert.match(sourceContracts.designSystem.spacing, /nav-rail 240px/);
+  const navigationIconNames = new Set();
   for (const screen of bundle.screens) {
     const artifact = JSON.parse(await readFile(new URL(screen.artifactPath, root), "utf8"));
+    for (const item of artifact.navigation.items) navigationIconNames.add(item.icon);
     assert.deepEqual(artifact.screen, sourceById.get(screen.id));
     assert.equal(artifact.source.contentDigest, expectedSourceDigest);
     assert.equal(
@@ -117,8 +134,9 @@ test("bundle keeps selected screens independent and preserves their source defin
     assert.equal(artifact.navigation.type, "nav-rail");
     assert.deepEqual(artifact.renderer, {
       adapterId: "aawp-console-surface",
-      adapterVersion: "0.2.0",
+      adapterVersion: "0.3.0",
       presentationDigest,
+      visualReferenceDigest,
       formFactor: "web"
     });
     assert.ok(artifact.navigation.items.length >= 7);
@@ -171,12 +189,18 @@ test("bundle keeps selected screens independent and preserves their source defin
   assert.doesNotMatch(sourceHtml, /class="navigator"/);
   assert.doesNotMatch(styles, /\.navigator/);
   assert.match(screenStyles, /grid-template-columns:\s*var\(--spacing-nav-rail-width\)/);
+  assert.match(screenStyles, /background:\s*var\(--color-authority-fg\)/);
+  assert.match(screenStyles, /width:\s*min\(1440px, calc\(100vw - 56px\)\)/);
   assert.match(screenStyles, /var\(--type-title-size\)/);
   assert.match(screenStyles, /var\(--type-table-cell-size\)/);
   assert.doesNotMatch(screenRuntime, /createElementNS/);
   for (const iconName of ["check", "clock", "triangle-alert", "shield-check", "info"]) {
     const iconSource = await readFile(new URL(`icons/${iconName}.svg`, root), "utf8");
     assert.match(iconSource, /class="lucide /);
+  }
+  for (const iconName of navigationIconNames) {
+    const iconSource = await readFile(new URL(`icons/${iconName}.svg`, root), "utf8");
+    assert.match(iconSource, /<svg/);
   }
   for (const component of sourceContracts.components) {
     assert.match(screenRuntime, new RegExp(`${component.name}:`));
