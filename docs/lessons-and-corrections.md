@@ -48,8 +48,15 @@
 
 - 관찰: screen ID 선택은 맞았지만 관리 콘솔 13개와 발행사 콘솔 9개를 같은 shell에 넣고, source의 22개 고유 layout을 dashboard/form/workflow/table 네 template로 축약했다. Source에 없는 운영 수치와 record도 임의로 추가해 panel 정보가 달라졌다.
 - 원인: scope selection과 결과 bundle packaging을 같은 문제로 보고, 여러 화면을 빠르게 탐색하는 UX를 screen content 합성과 혼동했다.
-- 교정: 임의 수치와 공통 content template을 제거했다. Platform-owned bundle manifest, surface와 독립 screen artifact를 추가하고 source screen object를 그대로 packaging한다.
+- 교정: 공통 content template과 운영 수치를 source screen artifact에서 제거했다. Platform-owned bundle manifest, surface와 독립 screen artifact를 추가하고 source screen object를 그대로 packaging한다. 상호작용 확인용 값은 renderer의 `예시 데이터` presentation fixture로 분리한다.
 - 재발 방지: 화면 묶음은 navigation collection으로만 취급한다. Screen builder는 screen별 route·surface·layout contract를 독립적으로 구현하며 bundle viewer는 content를 재해석하지 않는다.
+
+## 독립 screen artifact를 spec inspector로 렌더링했다
+
+- 관찰: Source screen object는 보존했지만 `ConsoleNavRail`, table, form과 approval component를 실제 UI가 아니라 `SPEC COMPONENT` 설명 카드로 표시했다. 그 결과 좌측 정책 콘솔 맥락과 버튼 연결이 사라지고 데모가 문서 viewer처럼 보였다.
+- 원인: Source 보존을 “화면을 해석하지 않고 metadata만 출력하는 것”으로 과도하게 적용했다. 플랫폼 bundle navigation과 제품 navigation의 역할도 분리하지 못했다.
+- 교정: Bundle selector는 바깥 collection UX로 유지하고 iframe 안에는 source surface의 240px rail, authority chrome과 screen별 composition을 복원했다. `interactionModel`의 navigate/local state/sheet/submit을 실행 projection으로 packaging하고 selected target만 연결했다. Selection 밖 목적지는 범위 안내, 불명확한 목적지는 Spec feedback으로 처리한다.
+- 재발 방지: Demo acceptance에 product shell 존재, source CTA resolution, local interaction과 screen별 renderer coverage를 포함한다. Artifact deep equality만으로 시각적 역할 보존을 통과시키지 않는다.
 
 ## Local simulation이 production workflow처럼 오해될 수 있었다
 

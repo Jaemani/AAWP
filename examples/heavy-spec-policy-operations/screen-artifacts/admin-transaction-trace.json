@@ -51,5 +51,146 @@
       "ItemCategoryCode(code 예:90101501, standardCode:'90101501', sourceStandard:'UNSPSC', label)",
       "PolicyCondition.payoutMethod 및 POS 할인/사후 환급 기록"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "SearchField",
+      "TransactionTraceTable",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-transaction-trace.filter",
+        "element": "SearchField+TransactionTraceTable(filter)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "traceFilter",
+        "storeEffect": "none",
+        "expected": "지갑/가맹점/기간/유통단위/상품권/판정상태/sourceStandard='ISO18245'/UNSPSC 필터를 적용한다.",
+        "resolution": { "kind": "demo-state", "target": "traceFilter" }
+      },
+      {
+        "id": "admin-transaction-trace.rowDetail",
+        "element": "TransactionTraceTable(row)",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "transaction-detail-sheet",
+        "storeEffect": "none",
+        "expected": "거래ID, 금액, sub-settlement, 상품권 차감, 표준 코드, payoutMethod, txHash를 read-only 표시한다.",
+        "resolution": { "kind": "demo-state", "target": "transaction-detail-sheet" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "필터 목록" },
+      { "state": "loading", "via": "조회 중" },
+      { "state": "empty", "via": "결과 없음" },
+      { "state": "error", "via": "권한/기간/카탈로그 오류" },
+      { "state": "success", "via": "검색 반영" }
+    ]
+  },
+  "specFeedback": []
 }

@@ -72,5 +72,216 @@
       "ItemCategoryCode active 목록(code·standardCode·label·sourceStandard='UNSPSC')",
       "참고 집계(예상 대상 규모)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "EligibilityRuleBuilder",
+      "PolicyConditionBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-condition-builder.tabSwitch",
+        "element": "PolicyConditionBinder(tab)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "builderTab",
+        "storeEffect": "none",
+        "expected": "대상조건/사용조건 탭을 전환한다.",
+        "resolution": { "kind": "demo-state", "target": "builderTab" }
+      },
+      {
+        "id": "admin-condition-builder.addRule",
+        "element": "EligibilityRuleBuilder(addRuleCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "predicateDraft",
+        "storeEffect": "none",
+        "expected": "조건 항목을 추가한다. PII 속성은 동의근거가 있는 active Attribute만 선택 가능하다.",
+        "resolution": { "kind": "demo-state", "target": "predicateDraft" }
+      },
+      {
+        "id": "admin-condition-builder.selectMerchantCategoryCodeRefs",
+        "element": "PolicyConditionBinder(merchantCategoryMultiSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "usageConditionDraft.merchantCategoryCodeRefs",
+        "storeEffect": "none",
+        "expected": "조건 빌더 내부에서만 허용 업종을 ISO 18245 MerchantCategoryCode.code[] 4자리 값으로 선택하며 자유 텍스트 입력은 허용하지 않는다.",
+        "resolution": {
+          "kind": "demo-state",
+          "target": "usageConditionDraft.merchantCategoryCodeRefs"
+        }
+      },
+      {
+        "id": "admin-condition-builder.selectItemCategoryCodeRefs",
+        "element": "PolicyConditionBinder(itemCategoryMultiSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "usageConditionDraft.itemCategoryCodeRefs",
+        "storeEffect": "none",
+        "expected": "조건 빌더 내부에서만 허용 품목을 UNSPSC 기반 ItemCategoryCode.code[]로 선택하며 자유 텍스트 입력은 허용하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "usageConditionDraft.itemCategoryCodeRefs" }
+      },
+      {
+        "id": "admin-condition-builder.selectPayoutMethod",
+        "element": "PolicyConditionBinder(payoutMethodSegmentedControl)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "usageConditionDraft.payoutMethod",
+        "storeEffect": "none",
+        "expected": "direct-grant/point-of-sale-discount/post-purchase-payback 중 하나를 선택한다. POS 할인 선택 시 보전 정산 주기와 targetPooledAccountRef, 사후 환급 선택 시 triggerMode(batch-schedule|manual-approval)를 노출한다.",
+        "resolution": { "kind": "demo-state", "target": "usageConditionDraft.payoutMethod" }
+      },
+      {
+        "id": "admin-condition-builder.selectTargetPooledAccount",
+        "element": "PolicyConditionBinder(targetPooledAccountSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "usageConditionDraft.targetPooledAccountRef",
+        "storeEffect": "none",
+        "expected": "POS 즉시할인 보전 재원은 선택한 유통 단위 내부 PooledAccount만 선택 가능하며 유통 단위 간 이전·순결제를 만들지 않는다.",
+        "resolution": {
+          "kind": "demo-state",
+          "target": "usageConditionDraft.targetPooledAccountRef"
+        }
+      },
+      {
+        "id": "admin-condition-builder.saveEligibility",
+        "element": "EligibilityRuleBuilder(saveEligibilityCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "eligibility-condition-save",
+        "storeEffect": "policy.saveEligibilityConditionSet({setIdPrefix:'ecs',conditionSetStatus:'draft',approvalStatus:'pending',predicateTree,referencedAttributes}, author)",
+        "expected": "EligibilityConditionSet을 ecs-* ref로 저장한다. 작성자 신원·직책/역할·일시를 기록하며 저장 직후 conditionSetStatus='draft', approvalStatus='pending'이다.",
+        "resolution": { "kind": "demo-state", "target": "eligibility-condition-save" }
+      },
+      {
+        "id": "admin-condition-builder.saveUsage",
+        "element": "EligibilityRuleBuilder(saveUsageCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "usage-condition-save",
+        "storeEffect": "policy.saveUsageConditionSet({setIdPrefix:'ucs',conditionSetStatus:'draft',approvalStatus:'pending',merchantCategoryCodeRefs,itemCategoryCodeRefs,payoutMethod,posDiscountSettlementCycle,targetPooledAccountRef,postPurchasePaybackTriggerMode,circulationScope}, author)",
+        "expected": "UsageConditionSet을 ucs-* ref로 저장한다. merchantCategoryCodeRefs는 ISO 18245 active code, itemCategoryCodeRefs는 UNSPSC active code 기준으로 검증되고 작성자 신원·직책/역할·일시를 기록한다.",
+        "resolution": { "kind": "demo-state", "target": "usage-condition-save" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "빌더 진입" },
+      { "state": "empty", "via": "저장된 조건 없음" },
+      { "state": "loading", "via": "저장/집계 계산 중" },
+      {
+        "state": "error",
+        "via": "PII 동의근거 미확인, 비활성 코드, payoutMethod별 필수 입력 누락"
+      },
+      { "state": "success", "via": "저장 완료" }
+    ]
+  },
+  "specFeedback": []
 }

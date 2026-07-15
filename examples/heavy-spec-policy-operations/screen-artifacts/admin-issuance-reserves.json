@@ -98,5 +98,167 @@
       "Issuer ApprovalPolicy registry row(appliesTo=policy-approval, consoleSurface=issuer, grantedByRoot=act-issuer-principal, approvalPolicyRef, approverCandidates, quorum, sodOptInAvailable, sourceActionAliases include reserve-change|instrument-classification-change|reserve-match-change only for issuer registry lookup)",
       "ApprovalRequest payload(subjectType=ReserveChange, sourceScreenId=admin-issuance-reserves, sourceAction=reserve-change|instrument-classification-change|reserve-match-change, requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, onFinalApproved.actionRefs[{slice:'issuance',action:'applyApprovedReserveChange',args:{changeId,approvalId},idempotencyKey,onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}])"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReserveAssetRegistry",
+      "ReserveIssuanceMatchPanel",
+      "ReserveBackingPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-issuance-reserves.editReserve",
+        "element": "ReserveAssetRegistry(row|changeCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "reserveChangeDraft",
+        "storeEffect": "none",
+        "expected": "오프체인 준비자산 항목, legalStructureSetting, legalEffectConfirmed, legalBasisStatus=unconfirmed|approved|rejected, legalStructureRef, safeguardingStructureType, effectMapRef, custodianLegalEntityRef, controllerLegalEntityRef, holderLegalEntityRef, reserveRef, licenseRef, controlStructureRef, YieldOwnershipPolicy 선택값을 초안에 반영한다. 준비자산 onchainCustodyRef, 유통 단위 onchain wallet address, chain, custodyType 입력은 제공하지 않는다",
+        "resolution": { "kind": "demo-state", "target": "reserveChangeDraft" }
+      },
+      {
+        "id": "admin-issuance-reserves.editMatch",
+        "element": "ReserveIssuanceMatchPanel(edit)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "matchDraft",
+        "storeEffect": "none",
+        "expected": "준비금↔발행분 N:M 매칭 초안 작성. 준비금은 오프체인 ReserveAsset 행만 참조하고 issuancePlanId는 ip-*를 사용한다",
+        "resolution": { "kind": "demo-state", "target": "matchDraft" }
+      },
+      {
+        "id": "admin-issuance-reserves.editInstrumentClassification",
+        "element": "ReserveAssetRegistry(instrumentClassificationLabel)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "instrumentClassificationDraft",
+        "storeEffect": "none",
+        "expected": "토큰 법적 분류 변경 초안 작성. canonical mappingId는 icm-e-money-claim-default 또는 승인된 새 mappingId로만 저장한다. legalBasisStatus는 unconfirmed|approved|rejected만 허용한다. approvalStatus는 approved|pending|rejected|expired, licenseStatus는 valid|pending|suspended|expired만 허용한다. exchangeDirection 저장값은 refund-to-krw 또는 blocked만 허용한다. ProductSupportMatrix는 productSupportMatrix boolean map으로 topup/exchange/payQr/accountWithdrawal/p2pTransfer/mint/burn만 기록한다. 규제 근거 확인 전 또는 launchBlocked 분류는 활성화 불가 사유를 blockedReason으로 함께 기록한다",
+        "resolution": { "kind": "demo-state", "target": "instrumentClassificationDraft" }
+      },
+      {
+        "id": "admin-issuance-reserves.pickApprovalPolicy",
+        "element": "ApprovalPolicyPicker(appliesTo=policy-approval, consoleSurface=issuer)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedIssuerApprovalPolicy",
+        "storeEffect": "none",
+        "expected": "appliesTo='policy-approval', consoleSurface='issuer', grantedByRoot='act-issuer-principal'인 issuer 전용 결재정책만 선택하고 sourceAction으로 reserve-change|instrument-classification-change|reserve-match-change를 기록한다",
+        "resolution": { "kind": "demo-state", "target": "selectedIssuerApprovalPolicy" }
+      },
+      {
+        "id": "admin-issuance-reserves.submitChange",
+        "element": "ReserveAssetRegistry(changeCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "reserve-change-request",
+        "storeEffect": "issuance.requestReserveChange({reserveChangeDraft, matchDraft, instrumentClassificationDraft}, author, {approvalPolicyRef:selectedIssuerApprovalPolicy.id, approverAssignments:selectedApprovers, consoleSurface:'issuer', grantedByRoot:'act-issuer-principal', sourceScreenId:'admin-issuance-reserves', sourceAction:'reserve-change', onFinalApproved:{actionRefs:[{slice:'issuance',action:'applyApprovedReserveChange',args:{changeId:'$subjectRef',approvalId:'$approvalId'},idempotencyKey:'apply-reserve-change:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}, idempotencyKey})",
+        "expected": "requestReserveChange가 오프체인 준비자산·매칭·법적 분류·운용수익 귀속 변경 draft와 issuer 전용 결재 요청을 1회 생성한다. 화면은 approvals.submitForApproval을 별도로 호출하지 않는다. 매핑 없는 legalStructureSetting은 중립 fallback 문구로 저장하고 결재 완료 전에는 하류 정책 projection을 바꾸지 않는다. legalEffectConfirmed=true는 approvalId, controllerLegalEntityRef, holderLegalEntityRef, effectMapRef가 있을 때만 허용한다. instrumentClassification 변경에 따른 topup/exchange/account-withdrawal projection 재계산은 applyApprovedReserveChange의 backend authority workflow가 승인된 mapping과 boolean productSupportMatrix를 기준으로 수행한다",
+        "resolution": { "kind": "demo-state", "target": "reserve-change-request" }
+      },
+      {
+        "id": "admin-issuance-reserves.sign",
+        "element": "SignerIdentityBinder",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "reserve-change-sign",
+        "storeEffect": "approvals.signApproval(requestId, signerIdentity, decision='approve')",
+        "expected": "단계 승인만 기록한다. 최종 결재 및 정족수 충족 시 backend approval runner가 approvals.runOnFinalApprovedOnce(requestId,{idempotencyKey:approvalRequest.onFinalApproved.idempotencyKey})를 호출해 linked reserveChangeDraft, matchDraft, instrumentClassificationDraft를 결재된 버전으로 한 번만 발효한다",
+        "resolution": { "kind": "demo-state", "target": "reserve-change-sign" }
+      },
+      {
+        "id": "admin-issuance-reserves.reject",
+        "element": "ApprovalChainStepper(reject)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "reserve-change-reject",
+        "storeEffect": "approvals.rejectRequest(requestId, signerIdentity, reason)",
+        "expected": "준비자산 변경 요청 반려, 반려 사유와 반려자 신원·직책·일시 기록",
+        "resolution": { "kind": "demo-state", "target": "reserve-change-reject" }
+      },
+      {
+        "id": "admin-issuance-reserves.viewPorRegistry",
+        "element": "ReserveAssetRegistry(porLink)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-issuance-por",
+        "storeEffect": "none",
+        "expected": "준비금별 PoR 검증 방식·결과 화면으로 이동",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-por" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "준비자산 조회" },
+      { "state": "loading", "via": "동기화 또는 결재 처리" },
+      { "state": "empty", "via": "준비자산 없음" },
+      { "state": "error", "via": "필수값 누락·동기화 실패·반려" },
+      { "state": "success", "via": "결재된 버전 발효" }
+    ]
+  },
+  "specFeedback": []
 }

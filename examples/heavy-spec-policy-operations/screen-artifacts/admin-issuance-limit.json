@@ -52,5 +52,146 @@
       "approvalSteps and audit trail",
       "issuerSession(consoleSurface=issuer, grantType, role, roleTitle, jurisdictionScope, grantedByRoot=act-issuer-principal)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "IssuanceLimitPanel",
+      "ReserveBackingPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-issuance-limit.changeDraft",
+        "element": "IssuanceLimitPanel(changeCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "limitChangeDraft",
+        "storeEffect": "none",
+        "expected": "grantType=full인 발행 관리자만 한도 변경 초안 작성 시작. readonly 세션에서는 비활성화",
+        "resolution": { "kind": "demo-state", "target": "limitChangeDraft" }
+      },
+      {
+        "id": "admin-issuance-limit.inputChange",
+        "element": "IssuanceLimitPanel(limitInput)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "limitChangeDraft",
+        "storeEffect": "none",
+        "expected": "유통 단위, 변경 전후 한도, 사유를 초안에 반영하고 오프체인 준비자산 대비 과다 여부를 로컬 경고로 표시",
+        "resolution": { "kind": "demo-state", "target": "limitChangeDraft" }
+      },
+      {
+        "id": "admin-issuance-limit.pickApprovalPolicy",
+        "element": "ApprovalPolicyPicker(appliesTo=policy-approval, consoleSurface=issuer)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedIssuerApprovalPolicy",
+        "storeEffect": "none",
+        "expected": "appliesTo='policy-approval', consoleSurface='issuer', grantedByRoot='act-issuer-principal'인 issuer 전용 결재정책만 선택하고 sourceAction=issuance-limit-change로 기록한다. 관리 콘솔 policy-approval registry와 섞지 않는다",
+        "resolution": { "kind": "demo-state", "target": "selectedIssuerApprovalPolicy" }
+      },
+      {
+        "id": "admin-issuance-limit.submitChange",
+        "element": "IssuanceLimitPanel(submitChange)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "limit-change-request",
+        "storeEffect": "issuance.requestLimitChange(limitChangeDraft, author, {approvalPolicyRef:selectedIssuerApprovalPolicy.id, approverAssignments:selectedApprovers, consoleSurface:'issuer', grantedByRoot:'act-issuer-principal', sourceScreenId:'admin-issuance-limit', sourceAction:'issuance-limit-change', onFinalApproved:{actionRefs:[{slice:'issuance',action:'applyApprovedLimitChange',args:{limitChangeId:'$subjectRef',approvalId:'$approvalId'},idempotencyKey:'apply-limit-change:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}, idempotencyKey})",
+        "expected": "requestLimitChange가 오프체인 준비자산 대비 적정성을 검증하고 한도 변경 draft와 issuer 전용 결재 요청을 1회 생성한다. 화면은 approvals.submitForApproval을 별도로 호출하지 않는다. 승인자 직책·역할·신원·일시를 결재 기록에 남긴다",
+        "resolution": { "kind": "demo-state", "target": "limit-change-request" }
+      },
+      {
+        "id": "admin-issuance-limit.sign",
+        "element": "ApprovalChainStepper(sign)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "limit-change-sign",
+        "storeEffect": "approvals.signApproval(requestId, signerIdentity, decision='approve')",
+        "expected": "단계 승인만 기록한다. 최종 결재 및 정족수 충족 시 backend approval runner가 approvals.runOnFinalApprovedOnce(requestId,{idempotencyKey:approvalRequest.onFinalApproved.idempotencyKey})를 호출해 linked limitChangeDraft를 결재된 한도 버전으로 한 번만 발효한다",
+        "resolution": { "kind": "demo-state", "target": "limit-change-sign" }
+      },
+      {
+        "id": "admin-issuance-limit.reject",
+        "element": "ApprovalChainStepper(reject)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "limit-change-reject",
+        "storeEffect": "approvals.rejectRequest(requestId, signerIdentity, reason)",
+        "expected": "한도 변경 요청 반려, 반려 사유와 반려자 신원·직책·일시 기록",
+        "resolution": { "kind": "demo-state", "target": "limit-change-reject" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "한도 조회" },
+      { "state": "loading", "via": "조회 또는 결재 처리" },
+      { "state": "empty", "via": "한도 없음" },
+      { "state": "error", "via": "검증 실패 또는 반려" },
+      { "state": "success", "via": "한도 발효" }
+    ]
+  },
+  "specFeedback": []
 }

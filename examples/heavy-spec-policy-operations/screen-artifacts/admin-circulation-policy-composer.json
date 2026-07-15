@@ -124,5 +124,279 @@
       "ApprovalRequest payload(subjectType/ref·sourceScreenId·requester identity/title/jurisdiction·approvalPolicyRef·ApprovalPolicy.appliesTo='policy-approval'·approverAssignments·signerBindings·sodPolicyResult opt-in·onFinalApproved.actionRefs[{slice,action,args,idempotencyKey,onlyWhen}])",
       "PolicyVersion 및 approvalStatus(draft|pending|approved|rejected)·lifecycleStatus(active|expired|superseded)·executionStatus executable|blocked·disabledReason?"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "CirculationPolicyComposer",
+      "PolicyConditionBinder",
+      "InstrumentClassificationMappingPanel",
+      "ConvertibilityRulePanel",
+      "PooledAccountPanel",
+      "CustomerFundsSafeguardingPanel",
+      "CirculationUnitPicker",
+      "OnchainWalletProvisioningPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-circulation-policy-composer.step",
+        "element": "CirculationPolicyComposer",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "composerStep",
+        "storeEffect": "none",
+        "expected": "1. 발행 필요 여부 2. 대상조건 세트 3. 사용조건 세트 4. 회수방법 5. 유통단위·재원 6. 상환·전환정책 단계로 이동한다.",
+        "resolution": { "kind": "demo-state", "target": "composerStep" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.toggleNeedsNewIssuance",
+        "element": "CirculationPolicyComposer(needsNewIssuanceToggle)",
+        "trigger": "toggle",
+        "action": "setLocalState",
+        "target": "needsNewIssuance",
+        "storeEffect": "none",
+        "expected": "신규 발행 필요 여부를 boolean으로 토글한다. 발행 문서를 만들거나 발행사 콘솔 권한을 대체하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "needsNewIssuance" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.selectEligibilityConditionSet",
+        "element": "PolicyConditionBinder(eligibilityConditionSetSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.eligibilityConditionSetRef",
+        "storeEffect": "none",
+        "expected": "conditionSetStatus='published' && approvalStatus='approved'인 EligibilityConditionSet(ecs-*)만 선택한다. KYC·연령·거주 등 세부 조건은 read-only summary로 표시하며 이 화면에서 편집하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.eligibilityConditionSetRef" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.selectUsageConditionSet",
+        "element": "PolicyConditionBinder(usageConditionSetSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.usageConditionSetRef",
+        "storeEffect": "none",
+        "expected": "conditionSetStatus='published' && approvalStatus='approved'인 UsageConditionSet(ucs-*)만 선택한다. 허용 업종·품목 코드는 merchantCategoryCodeRefs/itemCategoryCodeRefs read-only preview로만 표시하고 composer-local usageCodes를 만들지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.usageConditionSetRef" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.openConditionBuilder",
+        "element": "PolicyConditionBinder(editConditionSetDeeplink)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-condition-builder",
+        "storeEffect": "none",
+        "expected": "조건 수정이 필요하면 조건 빌더로 이동한다. 현재 정책 초안에는 condition set ref만 남긴다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.reviewInstrumentClassificationGate",
+        "element": "InstrumentClassificationMappingPanel(readonlyGate)",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "instrument-classification-gate-sheet",
+        "storeEffect": "none",
+        "expected": "승인된 mapping projection과 productSupportMatrix 7개 boolean 키를 read-only로 확인한다. 작성자가 mapping ref나 issuerAuthorizationRef를 정책 gate로 직접 저장하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "instrument-classification-gate-sheet" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.editConvertibilityRule",
+        "element": "ConvertibilityRulePanel",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "convertibilityRuleDraft",
+        "storeEffect": "none",
+        "expected": "eligibleFundSourceTypes[]=policyFund|topupPrincipal, policyFundRefundOptInRefs[], 본인계좌제한, 한도, 보유기간을 입력한다. 실행 가능한 circulationUnitScope는 targetCirculationUnitId로 고정되며 incentive/voucher는 fundSourceType으로 저장하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "convertibilityRuleDraft" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.selectCirculationUnitMode",
+        "element": "CirculationUnitPicker(circulationUnitModeSelector)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "circulationUnitMode",
+        "storeEffect": "none",
+        "expected": "reuse-existing 또는 provision-new를 선택한다. reuse-existing은 selectedCirculationUnitId만 사용하고 provision-new는 circulationUnitDraft만 사용한다.",
+        "resolution": { "kind": "demo-state", "target": "circulationUnitMode" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.selectExistingCirculationUnit",
+        "element": "CirculationUnitPicker(existingUnitSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedCirculationUnitId",
+        "storeEffect": "none",
+        "expected": "reuse-existing일 때만 노출한다. 기존 유통 단위의 pooledAccountRefs와 onchainWalletRef는 read-only 참고·중복검사용 preview로 표시하고 수정·재프로비저닝하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "selectedCirculationUnitId" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.editCirculationUnitIdentityDraft",
+        "element": "CirculationUnitPicker(newUnitIdentityFields)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "circulationUnitDraft",
+        "storeEffect": "none",
+        "expected": "provision-new일 때 신규 유통 단위의 name, jurisdiction, type(province|city-county|institution)만 입력한다. chain, custodyType, address, providerRef 입력 필드는 없고 draft에도 저장하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "circulationUnitDraft" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.editPooledAccountDraft",
+        "element": "PooledAccountPanel",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "pooledAccountDraft",
+        "storeEffect": "none",
+        "expected": "fundNature별 requiredInputs를 즉시 검증한다. policyFund는 policyFundAccount.fiatAccountRef와 authorityStatus='confirmed', reserveAsset은 reserveAssets[] 최소 1개와 필수 평가·법적구조·증명 필드, mixed는 두 조건 모두 필요하다. topup은 fundNature가 아니며 policyType='topup'의 customerFundsAccount 법적 효과와 운용 권한 gate로만 검증한다. reserveAssets[]는 오프체인 예치·전통 수탁·평가금·증명 참조만 허용하고 onchainCustodyRef, chain, address, token vault 입력은 없다.",
+        "resolution": { "kind": "demo-state", "target": "pooledAccountDraft" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.reviewCustomerFundsSafeguarding",
+        "element": "CustomerFundsSafeguardingPanel(readonlyBasis)",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "customer-funds-authority-basis-sheet",
+        "storeEffect": "none",
+        "expected": "customerFundsAccount가 있는 경우 계좌 운용 권한 상태와 read-only 근거를 확인한다. legalStructureRef 등은 근거로만 표시하고 이 화면에서 별도 법적 구조 작성 wizard를 열지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "customer-funds-authority-basis-sheet" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.configureApproval",
+        "element": "ApprovalPolicyPicker",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "approvalRequestDraft",
+        "storeEffect": "none",
+        "expected": "ApprovalPolicy.appliesTo='policy-approval'로 결재정책을 찾고 승인자 선택, 결재선, signerBindings, requester identity/title/jurisdiction, SoD opt-in 결과를 ApprovalRequest payload로 구성한다.",
+        "resolution": { "kind": "demo-state", "target": "approvalRequestDraft" }
+      },
+      {
+        "id": "admin-circulation-policy-composer.submit",
+        "element": "CirculationPolicyComposer(submitCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "policy-submit",
+        "storeEffect": "policy.composeCirculationPolicy({needsNewIssuance,policyType:'general',policyKind:'general',eligibilityConditionSetRef,usageConditionSetRef,conditionRefs,circulationUnitMode,selectedCirculationUnitId,circulationUnitDraft:{name,jurisdiction,type} when circulationUnitMode='provision-new',pooledAccountDraft,recoveryMethod,convertibilityRuleDraft,executionStatus:'executable'}, author)+approvals.submitForApproval({subjectType:'PolicyDraft',subjectRef:policyDraftId,sourceScreenId:'admin-circulation-policy-composer',sourceAction:'circulation-policy-submit',requester:{actorId:author.actorId,identityRef:author.identityRef,title:author.title,jurisdiction:author.jurisdiction},approvalPolicyRef,appliesTo:'policy-approval',approverAssignments,signerBindings,sodPolicyResult,approvalContext:{policyDraftId,policyType:'general'},onFinalApproved:{actionRefs:[{slice:'policy',action:'activateApprovedDraft',args:{policyDraftId:'$subjectRef',approvalId:'$approvalId',approverIdentity:'$finalApproverIdentity',approvedAt:'$approvedAt'},idempotencyKey:'activate-policy:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}},{slice:'circulation',action:'registerCirculationUnit',args:{circulationUnitDraft:'$policyDraft.circulationUnitDraft',author:'$requester'},idempotencyKey:'register-cu:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true,circulationUnitMode:'provision-new'}},{slice:'circulation',action:'registerPooledAccount',args:{circulationUnitId:'$resolvedTargetCirculationUnitId',pooledAccountDraft:'$policyDraft.pooledAccountDraft',author:'$requester'},idempotencyKey:'register-pa:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}},{slice:'convertibility',action:'setConvertibilityRule',args:{convertibilityRuleDraft:'$policyDraft.convertibilityRuleDraft',circulationUnitId:'$resolvedTargetCirculationUnitId',author:'$requester'},idempotencyKey:'set-convertibility:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}})",
+        "expected": "결재 상신은 여기서 한 번만 생성된다. reuse-existing은 registerCirculationUnit을 호출하지 않는다. provision-new만 registerCirculationUnit을 호출하며 반환값을 targetCirculationUnitId로 바인딩한다. registerCirculationUnit 내부 effect만 circulation.provisionOnchainWallet(circulationUnitId,{idempotencyKey:'provision-wallet-'+circulationUnitId,requestedBySystem:true})를 호출한다. chain/custodyType/providerRef는 payload가 아니라 provisioning record output이다. 승인/반려는 승인자 직책/역할·신원·관할·일시·결재ID를 기록한다.",
+        "resolution": { "kind": "demo-state", "target": "policy-submit" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "작성 단계 진입 또는 mode=edit/policyId 개정 진입" },
+      { "state": "empty", "via": "reuse-existing 선택 후 연결 가능한 기존 유통 단위 없음" },
+      { "state": "loading", "via": "저장/결재 상신 또는 시스템 지갑 프로비저닝 상태 동기화 처리" },
+      {
+        "state": "error",
+        "via": "필수항목 누락, conditionSet 미게시·미승인, enum/code 검증 실패, 계좌 운용 권한 미확인, 금지된 온체인 인프라 draft 전달, 결재 반려"
+      },
+      { "state": "success", "via": "결재 상신 완료 또는 최종 승인 후 후처리 완료" }
+    ]
+  },
+  "specFeedback": []
 }

@@ -52,5 +52,123 @@
       "auditor signOff(identity, role, title, jurisdiction, signedAt, notes)",
       "issuerSession(consoleSurface=issuer, grantType, issuerReadGrantRef?, grantedByRoot=act-issuer-principal)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReconciliationPanel",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-backing-reconciliation.filter",
+        "element": "ReconciliationPanel(filter)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "backingReconciliationFilter",
+        "storeEffect": "none",
+        "expected": "기간·유통 단위 기준 발행량↔준비자산 대사 범위 설정",
+        "resolution": { "kind": "demo-state", "target": "backingReconciliationFilter" }
+      },
+      {
+        "id": "admin-backing-reconciliation.refreshReadOnly",
+        "element": "ReconciliationPanel(refresh)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "backingReconciliationQuery.refreshNonce",
+        "storeEffect": "none",
+        "expected": "발행 원장 총량, 오프체인 준비자산 매칭, reserveProof 결과를 read-only query로 재조회해 판정 산출. 원장·InternalLedger 수정 없음",
+        "resolution": { "kind": "demo-state", "target": "backingReconciliationQuery.refreshNonce" }
+      },
+      {
+        "id": "admin-backing-reconciliation.signOff",
+        "element": "SignerIdentityBinder(signoff)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "reconciliation-signoff",
+        "storeEffect": "issuance.signOffBackingReconciliation(reportId, auditorIdentity)",
+        "expected": "발행사 감사자 또는 허용된 발행 관리자 신원·직책·관할·일시로 sign-off 기록. 원장 편집 없음",
+        "resolution": { "kind": "demo-state", "target": "reconciliation-signoff" }
+      },
+      {
+        "id": "admin-backing-reconciliation.viewPorRegistry",
+        "element": "ReconciliationPanel(porModuleLink)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-issuance-por",
+        "storeEffect": "none",
+        "expected": "PoR 상세 검증 이력으로 이동",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-por" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "대사 결과 조회" },
+      { "state": "loading", "via": "대사 산술 조회" },
+      { "state": "empty", "via": "대상 데이터 없음" },
+      { "state": "error", "via": "불일치 발견" },
+      { "state": "success", "via": "sign-off 완료" }
+    ]
+  },
+  "specFeedback": []
 }

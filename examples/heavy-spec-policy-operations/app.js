@@ -5,11 +5,13 @@ const search = document.getElementById("screen-search");
 const frame = document.getElementById("screen-frame");
 const deviceFrame = document.getElementById("device-frame");
 const errorMessage = document.getElementById("error-message");
+const viewerNotice = document.getElementById("viewer-notice");
 
 let manifest;
 let selectedBundleId;
 let selectedSurfaceId;
 let selectedScreenId;
+let noticeTimer;
 
 function clear(node) {
   node.replaceChildren();
@@ -168,6 +170,15 @@ function selectScreen(screenId) {
   render();
 }
 
+function showNotice(message) {
+  window.clearTimeout(noticeTimer);
+  viewerNotice.textContent = message;
+  viewerNotice.hidden = false;
+  noticeTimer = window.setTimeout(() => {
+    viewerNotice.hidden = true;
+  }, 3200);
+}
+
 async function start() {
   const response = await fetch("./bundle-manifest.json", { cache: "no-store" });
   if (!response.ok) throw new Error(`Bundle manifest를 불러오지 못했습니다: ${response.status}`);
@@ -195,6 +206,18 @@ search.addEventListener("input", renderScreens);
 window.addEventListener("hashchange", () => {
   const screen = screenById(location.hash.slice(1));
   if (screen && screen.id !== selectedScreenId) selectScreen(screen.id);
+});
+window.addEventListener("message", (event) => {
+  if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+  const message = event.data;
+  if (!message || message.type !== "aawp:demo-navigate") return;
+  const target = screenById(message.screenId);
+  if (!target) {
+    showNotice("요청한 화면이 현재 데모 묶음에 없습니다.");
+    return;
+  }
+  selectScreen(target.id);
+  showNotice(`${target.title}(으)로 이동했습니다.`);
 });
 
 start().catch((error) => {

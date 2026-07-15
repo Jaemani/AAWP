@@ -84,5 +84,167 @@
       "ApprovalRequest payload(subjectType=IssuancePlan, subjectRef=ip-*, sourceScreenId=admin-issuance-plan, sourceAction=issuance-plan, requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, onFinalApproved.actionRefs[{slice:'issuance',action:'markIssuancePlanApproved',args:{planId,approvalId},idempotencyKey,onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}])",
       "approvalSteps(signer identity, role, title, jurisdiction, keyRef, decision approved|rejected, decidedAt, reason)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReserveBackingPanel",
+      "IssuancePlanForm",
+      "BurnSettlementPolicyEditor",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-issuance-plan.selectPolicyRef",
+        "element": "IssuancePlanForm(fieldPolicyRef)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "planDraft.policyRef",
+        "storeEffect": "none",
+        "expected": "approvalStatus=approved, lifecycleStatus=active, needsNewIssuance=true인 정책만 선택한다. policyRef와 targetCirculationUnitId|circulationUnitIds만 초안에 반영하고 발행 인가·상품 분류는 초안 작성자가 발행 도메인 필드로 선택한다",
+        "resolution": { "kind": "demo-state", "target": "planDraft.policyRef" }
+      },
+      {
+        "id": "admin-issuance-plan.formInput",
+        "element": "IssuancePlanForm",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "planDraft",
+        "storeEffect": "none",
+        "expected": "발행주체, 발행 인가 근거, 라이선스, 상품 분류 매핑, 닫힌 유통 단위, 공급량, 증빙, 회수정책을 초안에 반영한다. IssuerAuthorization은 iauth-* issuerAuthorizationRef, issuerRef, licenseStatus, authorizationType, instrumentClassification, validity 기준으로 검토한다. 유통 단위 간 이전·순결제 항목은 제공하지 않는다",
+        "resolution": { "kind": "demo-state", "target": "planDraft" }
+      },
+      {
+        "id": "admin-issuance-plan.editBurnSettlementPolicy",
+        "element": "BurnSettlementPolicyEditor",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "planDraft.burnSettlementPolicy",
+        "storeEffect": "none",
+        "expected": "burnSettlementPolicyRef, trigger, redeemWindowDays, recoverWindowDays, burnBasis, batchCreationMode, approvalPolicyRef, requiresMasterMinterSignature=true를 초안에 반영한다. burnBasis는 issuedTotal-minus-validOutstandingLiability-minus-alreadyBurnedAmount만 선택 가능하며, 정책 만료 finalizer에서 즉시 burn을 만드는 옵션은 제공하지 않는다",
+        "resolution": { "kind": "demo-state", "target": "planDraft.burnSettlementPolicy" }
+      },
+      {
+        "id": "admin-issuance-plan.verifyPrerequisites",
+        "element": "ReserveBackingPanel(refresh)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "plan-prerequisite-check",
+        "storeEffect": "issuance.verifyReserves(planDraft)+issuance.verifyIssuerAuthorization({operation:'issuance-plan', issuerRef:planDraft.issuerRef, issuerAuthorizationRef:planDraft.issuerAuthorizationRef, licenseRef:planDraft.licenseRef, instrumentClassificationMappingRef:planDraft.instrumentClassificationMappingRef, circulationUnitIds:planDraft.circulationUnitIds})",
+        "expected": "발행 인가 status=active, licenseStatus=valid, authorizationType·instrumentClassification 적합성, 오프체인 준비자산, 발행가능한도, InstrumentClassificationMapping.approvalStatus=approved, legalBasisStatus=approved, productSupportMatrix.mint=true 여부와 burnSettlementPolicy 필수값을 확인한다. 정책 도메인의 issuerAuthorizationRef는 검증 입력으로 쓰지 않는다. unsupported 또는 launchBlocked 분류는 승인 불가로 표시한다. 원장·InternalLedger 필드는 수정하지 않는다",
+        "resolution": { "kind": "demo-state", "target": "plan-prerequisite-check" }
+      },
+      {
+        "id": "admin-issuance-plan.pickApprovalPolicy",
+        "element": "ApprovalPolicyPicker(appliesTo=policy-approval, consoleSurface=issuer)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedIssuerApprovalPolicy",
+        "storeEffect": "none",
+        "expected": "appliesTo='policy-approval', consoleSurface='issuer', grantedByRoot='act-issuer-principal'인 issuer 전용 결재정책만 선택한다. sourceAction=issuance-plan으로 승인자·정족수·SoD opt-in 제약을 결재선 초안에 반영한다. 관리 콘솔 정책 승인 registry와 섞지 않는다",
+        "resolution": { "kind": "demo-state", "target": "selectedIssuerApprovalPolicy" }
+      },
+      {
+        "id": "admin-issuance-plan.submitForApproval",
+        "element": "IssuancePlanForm(submit)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "issuance-plan-submit",
+        "storeEffect": "issuance.createIssuancePlan(planDraft, author,{approvalPolicyRef:selectedIssuerApprovalPolicy.id, approverAssignments:selectedApprovers, signerBindings, sodPolicyResult, consoleSurface:'issuer', grantedByRoot:'act-issuer-principal', sourceScreenId:'admin-issuance-plan', sourceAction:'issuance-plan', onFinalApproved:{actionRefs:[{slice:'issuance',action:'markIssuancePlanApproved',args:{planId:'$subjectRef',approvalId:'$approvalId'},idempotencyKey:'approve-issuance-plan:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}, idempotencyKey})",
+        "expected": "계획 초안 저장과 issuer 전용 결재 요청을 1회 생성한다. createIssuancePlan은 ApprovalPolicy.appliesTo='policy-approval', consoleSurface='issuer', grantedByRoot='act-issuer-principal', sourceAction='issuance-plan' 조건을 요구하고 최종 승인 전에는 markIssuancePlanApproved를 호출하지 않는다. planId는 ip-*를 사용한다",
+        "resolution": { "kind": "demo-state", "target": "issuance-plan-submit" }
+      },
+      {
+        "id": "admin-issuance-plan.sign",
+        "element": "SignerIdentityBinder",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "approval-sign",
+        "storeEffect": "approvals.signApproval(requestId, signerIdentity, decision='approve')",
+        "expected": "승인자 신원·직책·역할·관할·키·일시 기록 후 결재 단계만 진행한다. 중간 승인에서는 계획을 승인 상태로 만들지 않고, 최종 승인 및 정족수 충족 시 backend approval runner가 approvals.runOnFinalApprovedOnce(requestId,{idempotencyKey:approvalRequest.onFinalApproved.idempotencyKey})를 호출해 linked IssuancePlan approvalStatus=approved를 한 번만 반영한다",
+        "resolution": { "kind": "demo-state", "target": "approval-sign" }
+      },
+      {
+        "id": "admin-issuance-plan.reject",
+        "element": "ApprovalChainStepper(reject)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "approval-reject",
+        "storeEffect": "approvals.rejectRequest(requestId, signerIdentity, reason)",
+        "expected": "반려 사유와 반려자 신원·직책·일시 기록, linked IssuancePlan 상태 rejected",
+        "resolution": { "kind": "demo-state", "target": "approval-reject" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "초안 작성 또는 결재 대기" },
+      { "state": "loading", "via": "검증·제출·서명 처리" },
+      { "state": "empty", "via": "신규 계획" },
+      { "state": "error", "via": "검증 실패 또는 반려" },
+      { "state": "success", "via": "최종 결재 완료" }
+    ]
+  },
+  "specFeedback": []
 }

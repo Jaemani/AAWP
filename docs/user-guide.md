@@ -157,6 +157,10 @@ Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selec
 
 이 예제의 `bundle-manifest.json`은 정책, 유통, 발행·준비자산을 별도 bundle로 제공한다. Bundle을 고른 뒤 surface와 화면을 전환한다. 관리 콘솔과 발행사 콘솔은 서로 다른 surface이고, 각 화면은 독립 `screen-artifacts/<screen-id>.json`과 route를 가진다. 향후 mobile screen은 같은 manifest에 `formFactor: "mobile"` surface로 추가한다.
 
+화면 위쪽/바깥의 bundle selector는 결과 collection을 탐색하는 AAWP UI이고, iframe 안의 240px rail은 source spec이 정의한 실제 제품 navigation이다. 제품 rail과 CTA가 현재 22-screen selection을 가리키면 연결된 화면으로 이동한다. 원본 spec에는 있지만 이번 selection 밖인 목적지는 `이번 데모 범위 밖`으로 안내한다. 목적지가 불명확한 affordance는 버튼을 유지한 채 Spec feedback을 표시하며 임의 screen을 만들거나 연결하지 않는다.
+
+필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
+
 ## 4. `spec-feedback-to-spec`
 
 Workflow IR 검사:

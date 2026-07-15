@@ -167,5 +167,327 @@
       "ApprovalRequest.onFinalApproved.actionRefs structured array only: {slice:'policy', action:'activateApprovedDraft', args, idempotencyKey, onlyWhen}; voucher setup finalizer only activates the approved PolicyDraft and does not enqueue issuance, create payout records, create refund authority records, or create burn batches",
       "Forbidden draft inputs: PolicyTemplateDefinition, admin-voucher-policy-template-composer, targetAmountRules[], issuerAuthorizationRef as policy gate, IssuerAuthorization.scopeCirculationUnitIds, InstrumentClassificationMapping edit, chain, custodyType, providerRef, address, onchain wallet creation fields, user cash redemption/refund option, extension mode option, circulationUnitMode, circulationUnitDraft, pooledAccountDraft, convertibilityRuleDraft"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "VoucherPolicySetupPanel",
+      "PolicyConditionBinder",
+      "PooledAccountPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-voucher-policy-setup.editBasics",
+        "element": "VoucherPolicySetupPanel(basicInfoFields)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "policyDraft",
+        "storeEffect": "none",
+        "expected": "policyName, description, policyPurpose, effectivePeriod{effectiveFrom,effectiveUntil}, voucherValidityPeriod{startsAt,endsAt}, owningDepartment 또는 departmentRef를 PolicyDraft canonical 필드로 입력한다. effectiveFrom < effectiveUntil 및 voucherValidityPeriod가 effectivePeriod 안에 있는지 즉시 검증한다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.openConditionBuilderFromEmpty",
+        "element": "VoucherPolicySetupPanel(emptyConditionCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-condition-builder",
+        "storeEffect": "none",
+        "expected": "승인된 조건 세트가 없을 때 조건 빌더로 이동한다. 이 화면은 조건 raw field를 직접 편집하지 않고 ref picker만 사용한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.addConditionGrantRow",
+        "element": "PolicyConditionBinder(addTargetAmountRowCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.conditionRefs",
+        "storeEffect": "none",
+        "expected": "conditionRefs[]에 대상+금액 행을 추가한다. 새 targetAmountRules[] 필드는 만들지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.conditionRefs" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.selectEligibilityForGrantRow",
+        "element": "PolicyConditionBinder(eligibilityConditionSetSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.conditionRefs[rowIndex].eligibilityConditionSetRef",
+        "storeEffect": "none",
+        "expected": "conditionSetStatus='published' && approvalStatus='approved'인 ecs-*만 선택한다. KYC, 연령, 거주, 자격 raw field는 이 화면에서 직접 편집하지 않는다. 조건 세트가 circulationScope를 가지면 선택된 targetCirculationUnitId와 충돌하지 않아야 한다.",
+        "resolution": {
+          "kind": "demo-state",
+          "target": "policyDraft.conditionRefs[rowIndex].eligibilityConditionSetRef"
+        }
+      },
+      {
+        "id": "admin-voucher-policy-setup.editGrantAmountForRow",
+        "element": "PolicyConditionBinder(grantAmountInput)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "policyDraft.conditionRefs[rowIndex].grantAmount",
+        "storeEffect": "none",
+        "expected": "선택한 대상 행에 지급 금액을 연결한다. grantAmount는 {amount,currency:'KRW'}로 저장하고 대상 요약은 targetSummary로 남긴다. reviewDiff는 행 수, 행별 금액, 예상 대상 수가 있으면 예상 지급 총액을 계산해 표시한다.",
+        "resolution": {
+          "kind": "demo-state",
+          "target": "policyDraft.conditionRefs[rowIndex].grantAmount"
+        }
+      },
+      {
+        "id": "admin-voucher-policy-setup.removeConditionGrantRow",
+        "element": "PolicyConditionBinder(removeTargetAmountRowCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.conditionRefs",
+        "storeEffect": "none",
+        "expected": "대상+금액 행을 제거한다. 최소 1개 행이 없으면 결재 상신 CTA를 비활성화한다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.conditionRefs" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.selectUsageConditionSet",
+        "element": "PolicyConditionBinder(usageConditionSetSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.usageConditionSetRef",
+        "storeEffect": "none",
+        "expected": "사용처 제한이 필요한 정책에서 conditionSetStatus='published' && approvalStatus='approved'인 ucs-*를 선택한다. 업종·품목 raw code는 merchantCategoryCodeRefs/itemCategoryCodeRefs read-only preview로만 표시한다. 사용 조건이 circulationScope를 가지면 선택된 targetCirculationUnitId와 충돌하지 않아야 한다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.usageConditionSetRef" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.selectCirculationUnit",
+        "element": "VoucherPolicySetupPanel(targetCirculationUnitSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.targetCirculationUnitId",
+        "storeEffect": "none",
+        "expected": "운영자가 대상 유통 단위를 선택하고 PolicyDraft/Policy에 targetCirculationUnitId로 저장한다. 유통·정산·정책은 선택한 닫힌 circulation 단위 내부에서 종결되며 유통 단위 간 이전·순결제를 만들지 않는다. 선택 이후 재원/조건 scope 검증을 다시 계산한다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.targetCirculationUnitId" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.openPooledAccountManagementFromEmpty",
+        "element": "PooledAccountPanel(relatedManagementDeeplink)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-circulation-dashboard",
+        "storeEffect": "none",
+        "expected": "선택 가능한 기존 재원/집합계좌가 없을 때 기존 유통·재원 관리 화면으로 이동한다. 빈 상태에는 유통 단위 불일치, 정책재원 계좌 권한 미확정, 준비자산 필수 정보 누락, 혼합 재원 필수값 누락 중 계산된 사유를 표시한다. admin-voucher-policy-setup 내부에서는 신규 PooledAccount 등록 flow를 열지 않는다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.selectPooledAccount",
+        "element": "PooledAccountPanel(existingPooledAccountSelect)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.targetPooledAccountRef",
+        "storeEffect": "none",
+        "expected": "선택한 targetCirculationUnitId 내부의 selectableForVoucherPolicy=true인 기존 재원/집합계좌만 선택한다. 이 화면 안에서 신규 PooledAccount 등록 flow를 열지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.targetPooledAccountRef" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.validatePooledAccount",
+        "element": "PooledAccountPanel(validationSummary)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "pooledAccountValidation",
+        "storeEffect": "none",
+        "expected": "fundNature별 필수 입력과 scope를 검증한다. policyFund는 policyFundAccount.fiatAccountRef와 authorityStatus='confirmed', reserveAsset은 reserveAssets[] 최소 1개 및 필수 검증 필드, mixed는 둘 다 필요하다. selected targetPooledAccountRef.circulationUnitId는 targetCirculationUnitId와 같아야 한다. topup은 fundNature가 아니며 상품권 정책 재원으로 선택할 수 없다.",
+        "resolution": { "kind": "demo-state", "target": "pooledAccountValidation" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.selectPayoutExecutionMode",
+        "element": "VoucherPolicySetupPanel(payoutExecutionModeSegmentedControl)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyDraft.payoutExecutionMode",
+        "storeEffect": "none",
+        "expected": "immediate-list-grant 또는 application-based-grant만 선택한다. roster/application/eligibility-result/payout-batch/voucher-grant-job 같은 세부 source 선택은 열지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "policyDraft.payoutExecutionMode" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.reviewFixedLifecycleRules",
+        "element": "VoucherPolicySetupPanel(fixedLifecycleReadOnlyBlock)",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "voucher-period-expiry-lifecycle-sheet",
+        "storeEffect": "none",
+        "expected": "System Fixed Rules에서 needsNewIssuance=true 안내와 periodExpiryLifecycleRef='pel-period-expiry-fixed-voucher'의 resolved summary를 read-only로 확인한다. 기간 종료형 법적 근거는 legalBasisStatus와 approvalId로 표시하고 active 정책은 legalBasisStatus='approved' 및 approvalId가 있어야 한다. 사용자 현금 상환/환불 없음, 기간 내 정상 거래의 가맹점 정산 기간 허용, 미사용 사용자 잔액 만료, 미사용 정책 재원 회수, 미사용 발행 공급량의 소각 정산 후보 전달을 표시한다. 연장 가능형은 제공하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "voucher-period-expiry-lifecycle-sheet" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.configureApproval",
+        "element": "ApprovalPolicyPicker",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "approvalRequestDraft",
+        "storeEffect": "none",
+        "expected": "관리 콘솔 전용 ApprovalPolicy.appliesTo='policy-approval', consoleSurface='admin', grantedByRoot='act-superadmin'로 결재정책을 찾고 승인자 선택, 결재선, signerBindings, requester identity/title/jurisdiction, SoD opt-in 결과를 ApprovalRequest payload로 구성한다. 기본 approvalPolicyRef는 appr-policy-approval-default다.",
+        "resolution": { "kind": "demo-state", "target": "approvalRequestDraft" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.reviewDraftDiff",
+        "element": "VoucherPolicySetupPanel(reviewDiffCta)",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "voucher-policy-draft-diff-sheet",
+        "storeEffect": "none",
+        "expected": "생성될 PolicyDraft diff를 표시한다. needsNewIssuance=true, grantSchedule='one-time', periodExpiryLifecycleRef='pel-period-expiry-fixed-voucher', conditionRefs[].grantAmount, targetCirculationUnitId, targetPooledAccountRef, fundingReadyStatus, circulationScopeMatch, conditionScopeMatch, usageConditionScopeMatch, executionStatus, disabledReason, 예상 지급 총액을 검토한다.",
+        "resolution": { "kind": "demo-state", "target": "voucher-policy-draft-diff-sheet" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.submit",
+        "element": "VoucherPolicySetupPanel(submitCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "voucher-policy-submit",
+        "storeEffect": "policy.createVoucherPolicyDraft({policyKind:'voucher-payout',policyType:'general',policyName,description,policyPurpose,effectivePeriod,voucherValidityPeriod,owningDepartment,conditionRefs,usageConditionSetRef,targetCirculationUnitId,targetPooledAccountRef,payoutExecutionMode,grantSchedule:'one-time',needsNewIssuance:true,periodExpiryLifecycleRef:'pel-period-expiry-fixed-voucher',approvalPolicyRef,executionStatus,disabledReason}, author)+approvals.submitForApproval({subjectType:'PolicyDraft',subjectRef:policyDraftId,sourceScreenId:'admin-voucher-policy-setup',sourceAction:'voucher-policy-submit',sourceActionAliases:['voucher-payout-policy-setup'],requester:{actorId:author.actorId,identityRef:author.identityRef,title:author.title,jurisdiction:author.jurisdiction},approvalPolicyRef,appliesTo:'policy-approval',approverAssignments,signerBindings,sodPolicyResult,approvalContext:{policyDraftId,policyKind:'voucher-payout',needsNewIssuance:true,periodExpiryLifecycleRef:'pel-period-expiry-fixed-voucher'},onFinalApproved:{actionRefs:[{slice:'policy',action:'activateApprovedDraft',args:{policyDraftId:'$subjectRef',approvalId:'$approvalId',approverIdentity:'$finalApproverIdentity',approvedAt:'$approvedAt'},idempotencyKey:'activate-voucher-policy:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}})",
+        "expected": "바우처 전용 draft action policy.createVoucherPolicyDraft만 호출한다. policy.composeCirculationPolicy는 호출하지 않는다. PolicyTemplateDefinition, targetAmountRules[], issuerAuthorizationRef, scopeCirculationUnitIds, chain/custodyType/providerRef/address, circulationUnitMode, circulationUnitDraft, pooledAccountDraft, convertibilityRuleDraft, user cash redemption/refund option, extension mode를 payload로 보내면 검증 실패한다. 화면은 정책 초안 생성과 결재 상신까지만 담당한다. 최종 승인 뒤 policy.activateApprovedDraft만 실행하며 지급 record, IssuancePlan, 환불 권위 record, burn batch, issuance candidate refresh action을 직접 생성하지 않는다. 발행사 콘솔은 approvalStatus='approved' && lifecycleStatus='active' && needsNewIssuance=true 정책을 query로 조회해 발행 가능성을 독립 평가한다.",
+        "resolution": { "kind": "demo-state", "target": "voucher-policy-submit" }
+      },
+      {
+        "id": "admin-voucher-policy-setup.viewApprovalStatus",
+        "element": "VoucherPolicySetupPanel(approvalStatusCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-approval-inbox",
+        "storeEffect": "none",
+        "expected": "상신 완료 후 결재함으로 이동해 승인/반려 결정, 승인자 신원·직책/역할·일시, 결재ID를 확인한다.",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-approval-inbox",
+          "reason": "목적지는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "id": "admin-voucher-policy-setup.viewPolicyListStatus",
+        "element": "VoucherPolicySetupPanel(policyListStatusCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-policy-list",
+        "storeEffect": "none",
+        "expected": "정책 목록으로 이동해 PolicyDraft/Policy 상태와 최종 승인 후 발행 평가 대상 projection을 확인한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "고정형 설정 페이지 진입" },
+      {
+        "state": "empty",
+        "via": "선택 가능한 승인 조건 세트 또는 선택 가능한 기존 재원/집합계좌 없음"
+      },
+      { "state": "loading", "via": "초안 저장/검증/결재 상신 처리 중" },
+      {
+        "state": "error",
+        "via": "필수 항목 누락, 기간 검증 실패, 미승인 조건 세트, 재원 검증 실패, scope 불일치, 기간 종료형 법적 근거 미승인, 결재선 누락, 금지 필드 전달"
+      },
+      { "state": "success", "via": "PolicyDraft 생성 및 결재 상신 완료" }
+    ]
+  },
+  "specFeedback": []
 }

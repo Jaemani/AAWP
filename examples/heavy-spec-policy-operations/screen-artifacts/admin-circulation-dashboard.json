@@ -66,5 +66,169 @@
       "viewableCirculationUnitIds",
       "asOf 동기화 시각"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "CirculationUnitPicker",
+      "CirculationWalletPanel",
+      "OnchainWalletProvisioningPanel",
+      "InternalLedgerStatusPanel",
+      "PolicyEffectMetricCard",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-circulation-dashboard.unitPicker",
+        "element": "CirculationUnitPicker",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedCirculationUnitId",
+        "storeEffect": "none",
+        "expected": "viewableCirculationUnitIds 안에서 유통 단위를 전환한다.",
+        "resolution": { "kind": "demo-state", "target": "selectedCirculationUnitId" }
+      },
+      {
+        "id": "admin-circulation-dashboard.openPooledAccountPreview",
+        "element": "CirculationWalletPanel(pooledAccountRow)",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "pooled-account-preview-sheet",
+        "storeEffect": "none",
+        "expected": "policyRef, fundNature(policyFund|reserveAsset|mixed), 목적별 계좌 구조, 오프체인 reserveAssets 사용 여부를 read-only로 표시한다. topup은 fundNature가 아니라 customerFundsAccount.accountPurpose='customerTopupPrincipal'로만 표시한다.",
+        "resolution": { "kind": "demo-state", "target": "pooled-account-preview-sheet" }
+      },
+      {
+        "id": "admin-circulation-dashboard.openWalletProvisioningStatus",
+        "element": "OnchainWalletProvisioningPanel",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "wallet-provisioning-status-sheet",
+        "storeEffect": "none",
+        "expected": "providerRef, chain, custodyType, returnedAddress, 발급 상태 pending|provisioning|provisioned|failed, failureReason, providerAuthorizationRef, custodyMandateRef, keyControlPolicyRef, externalMandateRef를 read-only로 표시한다.",
+        "resolution": { "kind": "demo-state", "target": "wallet-provisioning-status-sheet" }
+      },
+      {
+        "id": "admin-circulation-dashboard.openInternalLedgerStatus",
+        "element": "InternalLedgerStatusPanel",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "internal-ledger-status-sheet",
+        "storeEffect": "none",
+        "expected": "InternalLedger 상세, 시스템 프로비저닝 onchainWalletRef, provisioningRecordRef를 표시한다. 수정 CTA는 없다.",
+        "resolution": { "kind": "demo-state", "target": "internal-ledger-status-sheet" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "진입" },
+      { "state": "loading", "via": "집계 조회" },
+      { "state": "empty", "via": "배정 유통 단위 없음" },
+      { "state": "error", "via": "참조 불일치 또는 조회 실패" },
+      { "state": "success", "via": "필터 반영" }
+    ]
+  },
+  "specFeedback": []
 }

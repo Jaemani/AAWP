@@ -58,5 +58,188 @@
       "ApprovalPolicy(appliesTo='policy-approval', approvalStatus='active'); roster-approval은 sourceAction/sourceActionAliases/sourceScreenId로만 보존",
       "ApprovalRequest payload(requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, sourceScreenId='admin-roster-builder', sourceAction='roster-approval', sourceActionAliases:['roster-approval'], approvalContext{operationPlanDraft,rosterDraft,policyRef}, onFinalApproved.actionRefs structured array)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "OperationPlanPanel",
+      "RosterBuilderPanel",
+      "ApprovalPolicyPicker",
+      "ApproverSelector",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-roster-builder.pickPolicyForPlan",
+        "element": "OperationPlanPanel(planPolicyPick)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "operationPlanDraft.policyRef",
+        "storeEffect": "none",
+        "expected": "approvalStatus='approved'이고 lifecycleStatus='active'인 정책만 선택한다.",
+        "resolution": { "kind": "demo-state", "target": "operationPlanDraft.policyRef" }
+      },
+      {
+        "id": "admin-roster-builder.editOperationPlanDraft",
+        "element": "OperationPlanPanel(planFields)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "operationPlanDraft",
+        "storeEffect": "none",
+        "expected": "운영계획서 초안을 로컬 draft로 작성한다.",
+        "resolution": { "kind": "demo-state", "target": "operationPlanDraft" }
+      },
+      {
+        "id": "admin-roster-builder.evaluateRules",
+        "element": "RosterBuilderPanel(evaluateCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "candidateRosterDraft",
+        "storeEffect": "none",
+        "expected": "선택된 PolicyCondition summary와 행정속성 평가 결과 projection으로 후보를 만든다. 이 단계는 권위 지급 기록을 만들지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "candidateRosterDraft" }
+      },
+      {
+        "id": "admin-roster-builder.upload",
+        "element": "RosterBuilderPanel(uploadCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "candidateRosterDraft.uploadFileRef",
+        "storeEffect": "none",
+        "expected": "external-ingest 파일 ref를 draft에 연결하고 중복·제외 사유 preview를 표시한다.",
+        "resolution": { "kind": "demo-state", "target": "candidateRosterDraft.uploadFileRef" }
+      },
+      {
+        "id": "admin-roster-builder.configureApproval",
+        "element": "ApprovalPolicyPicker+ApproverSelector",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "approvalDraft",
+        "storeEffect": "none",
+        "expected": "appliesTo='policy-approval', sourceAction='roster-approval' 결재정책, 승인자 후보, 결재선, opt-in SoD 결과를 구성한다.",
+        "resolution": { "kind": "demo-state", "target": "approvalDraft" }
+      },
+      {
+        "id": "admin-roster-builder.confirm",
+        "element": "RosterBuilderPanel(confirmCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "roster-confirm-and-submit-approval",
+        "storeEffect": "approvals.submitForApproval({subjectType:'roster',subjectRef:candidateRosterDraft.rosterId,sourceScreenId:'admin-roster-builder',sourceAction:'roster-approval',sourceActionAliases:['roster-approval'],requester:{identity:author.identity,title:author.title,jurisdiction:author.jurisdiction},appliesTo:'policy-approval',approvalPolicyRef,approverAssignments,signerBindings,sodPolicyResult,approvalContext:{operationPlanDraft,candidateRosterDraft,policyRef},onFinalApproved:{actionRefs:[{slice:'roster',action:'approveRoster',args:{rosterId:'$subjectRef',approvalId:'$approvalId',approvedAt:'$approvedAt'},idempotencyKey:'roster-approve:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}},{slice:'payouts',action:'createDirectGrantRecordsFromRoster',args:{rosterId:'$subjectRef',policyRef:'$approvalContext.policyRef',approvalId:'$approvalId'},idempotencyKey:'direct-grants-from-roster:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true,payoutMethod:'direct-grant'}}]}})",
+        "expected": "후보 명부를 결재 큐로 전달한다. 정족수 충족 후 approvals.runOnFinalApprovedOnce가 명부 승인과 direct-grant 지급 후처리를 한 번만 실행한다.",
+        "resolution": { "kind": "demo-state", "target": "roster-confirm-and-submit-approval" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "운영계획서 작성/명부 산출 대기" },
+      { "state": "loading", "via": "평가, 업로드 검증 또는 결재 상신" },
+      { "state": "empty", "via": "후보 없음" },
+      { "state": "error", "via": "정책 미승인, 검증 실패 또는 결재선 누락" },
+      { "state": "success", "via": "명부 결재 요청 완료" }
+    ]
+  },
+  "specFeedback": []
 }

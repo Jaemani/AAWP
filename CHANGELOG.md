@@ -31,6 +31,11 @@
 - 22-screen demo를 정책, 유통, 발행·준비자산 세 bundle로 나누고 관리 콘솔 13개와 발행사 콘솔 9개 surface를 분리했다.
 - 기존 4개 공통 layout과 임의 mock 수치를 제거하고 각 screen artifact가 source screen의 layout, components, states, copy와 dataNeeds를 그대로 보존하게 했다.
 - Viewer는 bundle → surface → screen을 전환하며 web/mobile/tablet form factor를 같은 manifest로 처리한다.
+- 관리 콘솔·발행사 콘솔 screen 안에 source-defined 240px product nav rail과 authority chrome을 복원했다.
+- Screen artifact가 source navigation, affordance, reachable state, resolution과 spec feedback을 함께 보존한다.
+- 정책 작성 CTA, 조건 빌더 이동, 발행 계획 → 상세, 발행 실행 → 원장, 준비자산 ↔ PoR 등 source에 명시된 screen transition을 실제로 연결했다.
+- Source target이 selection 밖이면 범위 안내를 표시하고, 불명확하면 임의 해석 대신 feedback으로 남긴다.
+- 22개 screen별 table, form, filter, stepper, drawer와 submit feedback을 demo interaction으로 구현했다. 표시 수치는 예시 데이터로 구분한다.
 
 ### `spec-feedback-to-spec`
 

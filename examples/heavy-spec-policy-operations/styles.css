@@ -389,3 +389,18 @@ input {
   background: #fee4e2;
   font-size: 11px;
 }
+.viewer-notice {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  max-width: 420px;
+  padding: 11px 14px;
+  border: 1px solid #b9d3ff;
+  border-radius: 9px;
+  color: #174ea6;
+  background: #f5f9ff;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14);
+  font-size: 12px;
+  font-weight: 700;
+}

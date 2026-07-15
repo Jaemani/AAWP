@@ -91,5 +91,271 @@
       "OperationPlan 참조 수",
       "감사 read-only 접근"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PolicyLifecycleTable",
+      "ApprovalChainStepper",
+      "AuditTrailRow",
+      "PermissionGate",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-policy-list.approvalStatusFilter",
+        "element": "PolicyLifecycleTable(approvalStatusFilter)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "approvalStatusFilter",
+        "storeEffect": "none",
+        "expected": "draft/pending/approved/rejected 승인 상태로 필터링한다.",
+        "resolution": { "kind": "demo-state", "target": "approvalStatusFilter" }
+      },
+      {
+        "id": "admin-policy-list.lifecycleStatusFilter",
+        "element": "PolicyLifecycleTable(lifecycleStatusFilter)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "lifecycleStatusFilter",
+        "storeEffect": "none",
+        "expected": "active/expired/superseded 생애주기 상태로 필터링한다.",
+        "resolution": { "kind": "demo-state", "target": "lifecycleStatusFilter" }
+      },
+      {
+        "id": "admin-policy-list.executionStatusFilter",
+        "element": "PolicyLifecycleTable(executionStatusFilter)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "executionStatusFilter",
+        "storeEffect": "none",
+        "expected": "executable/blocked 실행 상태로 필터링한다. blocked 정책은 disabledReason을 함께 표시한다.",
+        "resolution": { "kind": "demo-state", "target": "executionStatusFilter" }
+      },
+      {
+        "id": "admin-policy-list.policyCategoryFilter",
+        "element": "PolicyLifecycleTable(policyCategoryFilter)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "policyCategoryFilter",
+        "storeEffect": "none",
+        "expected": "전체/일반 정책/충전 정책/상품권 정책으로 필터링한다. 상품권 정책은 policyKind='voucher-payout'만으로 구분한다.",
+        "resolution": { "kind": "demo-state", "target": "policyCategoryFilter" }
+      },
+      {
+        "id": "admin-policy-list.versionCompare",
+        "element": "PolicyLifecycleTable(versionCompareCta)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "versionCompareDrawer",
+        "storeEffect": "none",
+        "expected": "선택한 정책의 버전 이력을 나란히 비교하는 패널을 연다.",
+        "resolution": { "kind": "demo-state", "target": "versionCompareDrawer" }
+      },
+      {
+        "id": "admin-policy-list.newPolicy",
+        "element": "PolicyLifecycleTable(newPolicyCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-circulation-policy-composer",
+        "storeEffect": "none",
+        "expected": "/admin/policy/circulation/new로 이동해 일반 정책 신규 작성을 시작한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "id": "admin-policy-list.newTopupPolicy",
+        "element": "PolicyLifecycleTable(topupEntryCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-circulation-topup-policy",
+        "storeEffect": "none",
+        "expected": "/admin/circulation/topup-policy로 이동해 충전 정책 작성을 시작한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "id": "admin-policy-list.newVoucherPolicy",
+        "element": "PolicyLifecycleTable(voucherEntryCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-voucher-policy-setup",
+        "storeEffect": "none",
+        "expected": "/admin/policy/voucher/setup으로 이동해 고정형 상품권 정책 설정을 시작한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "id": "admin-policy-list.revise",
+        "element": "PolicyLifecycleTable(reviseCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-circulation-policy-composer",
+        "storeEffect": "none",
+        "expected": "policyType='general'이고 policyKind!='voucher-payout'인 정책은 admin-circulation-policy-composer로 이동하고 mode='edit', policyId를 route state 또는 query adapter로 전달해 프리필한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "id": "admin-policy-list.editTopupPolicy",
+        "element": "PolicyLifecycleTable(topupEntryCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-circulation-topup-policy",
+        "storeEffect": "none",
+        "expected": "policyType='topup' 정책은 admin-circulation-topup-policy로 이동하고 policyId를 route state 또는 query adapter로 전달해 프리필한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "id": "admin-policy-list.editVoucherPolicy",
+        "element": "PolicyLifecycleTable(voucherEntryCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-voucher-policy-setup",
+        "storeEffect": "none",
+        "expected": "policyKind='voucher-payout' 정책은 admin-voucher-policy-setup으로 이동하고 policyId를 route state 또는 query adapter로 전달해 fixed setup 필드만 프리필한다.",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "id": "admin-policy-list.expire",
+        "element": "PolicyLifecycleTable(expireCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "policy-expire",
+        "storeEffect": "approvals.submitForApproval({subjectType:'Policy',subjectRef:policyId,sourceScreenId:'admin-policy-list',sourceAction:'policy-expire',requester:{actorId:author.actorId,identityRef:author.identityRef,title:author.title,jurisdiction:author.jurisdiction},approvalPolicyRef,appliesTo:(policyType==='topup'?'topup-policy':'policy-approval'),approverAssignments,signerBindings,sodPolicyResult,approvalContext:{policyId,policyType,policyKind,requestedLifecycleStatus:'expired',reason},onFinalApproved:{actionRefs:[{slice:'policy',action:'transitionPolicyStatus',args:{policyId:'$subjectRef',lifecycleStatus:'expired',approvalId:'$approvalId',approverIdentity:'$finalApproverIdentity',approvedAt:'$approvedAt'},idempotencyKey:'expire-policy:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}})",
+        "expected": "만료 전이를 결재 상신하고 최종 승인 조건 충족 후 lifecycleStatus만 expired로 변경한다. 공급 소각 candidate 생성, burnBatch 생성, issuance.executeSupplyBurn 호출은 하지 않는다. 상품권 정책의 미사용 공급량은 발행계획 burnSettlementPolicy와 발행사 콘솔 admin-supply-burn-settlement에서 별도 후보로 처리한다.",
+        "resolution": { "kind": "demo-state", "target": "policy-expire" }
+      },
+      {
+        "id": "admin-policy-list.viewIssuanceRefs",
+        "element": "PolicyLifecycleTable(viewIssuanceRefsLabel)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "issuanceRefsDrawer",
+        "storeEffect": "none",
+        "expected": "선택 정책을 참조하는 IssuancePlan ID prefix ip-*/상태와 burnSettlementPolicyRef 존재 여부를 read-only 패널로 표시한다. 승인·활성·needsNewIssuance=true 정책이 발행사 콘솔 후보 조회 조건임을 함께 표시한다. 관리 콘솔 actor에게 admin-issuance-plans 직접 이동은 제공하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "issuanceRefsDrawer" }
+      },
+      {
+        "id": "admin-policy-list.openIssuerConsoleIfAuthorized",
+        "element": "PolicyLifecycleTable(issuerAuthRequiredNote)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-auth",
+        "storeEffect": "none",
+        "expected": "issuer 권한 또는 issuerReadGrantRef(grantedBy='act-issuer-principal') 보유 세션에서만 admin-auth의 issuer surface mode로 전환한다. returnTo는 쿼리 파라미터로 전달하고 일반 관리 콘솔 권한만 있으면 PermissionGate가 비활성 사유를 표시한다.",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-auth",
+          "reason": "목적지는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "목록 조회" },
+      { "state": "empty", "via": "등록 정책 없음" },
+      { "state": "loading", "via": "조회 중" },
+      { "state": "error", "via": "전이 실패" },
+      { "state": "success", "via": "전이 요청 처리 완료" }
+    ]
+  },
+  "specFeedback": []
 }

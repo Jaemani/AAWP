@@ -30,16 +30,27 @@ test("selection manifest pins exactly 22 requested screens", async () => {
 });
 
 test("bundle keeps selected screens independent and preserves their source definitions", async () => {
-  const [selectionSource, bundleSource, sourceHtml, script, screenHtml, screenRuntime, styles] =
-    await Promise.all([
-      readFile(new URL("selection-manifest.json", root), "utf8"),
-      readFile(new URL("bundle-manifest.json", root), "utf8"),
-      readFile(new URL("index.html", root), "utf8"),
-      readFile(new URL("app.js", root), "utf8"),
-      readFile(new URL("screen.html", root), "utf8"),
-      readFile(new URL("screen-runtime.js", root), "utf8"),
-      readFile(new URL("styles.css", root), "utf8")
-    ]);
+  const [
+    selectionSource,
+    bundleSource,
+    sourceHtml,
+    script,
+    screenHtml,
+    screenRuntime,
+    styles,
+    screenStyles,
+    sourceContractsSource
+  ] = await Promise.all([
+    readFile(new URL("selection-manifest.json", root), "utf8"),
+    readFile(new URL("bundle-manifest.json", root), "utf8"),
+    readFile(new URL("index.html", root), "utf8"),
+    readFile(new URL("app.js", root), "utf8"),
+    readFile(new URL("screen.html", root), "utf8"),
+    readFile(new URL("screen-runtime.js", root), "utf8"),
+    readFile(new URL("styles.css", root), "utf8"),
+    readFile(new URL("screen.css", root), "utf8"),
+    readFile(new URL("source-contracts.json", root), "utf8")
+  ]);
   const selection = JSON.parse(selectionSource);
   const bundle = JSON.parse(bundleSource);
   const source = JSON.parse(await readFile(selection.source, "utf8"));
@@ -60,6 +71,22 @@ test("bundle keeps selected screens independent and preserves their source defin
   );
   assert.equal(bundle.screens.length, 22);
   assert.equal(new Set(bundle.screens.map((screen) => screen.artifactPath)).size, 22);
+  const sourceContracts = JSON.parse(sourceContractsSource);
+  const componentDefinitionByName = new Map(
+    sourceContracts.components.map((component) => [component.name, component])
+  );
+  assert.equal(sourceContracts.schemaVersion, "aawp/demo-source-contracts/v1");
+  assert.ok(
+    sourceContracts.designSystem.palette.some(
+      (token) => token.name === "primary" && token.value === "#2368D9"
+    )
+  );
+  assert.ok(
+    sourceContracts.designSystem.typography.some(
+      (token) => token.name === "title" && token.size === "22px"
+    )
+  );
+  assert.match(sourceContracts.designSystem.spacing, /nav-rail 240px/);
   for (const screen of bundle.screens) {
     const artifact = JSON.parse(await readFile(new URL(screen.artifactPath, root), "utf8"));
     assert.deepEqual(artifact.screen, sourceById.get(screen.id));
@@ -68,15 +95,115 @@ test("bundle keeps selected screens independent and preserves their source defin
       screen.surfaceId,
       artifact.screen.surface === "관리 콘솔(웹)" ? "admin-web" : "issuer-web"
     );
+    assert.equal(artifact.navigation.type, "nav-rail");
+    assert.deepEqual(artifact.renderer, {
+      adapterId: "aawp-console-surface",
+      adapterVersion: "0.1.0",
+      formFactor: "web"
+    });
+    assert.ok(artifact.navigation.items.length >= 7);
+    assert.equal(artifact.sourceContracts.path, "source-contracts.json");
+    assert.match(artifact.sourceContracts.contentDigest, /^[a-f0-9]{64}$/);
+    assert.deepEqual(artifact.sourceContracts.componentNames, artifact.screen.components);
+    assert.ok(
+      artifact.sourceContracts.componentNames.every((componentName) => {
+        const component = componentDefinitionByName.get(componentName);
+        return (
+          typeof component?.purpose === "string" &&
+          Array.isArray(component.props) &&
+          Array.isArray(component.variants) &&
+          Array.isArray(component.states)
+        );
+      })
+    );
+    assert.ok(
+      artifact.sourceContracts.componentNames.every((componentName) =>
+        componentDefinitionByName.has(componentName)
+      )
+    );
+    assert.ok(Array.isArray(artifact.interactions.affordances));
+    assert.ok(Array.isArray(artifact.interactions.reachableStates));
+    assert.ok(Array.isArray(artifact.specFeedback));
+    for (const affordance of artifact.interactions.affordances) {
+      assert.ok(
+        ["selected-screen", "out-of-scope-screen", "unresolved-navigation", "demo-state"].includes(
+          affordance.resolution.kind
+        )
+      );
+    }
   }
   assert.match(sourceHtml, new RegExp(expectedSourceDigest));
   assert.match(script, /location\.hash/);
   assert.match(script, /bundle-manifest\.json/);
   assert.match(screenRuntime, /screen-artifacts/);
+  assert.match(screenRuntime, /aawp:demo-navigate/);
+  assert.match(screenRuntime, /console-rail/);
+  assert.match(screenRuntime, /admin-policy-list/);
+  assert.match(screenRuntime, /admin-supply-burn-settlement/);
+  for (const screen of bundle.screens) assert.match(screenRuntime, new RegExp(screen.id));
+  assert.match(screenRuntime, /unresolved-navigation/);
+  assert.match(script, /aawp:demo-navigate/);
+  assert.match(script, /event\.origin !== location\.origin/);
   assert.match(styles, /--blue:\s*#2368d9/i);
+  assert.match(screenStyles, /grid-template-columns:\s*240px minmax\(0, 1fr\)/);
+  assert.match(screenStyles, /font-size:\s*22px/);
+  assert.match(screenStyles, /font-size:\s*14px/);
   assert.doesNotMatch(
-    `${sourceHtml}\n${script}\n${screenHtml}\n${screenRuntime}\n${styles}`,
+    `${sourceHtml}\n${script}\n${screenHtml}\n${screenRuntime}\n${styles}\n${screenStyles}`,
     /https?:\/\//i
+  );
+});
+
+test("source navigation and selected screen flows resolve without invented links", async () => {
+  const bundle = JSON.parse(await readFile(new URL("bundle-manifest.json", root), "utf8"));
+  const selectedIds = new Set(bundle.screens.map((screen) => screen.id));
+  const artifacts = new Map();
+  for (const screen of bundle.screens) {
+    artifacts.set(
+      screen.id,
+      JSON.parse(await readFile(new URL(screen.artifactPath, root), "utf8"))
+    );
+  }
+
+  const policyList = artifacts.get("admin-policy-list");
+  for (const target of [
+    "admin-circulation-policy-composer",
+    "admin-circulation-topup-policy",
+    "admin-voucher-policy-setup"
+  ]) {
+    const action = policyList.interactions.affordances.find(
+      (affordance) => affordance.target === target
+    );
+    assert.equal(action.resolution.kind, "selected-screen");
+    assert.equal(action.resolution.screenId, target);
+  }
+
+  const issuerPlans = artifacts.get("admin-issuance-plans");
+  assert.ok(
+    issuerPlans.interactions.affordances.some(
+      (affordance) =>
+        affordance.target === "admin-issuance-plan" &&
+        affordance.resolution.kind === "selected-screen"
+    )
+  );
+  const issuerExecute = artifacts.get("admin-issuance-execute");
+  assert.ok(
+    issuerExecute.interactions.affordances.some(
+      (affordance) =>
+        affordance.target === "admin-issuance-ledger" &&
+        affordance.resolution.kind === "selected-screen"
+    )
+  );
+
+  const outOfScope = [...artifacts.values()]
+    .flatMap((artifact) => artifact.interactions.affordances)
+    .filter((affordance) => affordance.resolution.kind === "out-of-scope-screen");
+  assert.ok(outOfScope.length > 0);
+  assert.ok(outOfScope.every((affordance) => !selectedIds.has(affordance.target)));
+  assert.ok(
+    [...artifacts.values()]
+      .flatMap((artifact) => artifact.navigation.items)
+      .some((item) => item.resolution.kind === "out-of-scope-screen")
   );
 });
 

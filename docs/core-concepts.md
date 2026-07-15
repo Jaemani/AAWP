@@ -71,6 +71,10 @@ bundle → surface(web/mobile/tablet) → group(topic/flow) → independent scre
 
 Workflow는 어떤 bundle과 screen을 만들지 유연하게 결정할 수 있다. 플랫폼은 manifest reference, route, surface membership과 artifact path를 검증하고 동일 viewer에서 묶음·surface·화면 전환 UX를 제공한다. 각 screen artifact는 source의 layout, state, copy와 authority를 독립적으로 보존한다.
 
+Bundle viewer의 navigation과 제품 화면의 navigation은 다르다. 전자는 AAWP가 결과 collection을 고르는 도구이고, 후자는 source `navModel`과 `interactionModel`에서 온 실제 제품 흐름이다. 선택된 target은 화면 사이를 연결하고, selection 밖 target은 범위 안내를 표시하며, 불명확한 target은 임의 해석하지 않고 Spec feedback으로 남긴다.
+
+Source가 token과 component semantic contract만 제공하고 pixel asset을 제공하지 않는 경우, AAWP의 versioned surface adapter가 console/mobile component의 시각 구현을 맡는다. Pinned source contract는 palette, typography, spacing, component props·variants·states를 보존하고 adapter가 이를 일관되게 렌더링한다.
+
 ## Spec feedback은 표준 필드보다 변경 semantics를 고정한다
 
 AAWP는 모든 조직에 하나의 spec schema를 강제하지 않는다. 대신 source artifact digest, feedback ID, 허용 JSON Pointer, patch reason, verifier profile과 승인을 공통 계약으로 둔다. 작은 변경을 `DIRECT`로 수행해도 source를 직접 덮어쓰지 않고 같은 immutable revision 규칙을 사용한다.

@@ -61,5 +61,139 @@
       "CustomerFundsLegalStructure(legalEffectConfirmed, legalBasisStatus:unconfirmed|approved|rejected, controllerLegalEntityRef, effectiveFrom, effectiveUntil); legalEffectConfirmed=false 또는 legalBasisStatus!='approved'이면 CTA disabled",
       "approved AuthorityBasisPolicy 및 legalInstrumentRef(처분 기반 강제 상환일 때)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "RedeemBurnConsole",
+      "PooledAccountPanel",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "LedgerTable",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-redeem-console.execute",
+        "element": "RedeemBurnConsole(executeCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "redeem-execute",
+        "storeEffect": "circulation.executeRedeem({requestId,circulationUnitId,fundSourceType,executorIdentity,executorTitle,executedAt,approvalId,legalInstrumentRef,instrumentClassificationMappingRef})",
+        "expected": "caller payload에서 fiatAccountRef/accountPurpose를 받지 않는다. backend가 fundSourceType, ConvertibilityRule, target PooledAccount에서 목적별 fiatAccountRef와 accountPurpose를 파생한다. 고객충전금은 authorityStatus='confirmed' && legalBasisStatus='approved' && legalEffectConfirmed=true && requestedOperation='exchange' requires effectiveScope.exchange=true; requestedOperation='accountWithdrawal' requires effectiveScope.exchange=true && effectiveScope.accountWithdrawal=true일 때만 집행한다.",
+        "resolution": { "kind": "demo-state", "target": "redeem-execute" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "결재 완료 요청 큐" },
+      { "state": "loading", "via": "차감/출금 처리" },
+      { "state": "empty", "via": "집행 대기 없음" },
+      { "state": "error", "via": "한도/잔고/계좌 권한 오류" },
+      { "state": "success", "via": "집행 완료" }
+    ]
+  },
+  "specFeedback": []
 }

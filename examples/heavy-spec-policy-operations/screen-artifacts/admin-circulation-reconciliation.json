@@ -63,5 +63,184 @@
       "reserveProof 결과 참조(read-only)",
       "감사자 신원·직책/역할·관할·일시"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "CirculationUnitPicker",
+      "ReconciliationPanel",
+      "OnchainWalletProvisioningPanel",
+      "InternalLedgerStatusPanel",
+      "AuditTrailRow",
+      "SignerIdentityBinder",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-circulation-reconciliation.verifyLiabilityCommit",
+        "element": "ReconciliationPanel(verifyCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "liability-proof-verify",
+        "storeEffect": "circulation.verifyLiabilityCommit(circulationUnitId,{method,batchCommitRef,liabilityProofRef,verifierIdentity,verifierTitle,verifiedAt})",
+        "expected": "액션 내부에서 units[].internalLedgerRef를 조회해 검증된 liabilitySum, batchCommitRef, liabilityProofRef, lastVerifiedAt, reconcileStatus만 갱신한다.",
+        "resolution": { "kind": "demo-state", "target": "liability-proof-verify" }
+      },
+      {
+        "id": "admin-circulation-reconciliation.runReconciliation",
+        "element": "ReconciliationPanel(runReconciliationCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "circulation-reconciliation-run",
+        "storeEffect": "circulation.runReconciliation(circulationUnitId,{period,operatorIdentity,operatorTitle,runAt})",
+        "expected": "InternalLedger 부채 합계와 PooledAccount 재원 충분성을 분리 계산한다. 유통 단위 간 netting은 만들지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "circulation-reconciliation-run" }
+      },
+      {
+        "id": "admin-circulation-reconciliation.openWalletProvisioningStatus",
+        "element": "OnchainWalletProvisioningPanel",
+        "trigger": "tap",
+        "action": "openSheet",
+        "target": "wallet-provisioning-status-sheet",
+        "storeEffect": "none",
+        "expected": "providerRef, chain, custodyType, returnedAddress, provisioningRecordRef, status pending|provisioning|provisioned|failed, failureReason, retryCount를 read-only로 표시한다.",
+        "resolution": { "kind": "demo-state", "target": "wallet-provisioning-status-sheet" }
+      },
+      {
+        "id": "admin-circulation-reconciliation.signOff",
+        "element": "SignerIdentityBinder(signOffCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "circulation-signoff",
+        "storeEffect": "circulation.signOffReconciliation({circulationUnitId,auditorIdentity,auditorTitle,jurisdiction,signedAt})+auditLog.append({origin:'admin-circulation-reconciliation',circulationUnitId,auditorIdentity,auditorTitle,signedAt})",
+        "expected": "감사자 신원·직책·관할·일시를 기록한다.",
+        "resolution": { "kind": "demo-state", "target": "circulation-signoff" }
+      },
+      {
+        "id": "admin-circulation-reconciliation.escalate",
+        "element": "ReconciliationPanel(escalateCta)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-disposition-console",
+        "storeEffect": "none",
+        "expected": "불일치 컨텍스트를 route state로 전달한다. authoritative 처분 케이스 생성은 처분 콘솔 제출에서만 수행한다.",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-disposition-console",
+          "reason": "목적지는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "유통 단위 선택" },
+      { "state": "loading", "via": "검증/대사 계산" },
+      { "state": "empty", "via": "활동 없음" },
+      { "state": "error", "via": "검증 실패 또는 불일치" },
+      { "state": "success", "via": "sign-off 완료" }
+    ]
+  },
+  "specFeedback": []
 }

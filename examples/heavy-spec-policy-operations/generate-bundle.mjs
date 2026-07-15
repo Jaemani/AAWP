@@ -16,12 +16,85 @@ if (sourceDigest !== selection.sourceSha256) {
 }
 const source = JSON.parse(sourceBytes.toString("utf8"));
 const screenById = new Map(source.screens.map((screen) => [screen.id, screen]));
+const componentByName = new Map(source.components.map((component) => [component.name, component]));
 const selectedIds = selection.groups.flatMap((group) => group.screenIds);
+const selectedIdSet = new Set(selectedIds);
 const selectedScreens = selectedIds.map((id) => {
   const screen = screenById.get(id);
   if (!screen) throw new Error(`selected screen does not exist: ${id}`);
   return screen;
 });
+const selectedComponentNames = [...new Set(selectedScreens.flatMap((screen) => screen.components))];
+const selectedComponentDefinitions = selectedComponentNames.map((componentName) => {
+  const component = componentByName.get(componentName);
+  if (!component) throw new Error(`component definition does not exist: ${componentName}`);
+  return component;
+});
+const sourceContracts = {
+  schemaVersion: "aawp/demo-source-contracts/v1",
+  source: {
+    artifactId: `refined-production-spec@sha256:${sourceDigest}`,
+    contentDigest: sourceDigest
+  },
+  designSystem: source.designTokens,
+  components: selectedComponentDefinitions
+};
+const sourceContractsDigest = sha256Hex(canonicalize(sourceContracts));
+
+function interactionFor(screenId) {
+  return (
+    source.interactionModel.find((interaction) => interaction.screenId === screenId) ?? {
+      screenId,
+      affordances: [],
+      reachableStates: []
+    }
+  );
+}
+
+function resolveAffordance(affordance) {
+  if (affordance.action !== "navigate") {
+    return { kind: "demo-state", target: affordance.target };
+  }
+  if (selectedIdSet.has(affordance.target)) {
+    return { kind: "selected-screen", screenId: affordance.target };
+  }
+  if (screenById.has(affordance.target)) {
+    return {
+      kind: "out-of-scope-screen",
+      screenId: affordance.target,
+      reason: "목적지는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+    };
+  }
+  return {
+    kind: "unresolved-navigation",
+    target: affordance.target,
+    reason: "원본 spec에서 이동 목적지를 screen ID로 확인할 수 없습니다."
+  };
+}
+
+function navigationFor(screen) {
+  const shell = source.navModel.shells.find((candidate) => candidate.surface === screen.surface);
+  if (!shell) return null;
+  return {
+    type: shell.type,
+    items: shell.items.map((item) => ({
+      ...item,
+      resolution: selectedIdSet.has(item.target)
+        ? { kind: "selected-screen", screenId: item.target }
+        : screenById.has(item.target)
+          ? {
+              kind: "out-of-scope-screen",
+              screenId: item.target,
+              reason: "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+            }
+          : {
+              kind: "unresolved-navigation",
+              target: item.target,
+              reason: "원본 spec에서 메뉴 목적지를 확인할 수 없습니다."
+            }
+    }))
+  };
+}
 
 function formatJson(value) {
   return format(JSON.stringify(value), {
@@ -95,6 +168,19 @@ const artifactDirectory = join(directory, "screen-artifacts");
 await rm(artifactDirectory, { recursive: true, force: true });
 await mkdir(artifactDirectory, { recursive: true });
 for (const screen of selectedScreens) {
+  const interaction = interactionFor(screen.id);
+  const affordances = interaction.affordances.map((affordance) => ({
+    ...affordance,
+    resolution: resolveAffordance(affordance)
+  }));
+  const specFeedback = affordances
+    .filter((affordance) => affordance.resolution.kind === "unresolved-navigation")
+    .map((affordance) => ({
+      kind: "ambiguous-navigation-target",
+      interactionId: affordance.id,
+      sourceTarget: affordance.target,
+      message: affordance.resolution.reason
+    }));
   const artifact = {
     schemaVersion: "aawp/demo-screen/v1",
     source: {
@@ -103,8 +189,25 @@ for (const screen of selectedScreens) {
       pointer: `/screens/${source.screens.findIndex((item) => item.id === screen.id)}`,
       screenDigest: sha256Hex(canonicalize(screen))
     },
-    screen
+    screen,
+    sourceContracts: {
+      path: "source-contracts.json",
+      contentDigest: sourceContractsDigest,
+      componentNames: screen.components
+    },
+    renderer: {
+      adapterId: "aawp-console-surface",
+      adapterVersion: "0.1.0",
+      formFactor: formFactor(screen.surface)
+    },
+    navigation: navigationFor(screen),
+    interactions: {
+      affordances,
+      reachableStates: interaction.reachableStates
+    },
+    specFeedback
   };
   await writeFile(join(artifactDirectory, `${screen.id}.json`), await formatJson(artifact));
 }
+await writeFile(join(directory, "source-contracts.json"), await formatJson(sourceContracts));
 await writeFile(join(directory, "bundle-manifest.json"), await formatJson(manifest));

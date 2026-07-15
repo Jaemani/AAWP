@@ -101,5 +101,168 @@
       "masterMinter signature(keyRef, signedAt, onchainApprovalRef)",
       "burn result(burnTxID, txHash, ledgerStatus, sourceIssuancePlanId, sourcePolicyId, burnSettlementPolicyRef, basisSnapshot)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReconciliationPanel",
+      "InternalLedgerStatusPanel",
+      "RedeemBurnConsole",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AdminAuthPanel",
+      "LedgerTable",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-supply-burn-settlement.recheck",
+        "element": "ReconciliationPanel(refresh)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "supply-burn-match-check",
+        "storeEffect": "issuance.verifySupplyMatch(batchId)+issuance.verifyIssuerAuthorization({operation:'supplyBurn', batchId, issuerRef, issuerAuthorizationRef, licenseRef, instrumentClassificationMappingRef, circulationUnitIds:[burnBatch.circulationUnitId]})",
+        "expected": "IssuancePlan.burnSettlementPolicy, policyLifecycleStatusAtBatch, 상환·회수 유예기간 종료 여부, 발행 총량, 유효 지급의무, 이미 소각된 수량, 상환·회수 누계, 발행 인가 status=active, licenseStatus=valid, InstrumentClassificationMapping.approvalStatus=approved, legalBasisStatus=approved, productSupportMatrix.burn=true 여부, circulationUnitId로 조회한 InternalLedger reconcileStatus, liabilityProofRef, reserveProofRef를 read-only로 재확인한다. 유예기간이 닫히지 않았으면 candidateStatus=pending-period-close로 표시하고 실행 CTA를 비활성화한다. circulation.updateInternalLedger 같은 우회 setter를 쓰지 않고 PooledAccount 재원 충분성 대사와도 섞지 않는다",
+        "resolution": { "kind": "demo-state", "target": "supply-burn-match-check" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.pickApprovalPolicy",
+        "element": "ApprovalPolicyPicker(appliesTo=policy-approval, consoleSurface=issuer)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedIssuerApprovalPolicy",
+        "storeEffect": "none",
+        "expected": "appliesTo='policy-approval', consoleSurface='issuer', grantedByRoot='act-issuer-principal'인 issuer 전용 결재정책만 선택한다. sourceAction=supply-burn-approval과 burnSettlementPolicy.approvalPolicyRef가 일치해야 한다",
+        "resolution": { "kind": "demo-state", "target": "selectedIssuerApprovalPolicy" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.signApproval",
+        "element": "ApprovalChainStepper(sign)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "supply-burn-approval-sign",
+        "storeEffect": "approvals.signApproval(requestId, signerIdentity, decision='approve')",
+        "expected": "공급 소각 배치 승인자의 신원·직책·역할·관할·일시를 단계 승인으로 기록한다. 중간 승인에서는 burnBatch를 승인 또는 실행 상태로 만들지 않고, 정족수 충족 시 backend approval runner가 approvals.runOnFinalApprovedOnce(requestId,{idempotencyKey:approvalRequest.onFinalApproved.idempotencyKey})를 호출해 burnBatch approvalStatus=approved를 한 번만 반영한다",
+        "resolution": { "kind": "demo-state", "target": "supply-burn-approval-sign" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.rejectApproval",
+        "element": "ApprovalChainStepper(reject)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "supply-burn-approval-reject",
+        "storeEffect": "approvals.rejectRequest(requestId, signerIdentity, reason)",
+        "expected": "공급 소각 배치 반려, 반려 사유와 반려자 신원·직책·일시 기록",
+        "resolution": { "kind": "demo-state", "target": "supply-burn-approval-reject" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.stepUp",
+        "element": "AdminAuthPanel(variant=step-up)",
+        "trigger": "input",
+        "action": "submit",
+        "target": "issuer-step-up",
+        "storeEffect": "issuerSession.stepUpReauth(actorId, {keyType:'issuer-console', purpose:'executeSupplyBurn', batchId})",
+        "expected": "발행 관리자 step-up 재인증 통과. issuerSession owner가 consoleSurface=issuer로 기록한다",
+        "resolution": { "kind": "demo-state", "target": "issuer-step-up" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.masterMinterSign",
+        "element": "SignerIdentityBinder(masterMinter)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "onchain-burn-sign",
+        "storeEffect": "issuance.signOnchainBurn(batchId, masterMinterId)",
+        "expected": "masterMinter canOperate와 onchainKeyBound=true 확인 후 burn 서명 생성. InternalLedger.onchainWalletRef는 서명 권한이 아니라 read-only 공급량 mirror 참조로만 표시",
+        "resolution": { "kind": "demo-state", "target": "onchain-burn-sign" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.execute",
+        "element": "RedeemBurnConsole(executeCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "supply-burn-execute",
+        "storeEffect": "issuance.executeSupplyBurn(batchId, executorId, {stepUpRef, masterMinterSignatureRef})",
+        "expected": "결재 완료, burnSettlementPolicyRef 일치, 상환·회수 유예기간 종료, 발행 인가 유효, 상품 분류 burn 허용, legalBasisStatus=approved, step-up, masterMinter 서명, InternalLedger reconcileStatus=matched, liabilityProofRef와 reserveProofRef 유효 조건 충족 시 burnTxID·txHash 발급 및 발행 원장 기록. 발행 원장 burn 행에는 sourceIssuancePlanId, sourcePolicyId, policyLifecycleStatusAtBatch, burnSettlementPolicyRef, basisSnapshot을 남긴다. 유통 단위 간 이전·순결제는 생성하지 않는다",
+        "resolution": { "kind": "demo-state", "target": "supply-burn-execute" }
+      },
+      {
+        "id": "admin-supply-burn-settlement.viewLedger",
+        "element": "RedeemBurnConsole(viewLedger)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-issuance-ledger",
+        "storeEffect": "none",
+        "expected": "burn 완료 후 sourceIssuancePlanId와 burnTxID가 필터로 적용된 발행 원장으로 이동",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "소각 후보 또는 배치 대기" },
+      { "state": "loading", "via": "재확인·step-up·서명·burn 처리" },
+      { "state": "empty", "via": "소각 대상 없음 또는 유예기간 미종료" },
+      { "state": "error", "via": "게이트 실패 또는 대사 불일치" },
+      { "state": "success", "via": "burn 완료" }
+    ]
+  },
+  "specFeedback": []
 }

@@ -9,7 +9,9 @@
 
 `bundle-manifest.json`은 정책, 유통, 발행·준비자산을 세 개의 선택 가능한 bundle로 제공한다. Bundle 안에서는 관리 콘솔과 발행사 콘솔 surface를 분리하고 각 화면을 `screen-artifacts/<screen-id>.json`으로 보존한다. Viewer는 screen content를 하나의 공통 panel로 합치지 않는다.
 
-각 screen artifact의 route, surface, title, purpose, layout, components, states, copy와 dataNeeds는 source screen object와 일치한다. Source에 없는 운영 수치나 record를 추가하지 않으며 외부 network를 호출하지 않는다.
+Bundle selector는 결과 화면을 고르는 플랫폼 navigation이다. 각 iframe 안에는 source `navModel`의 240px 관리 콘솔 또는 발행사 콘솔 rail이 별도로 존재한다. Source `interactionModel`이 선택된 screen을 가리키면 CTA와 rail이 부모 viewer에 `aawp:demo-navigate` event를 보내 실제 화면을 전환한다. Source screen이 selection 밖이면 범위 밖 안내를 표시하고, 목적지를 확인할 수 없으면 임의 연결하지 않고 `specFeedback`에 기록한다.
+
+각 screen artifact의 route, surface, title, purpose, layout, components, states, copy와 dataNeeds는 source screen object와 일치한다. 공통 `source-contracts.json`이 pinned design token과 선택 화면이 사용하는 component purpose·props·variants·states를 중복 없이 보존한다. 화면에 보이는 운영 수치와 record는 상호작용 확인용 예시 데이터이며 권위값이 아니다. 외부 network는 호출하지 않는다.
 
 ```bash
 npm run build

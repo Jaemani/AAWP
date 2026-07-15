@@ -71,5 +71,190 @@
       "ApprovalPolicy(appliesTo='settlement-exception', approvalStatus='active'); 화면 행위명은 sourceAction='jurisdiction-exit.close'로 보존",
       "jurisdictionExit.closeExitCase canonical payload({exitCaseId, selectedOutcome:recover|redeem|continue-use, fromCirculationUnitId, authorityRecordRefs, approvalId?, approvalNotRequiredReason?, executorIdentity, executorTitle, executedAt, finalStatus:'closed'})"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "JurisdictionExitPanel",
+      "ApprovalPolicyPicker",
+      "ApproverSelector",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "정책",
+        "target": "admin-policy-list",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-policy-list" }
+      },
+      {
+        "label": "일반 정책 작성",
+        "target": "admin-circulation-policy-composer",
+        "icon": "file-plus",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-policy-composer" }
+      },
+      {
+        "label": "충전 정책",
+        "target": "admin-circulation-topup-policy",
+        "icon": "plus-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-topup-policy" }
+      },
+      {
+        "label": "상품권 정책",
+        "target": "admin-voucher-policy-setup",
+        "icon": "gift",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-voucher-policy-setup" }
+      },
+      {
+        "label": "조건·표준코드",
+        "target": "admin-condition-builder",
+        "icon": "list-checks",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-condition-builder" }
+      },
+      {
+        "label": "표준코드",
+        "target": "admin-attribute-catalog",
+        "icon": "list-checks",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-attribute-catalog",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "유통",
+        "target": "admin-circulation-dashboard",
+        "icon": "network",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-circulation-dashboard" }
+      },
+      {
+        "label": "정산",
+        "target": "admin-settlement-dashboard",
+        "icon": "landmark",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-settlement-dashboard",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "가맹점심사",
+        "target": "admin-merchant-review",
+        "icon": "store",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-merchant-review",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "거버넌스/RBAC·플랫폼",
+        "target": "admin-account-management",
+        "icon": "shield",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-account-management",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      },
+      {
+        "label": "감사",
+        "target": "admin-audit-log",
+        "icon": "search-check",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-audit-log",
+          "reason": "이 메뉴는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-jurisdiction-exit.updateEligibility",
+        "element": "JurisdictionExitPanel(updateEligibilityCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "jurisdiction-eligibility-update",
+        "storeEffect": "jurisdictionExit.updateEligibilityStatus({exitCaseId,citizenId,fromCirculationUnitId,newAffiliationStatus,effectiveAt,operatorIdentity,operatorTitle})",
+        "expected": "자격/소속 상태만 갱신한다. 유통 단위 간 이전은 생성하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "jurisdiction-eligibility-update" }
+      },
+      {
+        "id": "admin-jurisdiction-exit.selectOutcome",
+        "element": "JurisdictionExitPanel(outcomeSelector)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "selectedExitOutcome",
+        "storeEffect": "none",
+        "expected": "recover, redeem, continue-use 중 하나를 선택한다.",
+        "resolution": { "kind": "demo-state", "target": "selectedExitOutcome" }
+      },
+      {
+        "id": "admin-jurisdiction-exit.configureClosureApproval",
+        "element": "ApprovalPolicyPicker+ApproverSelector",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "exitClosureApprovalDraft",
+        "storeEffect": "none",
+        "expected": "appliesTo='settlement-exception', sourceAction='jurisdiction-exit.close'로 결재정책과 승인자를 선택한다.",
+        "resolution": { "kind": "demo-state", "target": "exitClosureApprovalDraft" }
+      },
+      {
+        "id": "admin-jurisdiction-exit.recoverPolicyFund",
+        "element": "JurisdictionExitPanel(executeRecoverCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "policy-fund-recover-approval",
+        "storeEffect": "approvals.submitForApproval({subjectType:'jurisdictionExitClosure',subjectRef:exitCaseId,sourceScreenId:'admin-jurisdiction-exit',sourceAction:'jurisdiction-exit.close',sourceActionAliases:['jurisdiction-exit'],requester:{identity:operatorIdentity,title:operatorTitle,jurisdiction},appliesTo:'settlement-exception',approvalPolicyRef,approverAssignments,signerBindings,sodPolicyResult,approvalContext:{citizenId,fromCirculationUnitId,policyRef,fundSourceType:'policyFund',selectedOutcome:'recover'},onFinalApproved:{actionRefs:[{slice:'jurisdictionExit',action:'closeExitCase',args:{exitCaseId:'$subjectRef',selectedOutcome:'recover',citizenId:'$approvalContext.citizenId',fromCirculationUnitId:'$approvalContext.fromCirculationUnitId',authorityRecordRefs:'create-from-closeExitCase',approvalId:'$approvalId',executorIdentity:'$finalApproverIdentity',executorTitle:'$finalApproverTitle',executedAt:'$approvedAt',finalStatus:'closed'},idempotencyKey:'exit-recover:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}})",
+        "expected": "manual-required 정책자금 회수는 결재 완료 후 closeExitCase가 회수 권위 기록을 생성하고 종결한다.",
+        "resolution": { "kind": "demo-state", "target": "policy-fund-recover-approval" }
+      },
+      {
+        "id": "admin-jurisdiction-exit.redeemRemainingBalance",
+        "element": "JurisdictionExitPanel(redeemOutcomeCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "jurisdiction-redeem-outcome",
+        "storeEffect": "approvals.submitForApproval({subjectType:'jurisdictionExitClosure',subjectRef:exitCaseId,sourceScreenId:'admin-jurisdiction-exit',sourceAction:'jurisdiction-exit.close',sourceActionAliases:['jurisdiction-exit'],requester:{identity:operatorIdentity,title:operatorTitle,jurisdiction},appliesTo:'settlement-exception',approvalPolicyRef,approverAssignments,signerBindings,sodPolicyResult,approvalContext:{citizenId,fromCirculationUnitId,selectedOutcome:'redeem'},onFinalApproved:{actionRefs:[{slice:'jurisdictionExit',action:'closeExitCase',args:{exitCaseId:'$subjectRef',selectedOutcome:'redeem',citizenId:'$approvalContext.citizenId',fromCirculationUnitId:'$approvalContext.fromCirculationUnitId',authorityRecordRefs:'create-from-closeExitCase',approvalId:'$approvalId',executorIdentity:'$finalApproverIdentity',executorTitle:'$finalApproverTitle',executedAt:'$approvedAt',finalStatus:'closed'},idempotencyKey:'exit-redeem:$subjectRef:$approvalId',onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}]}})",
+        "expected": "상환 선택은 출발 유통 단위의 ConvertibilityRule과 목적별 PooledAccount를 근거로 종결한다. 다른 유통 단위로 잔액을 이전하지 않는다.",
+        "resolution": { "kind": "demo-state", "target": "jurisdiction-redeem-outcome" }
+      },
+      {
+        "id": "admin-jurisdiction-exit.continueUse",
+        "element": "JurisdictionExitPanel(continueUseOutcomeCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "jurisdiction-continue-use-outcome",
+        "storeEffect": "jurisdictionExit.closeExitCase({exitCaseId,selectedOutcome:'continue-use',citizenId,fromCirculationUnitId,authorityRecordRefs:'create-from-closeExitCase',approvalNotRequiredReason:'policy-allows-continue-use',executorIdentity:operatorIdentity,executorTitle:operatorTitle,executedAt,finalStatus:'closed'})",
+        "expected": "계속사용도 처리자 신원·직책·일시와 authorityRecordRefs를 남겨 종결한다.",
+        "resolution": { "kind": "demo-state", "target": "jurisdiction-continue-use-outcome" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "이탈 대상자 큐" },
+      { "state": "loading", "via": "자격/상품권 출처 조회 또는 종결 처리" },
+      { "state": "empty", "via": "처리 대기 없음" },
+      { "state": "error", "via": "갱신 실패, 결재 미완료 또는 종결 기록 누락" },
+      { "state": "success", "via": "갱신/회수/상환/계속사용 종결 완료" }
+    ]
+  },
+  "specFeedback": []
 }

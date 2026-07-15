@@ -74,5 +74,136 @@
       "masterMinter signature(keyRef, signedAt, onchainApprovalRef)",
       "mint result(mintTxID, txHash, ledgerStatus)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "IssuanceExecutionPanel",
+      "ReserveBackingPanel",
+      "SignerIdentityBinder",
+      "AdminAuthPanel",
+      "LedgerTable",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-issuance-execute.recheck",
+        "element": "IssuanceExecutionPanel(recheck)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "mint-prerequisite-check",
+        "storeEffect": "issuance.verifyReserves(planId)+issuance.verifyIssuerAuthorization({operation:'mint', planId, issuerRef, issuerAuthorizationRef, licenseRef, instrumentClassificationMappingRef, circulationUnitIds:plan.circulationUnitIds})",
+        "expected": "실행 직전 오프체인 준비자산, 발행가능한도, 발행주체 인가 status=active, licenseStatus=valid, authorizationType·instrumentClassification 적합성, InstrumentClassificationMapping.approvalStatus=approved, legalBasisStatus=approved, productSupportMatrix.mint=true를 표시한다. 원장 수정은 하지 않는다",
+        "resolution": { "kind": "demo-state", "target": "mint-prerequisite-check" }
+      },
+      {
+        "id": "admin-issuance-execute.stepUp",
+        "element": "AdminAuthPanel(variant=step-up)",
+        "trigger": "input",
+        "action": "submit",
+        "target": "issuer-step-up",
+        "storeEffect": "issuerSession.stepUpReauth(actorId, {keyType:'issuer-console', purpose:'executeMint', planId})",
+        "expected": "발행 관리자 신원 재확인 및 step-up 상태 저장. issuerSession owner가 consoleSurface=issuer로 기록한다",
+        "resolution": { "kind": "demo-state", "target": "issuer-step-up" }
+      },
+      {
+        "id": "admin-issuance-execute.masterMinterSign",
+        "element": "SignerIdentityBinder(masterMinter)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "onchain-mint-sign",
+        "storeEffect": "issuance.signOnchainMint(planId, masterMinterId)",
+        "expected": "masterMinter canOperate, onchainKeyBound=true, 정책상 온체인 게이트를 검증한 뒤 keyRef·signedAt·onchainApprovalRef 생성",
+        "resolution": { "kind": "demo-state", "target": "onchain-mint-sign" }
+      },
+      {
+        "id": "admin-issuance-execute.execute",
+        "element": "IssuanceExecutionPanel(executeCta)",
+        "trigger": "tap",
+        "action": "submit",
+        "target": "mint-execute",
+        "storeEffect": "issuance.executeMint(planId, executorId, {stepUpRef, masterMinterSignatureRef})",
+        "expected": "결재 완료, step-up, 발행 인가 유효, licenseStatus=valid, 상품 분류 mint 허용, legalBasisStatus=approved, 오프체인 준비자산 재확인, 발행한도, masterMinter 서명 충족 시 mintTxID·txHash를 발급하고 발행 원장에 실행자·승인결재ID·issuerAuthorizationRef·masterMinter 서명 참조 기록. InternalLedger.onchainWalletRef는 조회하지 않고 서명 권한으로도 쓰지 않는다",
+        "resolution": { "kind": "demo-state", "target": "mint-execute" }
+      },
+      {
+        "id": "admin-issuance-execute.viewLedger",
+        "element": "IssuanceExecutionPanel(viewLedger)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-issuance-ledger",
+        "storeEffect": "none",
+        "expected": "실행 완료 후 발행 원장 행으로 이동",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "실행 전 체크 대기" },
+      { "state": "loading", "via": "재확인·step-up·서명·mint 처리" },
+      { "state": "empty", "via": "실행 가능 계획 없음" },
+      { "state": "error", "via": "게이트 실패" },
+      { "state": "success", "via": "mint 완료" }
+    ]
+  },
+  "specFeedback": []
 }

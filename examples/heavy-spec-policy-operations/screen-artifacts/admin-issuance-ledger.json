@@ -59,5 +59,136 @@
       "ledgerFilter(unit, actionType, period, executor)",
       "issuerSession(consoleSurface=issuer, grantType, jurisdictionScope, grantedByRoot=act-issuer-principal)"
     ]
-  }
+  },
+  "sourceContracts": {
+    "path": "source-contracts.json",
+    "contentDigest": "0152d6efc3912fd35c57115816c0c1863f4d211720c0a2a8c84c8a8f2fb55660",
+    "componentNames": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "LedgerTable",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ]
+  },
+  "renderer": {
+    "adapterId": "aawp-console-surface",
+    "adapterVersion": "0.1.0",
+    "formFactor": "web"
+  },
+  "navigation": {
+    "type": "nav-rail",
+    "items": [
+      {
+        "label": "발행 계획",
+        "target": "admin-issuance-plans",
+        "icon": "file-text",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plans" }
+      },
+      {
+        "label": "발행 실행",
+        "target": "admin-issuance-execute",
+        "icon": "play-circle",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-execute" }
+      },
+      {
+        "label": "발행 원장",
+        "target": "admin-issuance-ledger",
+        "icon": "book-open",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-ledger" }
+      },
+      {
+        "label": "발행 한도",
+        "target": "admin-issuance-limit",
+        "icon": "gauge",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-limit" }
+      },
+      {
+        "label": "준비자산",
+        "target": "admin-issuance-reserves",
+        "icon": "vault",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-reserves" }
+      },
+      {
+        "label": "대사",
+        "target": "admin-backing-reconciliation",
+        "icon": "scale",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-backing-reconciliation" }
+      },
+      {
+        "label": "공급 소각·정산",
+        "target": "admin-supply-burn-settlement",
+        "icon": "flame",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      }
+    ]
+  },
+  "interactions": {
+    "affordances": [
+      {
+        "id": "admin-issuance-ledger.filter",
+        "element": "LedgerTable(filter)",
+        "trigger": "input",
+        "action": "setLocalState",
+        "target": "ledgerFilter",
+        "storeEffect": "none",
+        "expected": "유통 단위·행위 유형·기간·실행자 필터 적용",
+        "resolution": { "kind": "demo-state", "target": "ledgerFilter" }
+      },
+      {
+        "id": "admin-issuance-ledger.rowExpand",
+        "element": "LedgerTable(row)",
+        "trigger": "tap",
+        "action": "setLocalState",
+        "target": "ledgerRowDetail",
+        "storeEffect": "none",
+        "expected": "txHash, keyRef, signedAt, onchainApprovalRef, issuerAuthorizationRef, 승인결재ID, circulationUnitIds 상세 표시. burn 행은 sourceIssuancePlanId, sourcePolicyId, policyLifecycleStatusAtBatch, burnSettlementPolicyRef, basisSnapshot을 함께 표시",
+        "resolution": { "kind": "demo-state", "target": "ledgerRowDetail" }
+      },
+      {
+        "id": "admin-issuance-ledger.mintApprovalDeeplink",
+        "element": "AuditTrailRow(approvalIdLink:mint)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-issuance-plan",
+        "storeEffect": "none",
+        "expected": "mint 행의 원소속 발행 계획 결재 기록으로 이동",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-issuance-plan" }
+      },
+      {
+        "id": "admin-issuance-ledger.burnApprovalDeeplink",
+        "element": "AuditTrailRow(approvalIdLink:burn)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-supply-burn-settlement",
+        "storeEffect": "none",
+        "expected": "burn 행의 공급 소각 배치 결재 기록으로 이동",
+        "resolution": { "kind": "selected-screen", "screenId": "admin-supply-burn-settlement" }
+      },
+      {
+        "id": "admin-issuance-ledger.reauth",
+        "element": "AccessibleStatusRow(reauthLink)",
+        "trigger": "tap",
+        "action": "navigate",
+        "target": "admin-auth",
+        "storeEffect": "none",
+        "expected": "issuerSession 만료 시 admin-auth를 route state surfaceMode=issuer로 열고 인증 성공 후 발행 원장으로 복귀",
+        "resolution": {
+          "kind": "out-of-scope-screen",
+          "screenId": "admin-auth",
+          "reason": "목적지는 원본 spec에 있지만 이번 요청 화면 묶음에는 포함되지 않았습니다."
+        }
+      }
+    ],
+    "reachableStates": [
+      { "state": "default", "via": "원장 조회 완료" },
+      { "state": "loading", "via": "조회 중" },
+      { "state": "empty", "via": "결과 없음" },
+      { "state": "error", "via": "조회 실패 또는 세션 만료" },
+      { "state": "success", "via": "상세 확장" }
+    ]
+  },
+  "specFeedback": []
 }
