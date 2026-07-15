@@ -205,7 +205,13 @@ node apps/cli/dist/index.js check examples/spec-feedback-to-spec.wir.yaml
 }
 ```
 
-Spec field 표준은 profile validator가 소유한다. 현재 template은 revision substrate까지 구현됐고 production model activity, Studio diff/approval UI와 heavy spec 전용 semantic validator는 아직 연결되지 않았다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
+Spec field 표준은 profile validator가 소유한다. 현재 `gyeonggi-integrated-wallet-production-spec/v1` profile은 heavy spec의 root, stable ID, route, component/actor/nav/interaction 참조, baseline entity 보존과 admin/issuer authority root 분리를 검사한다.
+
+```bash
+npm run validate:heavy-spec -- refined-production-spec.json
+```
+
+담당자별 화면그룹 피드백은 `examples/heavy-spec-feedback-revision/feedback-intent.json`의 13개 stable ID로 컴파일됐다. 원본, `designTokens`와 `extendedDesign`은 변경하지 않는다. Production model activity, patch candidate, Studio diff/approval UI는 아직 연결되지 않았으므로 intent 검증을 spec 교정 완료로 보아서는 안 된다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
 
 ## 5. Spec version과 revision
 

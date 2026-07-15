@@ -53,6 +53,8 @@
 - Add/replace/remove patch materialization, source drift·권한 이탈·unknown feedback·no-op 거부를 구현했다.
 - Domain profile validator와 required pointer 검증을 통과하고 사람 승인을 받은 candidate만 새 spec artifact로 승격한다.
 - 원본 spec은 직접 수정하지 않으며 WIR check와 focused test를 추가했다.
+- 102-screen 경기 통합월렛 spec용 profile validator를 추가해 root·stable ID·route·component/actor/nav/interaction 참조, 기존 entity 보존과 admin/issuer authority root 분리를 검사한다.
+- 담당자별 화면그룹 피드백을 13개 stable feedback ID, allowed JSON Pointer root와 삭제 금지를 가진 intent artifact로 컴파일했다.
 
 ### 문서
 

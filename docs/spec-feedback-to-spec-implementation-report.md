@@ -15,6 +15,8 @@
 - Source에서 patch를 재실행해 candidate를 대조하는 independent verification
 - Passed verdict와 human approval이 모두 있어야 하는 artifact promotion
 - `spec-feedback-to-spec` CONTRACT WIR
+- `gyeonggi-integrated-wallet-production-spec/v1` profile과 baseline preservation 검사
+- 담당자별 화면그룹 피드백 13개 stable ID intent artifact
 
 ## 검증 결과
 
@@ -26,8 +28,9 @@
 ## 증명하지 않은 범위
 
 - 자연어 feedback을 올바른 patch로 바꾸는 실제 model first-pass 품질
-- 현재 heavy spec의 domain enum, cross-reference와 논리 일관성을 검사하는 profile
+- Heavy spec의 행정·법적 domain enum 전체와 자연어 논리 일관성 검사
+- 담당자별 화면그룹 피드백을 반영한 patch proposal과 child candidate
 - Studio diff, finding, approval inbox와 artifact promotion UI
 - Git repository나 외부 document system에 승인 artifact를 쓰는 side-effect adapter
 
-따라서 현재 구현은 안전한 revision substrate와 workflow contract다. Heavy spec을 자동으로 논리 교정할 수 있는 production workflow 완료를 의미하지 않는다.
+따라서 현재 구현은 안전한 revision substrate, heavy spec 구조 profile과 검증된 feedback intent까지다. Heavy spec을 자동으로 논리 교정할 수 있는 production workflow 완료를 의미하지 않는다.

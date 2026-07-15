@@ -1,5 +1,9 @@
 export { JsonPointerError, parseJsonPointer, readJsonPointer } from "./pointer.js";
 export {
+  createHeavyProductionSpecValidator,
+  HEAVY_PRODUCTION_SPEC_PROFILE_ID
+} from "./heavy-production-spec-profile.js";
+export {
   approveSpecRevision,
   compileSpecFeedbackContract,
   materializeSpecRevisionCandidate,

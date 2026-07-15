@@ -64,12 +64,24 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 - Required pointer와 pluggable domain validator
 - Independent verdict와 human approval gate
 - WIR static validation과 unit test
+- `gyeonggi-integrated-wallet-production-spec/v1` heavy spec profile
+- 102개 baseline screen, 140개 component, 24개 actor와 route/reference integrity 검증
+- 기존 screen/actor/component 삭제와 admin/issuer authority root 결합 방지
 
 미완료:
 
 - Production model provider를 사용하는 patch proposal activity
 - Studio diff, finding과 approval inbox UI
 - Approved artifact의 external repository write adapter
-- 현재 heavy spec 전용 semantic profile과 cross-reference verifier
+- Heavy spec의 행정·법적 domain enum 전체와 자연어 논리 일관성 verifier
+- 담당자별 화면그룹 피드백의 patch proposal, child candidate와 승인
 
-따라서 현재 원본 heavy spec을 자동으로 안전하게 교정할 준비가 끝난 것은 아니다. Revision substrate와 workflow contract가 준비된 상태다.
+Baseline 형식과 참조 무결성은 검증할 수 있지만, 자연어 피드백을 올바른 patch로 바꾸는 production model activity는 아직 없다. 따라서 현재 단계는 검증된 source와 feedback intent까지이며 자동 논리 교정 완료를 의미하지 않는다.
+
+현재 pinned heavy spec은 다음 명령으로 검사한다.
+
+```bash
+npm run validate:heavy-spec -- refined-production-spec.json
+```
+
+원본 byte SHA-256은 `b4b50cd9…df33`, canonical digest는 `7031b9f0…ad55`다. Byte hash는 전달 파일 동일성을, canonical digest는 revision contract를 고정한다. 담당자별 피드백 intent와 provenance는 `examples/heavy-spec-feedback-revision`에 있다.

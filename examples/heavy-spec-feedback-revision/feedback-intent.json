@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "aawp/spec-feedback-intent/v1",
+  "sourceArtifactId": "refined-production-spec@b4b50cd9c1d2321c",
+  "sourceDigest": "7031b9f0b51bddb06d7b9f8dc1377de583a5cea7aa452e908792553be4ffad55",
+  "requestText": "관리 콘솔과 발행사 콘솔을 담당자별 업무영역으로 재구성하고, 같은 바우처 사업 문맥 안에서 정책·명부·결재·지급·발행 책임을 분리한다. 기존 102개 화면과 관련 없는 계약 및 디자인 시스템은 보존한다.",
+  "feedback": [
+    {
+      "id": "role-workspace-001",
+      "text": "인증을 먼저 수행하고, 인증 결과의 업무영역이 하나면 바로 진입하며 여러 개면 업무영역 선택과 전환을 제공한다.",
+      "targetPointer": "/screens/93",
+      "source": "피드백 문서 > 여러 역할을 가진 사용자의 진입과 전환"
+    },
+    {
+      "id": "role-workspace-002",
+      "text": "정책, 사업·명부, 결재, 지급, 발행, 정산, 감사, 계정·권한 업무영역마다 시작 화면, 왼쪽 메뉴와 가능한 행동을 다르게 정의한다.",
+      "targetPointer": "/navModel",
+      "source": "피드백 문서 > 담당자별 화면그룹"
+    },
+    {
+      "id": "voucher-hub-001",
+      "text": "정책과 운영계획을 한 사업 문맥으로 연결하는 바우처 사업 업무 상세 허브를 추가하되 모든 권한을 한 편집폼에 합치지 않는다.",
+      "targetPointer": "/screens",
+      "source": "피드백 문서 > 한 사업을 중심으로 한 통합 업무 페이지"
+    },
+    {
+      "id": "policy-work-001",
+      "text": "admin-policy-list를 데이터 분류표가 아니라 정책 담당자의 내 처리 필요 업무 목록으로 바꾸고 admin-voucher-policy-setup을 근거·일정·재원·결재까지 확장한다.",
+      "targetPointer": "/screens/70",
+      "source": "피드백 문서 > 기존 화면의 유지·이동·통합·추가 지시"
+    },
+    {
+      "id": "roster-work-001",
+      "text": "명부 작업 목록과 업로드·검증·오류 수정·버전 비교·확정 상신 흐름을 추가하고 명부 결재 상세에서 작성과 승인을 분리한다.",
+      "targetPointer": "/screens/75",
+      "source": "피드백 문서 > 회차·명부 작업 및 명부 결재"
+    },
+    {
+      "id": "payout-work-001",
+      "text": "지급 업무 목록, 준비·실행 상세, 진행·결과를 추가하고 정책·명부·재원·발행 gate, 재인증, 중복 방지와 실패 대상만 재처리를 정의한다.",
+      "targetPointer": "/screens",
+      "source": "피드백 문서 > 지급 준비·지급 실행·진행·실패·완료"
+    },
+    {
+      "id": "issuance-work-001",
+      "text": "발행 필요 정책을 시작 화면으로 만들고 새 정책 수립을 제거하며 발행 계획 작성, 발행 승인, 최종 서명과 발행 실행을 서로 다른 상태와 행동으로 분리한다.",
+      "targetPointer": "/screens/57",
+      "source": "피드백 문서 > 화면그룹 E/F 및 발행사 인계"
+    },
+    {
+      "id": "approval-separation-001",
+      "text": "정책 승인, 명부 승인, 지급 실행, 발행 승인, 최종 서명이 자동으로 연쇄 실행되지 않도록 별도 상태, 권한과 상호작용으로 정의한다.",
+      "targetPointer": "/stateModel",
+      "source": "피드백 문서 > 상태와 가능한 행동"
+    },
+    {
+      "id": "authority-boundary-001",
+      "text": "관리 콘솔 act-superadmin 계보와 발행사 콘솔 act-issuer-principal 계보를 합치지 않고 역할별 쓰기 권한과 읽기 전용 구역을 유지한다.",
+      "targetPointer": "/actors",
+      "source": "피드백 문서 > Spec 변환 workflow의 출력 지시"
+    },
+    {
+      "id": "human-copy-001",
+      "text": "기본 UI에는 한글 업무명, 상태, 다음 행동을 우선하고 내부 코드·영문 enum·ID·함수명은 기술정보 또는 감사정보 펼쳐보기에서만 노출한다.",
+      "targetPointer": "/screens",
+      "source": "피드백 문서 > 화면 문구와 표현 규칙"
+    },
+    {
+      "id": "scenario-assumption-001",
+      "text": "청년 지역화폐 지급 바우처와 확정 명부 직접 지급은 작업용 시나리오로 표시하고 실제 연령·금액·일정·명부 원천·환불 소각 모델은 임의 확정하지 않는다.",
+      "targetPointer": "/mockData",
+      "source": "피드백 문서 > 작업용 가정과 미확정 항목"
+    },
+    {
+      "id": "poc-flow-001",
+      "text": "정책 담당자 진입부터 보완·승인, 명부 검증·승인, 지급 실행·부분 실패 재처리, 발행 승인·최종 서명까지 역할 전환 가능한 종단 시나리오와 첫 PoC 15화면 우선순위를 추가한다.",
+      "targetPointer": "/demoStoryboard",
+      "source": "피드백 문서 > 첫 생성에서 우선할 화면 및 최종 수용 시나리오"
+    },
+    {
+      "id": "accessibility-001",
+      "text": "키보드·focus·200% 확대·텍스트 오류 안내·aria-live·위험 행동 재확인·읽기 전용 구분·비활성 사유를 새 화면과 상호작용 계약에 포함한다.",
+      "targetPointer": "/interactionModel",
+      "source": "피드백 문서 > 접근성과 사용성 요구"
+    }
+  ],
+  "authority": {
+    "allowedPathPrefixes": [
+      "/actors",
+      "/components",
+      "/demoStoryboard",
+      "/interactionModel",
+      "/meta",
+      "/mockData",
+      "/navModel",
+      "/screens",
+      "/stateModel"
+    ],
+    "allowRemove": false
+  },
+  "profile": {
+    "id": "gyeonggi-integrated-wallet-production-spec/v1",
+    "requiredPointers": [
+      "/actors",
+      "/components",
+      "/demoStoryboard",
+      "/designTokens",
+      "/extendedDesign",
+      "/interactionModel",
+      "/meta",
+      "/mockData",
+      "/navModel",
+      "/screens",
+      "/stateModel"
+    ]
+  }
+}
