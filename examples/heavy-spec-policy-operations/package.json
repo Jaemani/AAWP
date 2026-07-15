@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "generate": "node generate-bundle.mjs",
     "test": "node --test verify.test.mjs"
   }
 }

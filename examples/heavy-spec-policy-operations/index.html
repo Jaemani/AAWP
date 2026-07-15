@@ -8,51 +8,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="경기 통합월렛 production spec의 정책·유통·발행·준비자산 22-screen 운영 콘솔 demo"
+      content="AAWP demo bundle viewer for independent policy, circulation, issuance and reserve screens"
     />
-    <title>경기 통합월렛 · 정책·유통·발행 운영</title>
+    <title>경기 통합월렛 · 화면 묶음</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark">GG</span>
-        <div><strong>경기 통합월렛</strong><small>정책·유통·발행 운영</small></div>
+        <div><strong>경기 통합월렛</strong><small>Demo bundle viewer</small></div>
       </div>
-      <div class="topbar-meta">
-        <span class="sync-state">As of 2026.07.15 10:30</span
-        ><span class="actor">광역 운영 관리자</span>
+      <div class="source-status">
+        <span id="manifest-status">Manifest loading</span><code>22 / 102</code>
       </div>
     </header>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <label class="nav-search"
-          ><span>화면 찾기</span
-          ><input
-            id="screen-search"
-            type="search"
-            placeholder="정책, 발행, 대사…"
-            autocomplete="off"
-        /></label>
-        <nav id="screen-navigation" aria-label="Demo 화면"></nav>
-        <div class="source-note">
-          <strong>22 / 102 screens</strong><span>선택된 scope만 구현</span>
+    <main class="workspace">
+      <section class="bundle-library" aria-labelledby="bundle-heading">
+        <div class="library-copy">
+          <span class="eyebrow">REQUESTED BUNDLES</span>
+          <h1 id="bundle-heading">화면 묶음을 선택하세요</h1>
+          <p id="request-text"></p>
         </div>
-      </aside>
-      <main class="content">
-        <header class="screen-header">
-          <div>
-            <p id="screen-breadcrumb" class="breadcrumb"></p>
-            <h1 id="screen-title"></h1>
-            <p id="screen-summary" class="screen-summary"></p>
+        <div id="bundle-list" class="bundle-list" role="list"></div>
+      </section>
+      <section class="viewer" aria-label="선택한 화면 묶음">
+        <aside class="navigator">
+          <div class="navigator-head">
+            <span class="eyebrow">BUNDLE</span>
+            <strong id="selected-bundle-title"></strong>
+            <small id="selected-bundle-description"></small>
           </div>
-          <div id="screen-header-action"></div>
-        </header>
-        <section id="screen-status" class="authority-note" aria-live="polite"></section>
-        <div id="screen-content"></div>
-      </main>
-    </div>
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+          <div class="surface-section">
+            <span class="nav-label">Surface</span>
+            <div id="surface-list" class="surface-list"></div>
+          </div>
+          <label class="screen-search"
+            ><span>화면 찾기</span
+            ><input
+              id="screen-search"
+              type="search"
+              placeholder="화면명 또는 route"
+              autocomplete="off"
+          /></label>
+          <nav id="screen-list" class="screen-list" aria-label="묶음 안의 화면"></nav>
+        </aside>
+        <section class="preview-area">
+          <header class="preview-head">
+            <div>
+              <div class="preview-meta">
+                <span id="selected-surface"></span><span id="selected-group"></span>
+              </div>
+              <h2 id="selected-screen-title"></h2>
+              <code id="selected-screen-route"></code>
+            </div>
+            <a id="screen-open-link" target="_blank" rel="noopener">독립 화면 열기</a>
+          </header>
+          <div id="device-frame" class="device-frame">
+            <iframe
+              id="screen-frame"
+              title="선택한 독립 demo 화면"
+              sandbox="allow-scripts allow-same-origin"
+            ></iframe>
+          </div>
+        </section>
+      </section>
+    </main>
+    <p id="error-message" class="error-message" hidden></p>
     <script src="./app.js"></script>
   </body>
 </html>

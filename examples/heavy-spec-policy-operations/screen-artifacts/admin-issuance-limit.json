@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/61",
+    "screenDigest": "4ba607745edc8fd6f98c9e042ca1919c3ac299c62152083c35a8cc84ebbf8320"
+  },
+  "screen": {
+    "id": "admin-issuance-limit",
+    "route": "/issuer/issuance/limits",
+    "surface": "발행사 콘솔(웹)",
+    "title": "발행한도 관리",
+    "purpose": "유통 단위별 발행가능한도를 조회·변경하는 화면. 한도 변경은 작성→발행사 콘솔 전용 전자결재→발효 과정을 거치며, 준비자산 대비 적정성은 판정 근거로만 표시한다. 발행 계획과 실행은 결재 완료된 한도 안에서만 가능하다.",
+    "audience": "발행 관리자 · 발행 승인자 · 발행사 감사",
+    "actors": ["act-issuance-manager", "act-issue-approver", "act-issuer-auditor"],
+    "layout": "IssuerConsoleNavRail, IssuanceLimitPanel, ReserveBackingPanel, ApprovalPolicyPicker issuer registry, ApprovalChainStepper, AuditTrailRow",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "IssuanceLimitPanel",
+      "ReserveBackingPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "유통 단위별 한도·발행 누계·잔여 표시" },
+      { "state": "loading", "description": "한도 조회 또는 변경 결재 진행 중" },
+      { "state": "empty", "description": "설정된 한도 없음" },
+      { "state": "error", "description": "준비자산 대비 한도 과다, 권한 부족, 또는 결재 반려" },
+      { "state": "success", "description": "최종 승인된 한도 버전 발효" }
+    ],
+    "copy": [
+      { "key": "title", "text": "발행한도 관리" },
+      { "key": "authorityBadge", "text": "한도 변경은 결재된 버전으로만 발효돼요" },
+      { "key": "changeCta", "text": "한도 변경 요청" },
+      { "key": "changeHistory", "text": "이전값 → 이후값 · 작성자 · 승인자 · 일시 · 버전" },
+      { "key": "readonlyGate", "text": "read-only 세션에서는 변경 요청과 결재를 할 수 없어요" },
+      { "key": "errorBacking", "text": "준비자산 대비 한도가 과다해요" }
+    ],
+    "dataNeeds": [
+      "issuanceLimits(circulationUnitId, limitAmount, issuedTotal, headroom, version, effectiveAt)",
+      "ReserveBacking adequacy result from off-chain reserve assets only",
+      "limitChangeDraft(limitChangeId, circulationUnitId, beforeAmount, afterAmount, reason, author, status=draft|pending|approved|rejected)",
+      "Issuer ApprovalPolicy registry row(appliesTo=policy-approval, consoleSurface=issuer, grantedByRoot=act-issuer-principal, approvalPolicyRef, approverCandidates, quorum, sodOptInAvailable, sourceActionAliases include issuance-limit-change only for issuer registry lookup)",
+      "ApprovalRequest payload(subjectType=IssuanceLimitChange, sourceScreenId=admin-issuance-limit, sourceAction=issuance-limit-change, requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, onFinalApproved.actionRefs[{slice:'issuance',action:'applyApprovedLimitChange',args:{limitChangeId,approvalId},idempotencyKey,onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}])",
+      "approvalSteps and audit trail",
+      "issuerSession(consoleSurface=issuer, grantType, role, roleTitle, jurisdictionScope, grantedByRoot=act-issuer-principal)"
+    ]
+  }
+}

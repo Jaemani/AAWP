@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/72",
+    "screenDigest": "52a77f7a2e9d896fedd7f9458ababb6773cba5f7f60001761b8255ce9c1ffe44"
+  },
+  "screen": {
+    "id": "admin-circulation-topup-policy",
+    "route": "/admin/circulation/topup-policy",
+    "surface": "관리 콘솔(웹)",
+    "title": "충전 정책 관리",
+    "purpose": "policyType='topup' 충전 정책의 한도, 자동충전 허용 여부, 승인된 대상 조건 세트 ref, 고객충전금 계좌 운용 권한 상태를 작성한다. 작성자는 KYC 등급, 발행 인가, 상품분류 mapping을 직접 선택하지 않는다.",
+    "audience": "정책조건 등록자 · 정책총괄·책임관 · 감사(read-only)",
+    "actors": ["act-policy-operator", "act-policy-approver", "act-auditor"],
+    "layout": "상단 chrome + 충전 정책 기본정보 + 승인·게시된 대상 조건 세트 선택 + 조건 read-only summary + 충전한도/자동충전 설정 + 고객충전금 계좌 운용 권한 패널 + read-only 상품분류 gate projection + 결재선 패널",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "TopupPolicyPanel",
+      "PolicyConditionBinder",
+      "InstrumentClassificationMappingPanel",
+      "PooledAccountPanel",
+      "CustomerFundsSafeguardingPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "충전 정책 초안 또는 기존 topup policy를 표시한다. published+approved 조건 세트 ref와 고객충전금 계좌 권한 상태를 함께 보여준다."
+      },
+      {
+        "state": "empty",
+        "description": "선택 가능한 승인·게시 대상 조건 세트 또는 연결 가능한 고객충전금 계좌가 없어 admin-condition-builder 또는 유통·재원 관리로 이동할 수 있다."
+      },
+      { "state": "loading", "description": "초안 저장, 결재 상신, 계좌 권한 상태 조회 중이다." },
+      {
+        "state": "error",
+        "description": "대상 조건 세트 미승인, 고객충전금 계좌 필수값 누락, authorityStatus!='confirmed', legalBasisStatus!='approved', legalEffectConfirmed=false, effectiveScope.topup=false, 상품 분류 승인 필요, 결재 반려를 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "최종 승인 후 topup policy가 활성화되고 policy.evaluateTopupExecutionGate로 executionStatus와 disabledReason이 executable|blocked 계약으로 갱신된다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "충전 정책 관리" },
+      { "key": "eligibilitySetLabel", "text": "대상 조건 세트" },
+      { "key": "usageSetLabel", "text": "사용 조건 세트" },
+      {
+        "key": "eligibilityReadonlyNote",
+        "text": "KYC·연령·거주 조건은 선택된 조건 세트에서 읽어와요. 이 화면에서는 직접 편집하지 않아요."
+      },
+      {
+        "key": "classificationReadonlyNote",
+        "text": "상품 분류 mapping은 승인된 정책 실행 projection으로만 확인해요. 이 화면에서는 바꾸지 않아요."
+      },
+      { "key": "customerFundsAccountLabel", "text": "고객충전금 계좌" },
+      { "key": "customerFundsPending", "text": "계좌 운용 권한 확인 중" },
+      {
+        "key": "customerFundsBlocked",
+        "text": "운용 권한이 확인되지 않아 충전·환불을 실행할 수 없어요."
+      },
+      { "key": "topupLimitLabel", "text": "충전 한도" },
+      { "key": "autoTopupLabel", "text": "자동충전 허용" },
+      { "key": "submitCta", "text": "결재 상신" },
+      {
+        "key": "successMsg",
+        "text": "충전 정책 결재 요청이 생성됐어요. 최종 승인 후 실행 상태가 갱신됩니다."
+      }
+    ],
+    "dataNeeds": [
+      "route state 또는 query adapter(mode?='edit', policyId?)",
+      "TopupPolicyDraft(policyType='topup', circulationUnitId, eligibilityConditionSetRef prefix ecs-*, usageConditionSetRef? prefix ucs-*, dailyLimit, monthlyLimit, perTxnLimit, autoTopupAllowed, executionStatus executable|blocked, disabledReason?)",
+      "EligibilityConditionSet picker(conditionSetStatus='published', approvalStatus='approved', setId prefix ecs-*·name·version·summary·approvalId·conditionsPreview read-only)",
+      "UsageConditionSet optional picker(conditionSetStatus='published', approvalStatus='approved', setId prefix ucs-*·name·version·summary·approvalId·merchantCategoryCodeRefs[]·itemCategoryCodeRefs[] read-only)",
+      "작성자가 직접 편집하지 않는 값(requiredKycTier 없음, issuerAuthorizationRef 없음, instrumentClassificationMappingRef 사용자 입력 없음)",
+      "ResolvedInstrumentClassificationGate(read-only projection: mappingId·approvalStatus approved|pending|rejected|expired·legalBasisStatus unconfirmed|approved|rejected·launchBlocked·blockedReason?·productSupportMatrix {topup,exchange,payQr,accountWithdrawal,p2pTransfer,mint,burn})",
+      "PooledAccountDraft(policyType='topup', fundNature policyFund|reserveAsset|mixed only when policy funding account is also configured; customerFundsAccount required independently for topup policy)",
+      "PooledAccount validation: policyFund requires policyFundAccount.fiatAccountRef and policyFundAccount.authorityStatus='confirmed'; reserveAsset requires reserveAssets[] min 1; mixed requires both; topup policy requires customerFundsAccount(accountPurpose='customerTopupPrincipal', fiatAccountRef, legalStructureRef, safeguardingRuleRef, controllerLegalEntityRef, authorityStatus='confirmed', legalEffectConfirmed=true, legalBasisStatus='approved', effectiveScope.topup=true)",
+      "customerFundsAccount fields(fiatAccountRef, accountPurpose='customerTopupPrincipal', legalStructureRef, safeguardingRuleRef, controllerLegalEntityRef, accountOperationalAuthorityRef?, authorityStatus confirmed|pending|rejected|expired, legalEffectConfirmed, legalBasisStatus unconfirmed|approved|rejected, effectiveScope {topup,exchange,accountWithdrawal,autoTopup}, lastVerifiedAt?, disabledReason?)",
+      "execution gate: executable only when customerFundsAccount.authorityStatus='confirmed' && legalEffectConfirmed=true && legalBasisStatus='approved' && effectiveScope.topup=true && resolved productSupportMatrix.topup=true && approvalStatus='approved'; otherwise executionStatus='blocked' and disabledReason such as blocked-pending-account-authority|authority-rejected|classification-approval-required",
+      "ApprovalRequest payload(subjectType/ref·sourceScreenId·requester identity/title/jurisdiction·approvalPolicyRef·ApprovalPolicy.appliesTo='topup-policy'·approverAssignments·signerBindings·sodPolicyResult·onFinalApproved.actionRefs structured array)"
+    ]
+  }
+}

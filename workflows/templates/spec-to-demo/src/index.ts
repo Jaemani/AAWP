@@ -1,5 +1,6 @@
 export * from "./acceptance/index.js";
 export * from "./builder.js";
+export * from "./bundle.js";
 export * from "./compiler/index.js";
 export * from "./delivery.js";
 export * from "./fixture.js";

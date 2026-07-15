@@ -12,6 +12,7 @@
     "@awf/agent-gateway": "0.1.0",
     "@awf/artifact-store": "0.1.0",
     "@awf/compiler": "0.1.0",
+    "@awf/demo-bundle": "0.1.0",
     "@awf/impact-engine": "0.1.0",
     "@awf/ir": "0.1.0",
     "@awf/verifier-sdk": "0.1.0",

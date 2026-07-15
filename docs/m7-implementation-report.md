@@ -20,6 +20,7 @@
 - failure-class 기반 bounded repair controller
 - evidence tenant/run/branch/product/verifier binding을 확인하는 delivery bundle
 - 한 checkout requirement 변경의 explainable cache/revision benchmark
+- platform-owned `aawp/demo-bundle/v1` manifest compiler와 `spec-to-demo` output binding
 
 ## Fixture와 테스트 증거
 
@@ -50,7 +51,7 @@
 
 - M7 focused Vitest: 4개 test file, 18개 test 통과
 - package export boundary에서 `compileSpecContracts` 확인
-- 전체 Vitest: 43개 test file, 222개 test 통과
+- 전체 Vitest: 45개 test file, 230개 test 통과
 - `npm ci`, build, typecheck, lint, format check, schema generation과 whitespace 검사 통과
 - 기존 `spec-to-demo` WIR check 성공, simulate 2회 출력 byte-identical
 
@@ -68,9 +69,11 @@
 - Selection: `examples/heavy-spec-policy-operations/selection-manifest.json`
 - Input: `examples/heavy-spec-policy-operations.input.json`
 - Demo: `examples/heavy-spec-policy-operations/`
-- Fixture 검증: source hash와 102-screen 원본, exact 22 IDs, 6/7/9 group count, source ID 존재, JavaScript syntax, 외부 network 부재
+- Bundle: 정책 6개, 유통 7개, 발행·준비자산 9개를 별도 선택 collection으로 제공
+- Surface: 관리 콘솔 13개와 발행사 콘솔 9개를 분리하고 screen별 독립 artifact path를 부여
+- Fixture 검증: source hash와 102-screen 원본, exact 22 IDs, 6/7/9 group count, 13/9 surface membership, 각 artifact와 source screen의 deep equality, JavaScript syntax, 외부 network 부재
 
-이 demo는 선택 경계와 화면 projection을 확인하기 위한 source-pinned static evidence다. Spec 내부의 흐름·논리적 일관성은 수정하지 않았고, 이 결과를 model-backed production workflow의 first-pass 품질이나 direct baseline 대비 우위 증거로 사용하지 않는다.
+이 demo는 선택 경계, bundle navigation과 source-preserving screen artifact를 확인하기 위한 source-pinned static evidence다. Spec 내부의 흐름·논리적 일관성은 수정하지 않았고, source에 없는 운영 수치도 추가하지 않는다. 이 결과를 model-backed production workflow의 first-pass 품질이나 direct baseline 대비 우위 증거로 사용하지 않는다.
 
 ## 남은 operational proof
 

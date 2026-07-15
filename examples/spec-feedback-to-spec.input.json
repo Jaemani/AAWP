@@ -1,0 +1,33 @@
+{
+  "source": {
+    "meta": { "title": "Wallet spec", "version": 1 },
+    "screens": [
+      {
+        "id": "policy-list",
+        "title": "정책 목록",
+        "copy": { "empty": "정책이 없습니다" }
+      }
+    ]
+  },
+  "feedback": {
+    "schemaVersion": "aawp/spec-feedback-intent/v1",
+    "sourceArtifactId": "spec-wallet-v1",
+    "sourceDigest": "44099da50308ca67fd12d20ab9649aa8decb95265b58457ae9d52556cc9ea59f",
+    "requestText": "정책 목록의 빈 상태에 다음 행동을 추가해줘",
+    "feedback": [
+      {
+        "id": "feedback-1",
+        "text": "빈 상태에서 정책 작성 방법을 안내해줘",
+        "targetPointer": "/screens/0/copy/empty"
+      }
+    ],
+    "authority": {
+      "allowedPathPrefixes": ["/screens/0"],
+      "allowRemove": false
+    },
+    "profile": {
+      "id": "wallet-spec",
+      "requiredPointers": ["/meta/title", "/screens"]
+    }
+  }
+}

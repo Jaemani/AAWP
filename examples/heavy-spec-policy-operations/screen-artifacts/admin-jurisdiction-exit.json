@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/78",
+    "screenDigest": "5d86b2d053a680ee4959e211be7e84c9007256ccc525b26e4e3c94e3ac03f2b8"
+  },
+  "screen": {
+    "id": "admin-jurisdiction-exit",
+    "route": "/admin/circulation/jurisdiction-exit",
+    "surface": "관리 콘솔(웹)",
+    "title": "자격 상실 · 잔여 재원 정리(관할 이탈)",
+    "purpose": "시민이 유통 단위 관할을 벗어났을 때 출발 유통 단위 안에서 자격/소속 상태를 갱신하고, 잔여 재원을 recover, redeem, continue-use 중 하나로 종결한다. 유통 단위 간 이전·순결제는 만들지 않는다.",
+    "audience": "정산 운영자, 감사",
+    "actors": ["act-settlement-operator", "act-auditor"],
+    "layout": "ConsoleNavRail + SessionActorBadge + AuthorityScopeBadge + JurisdictionExitPanel + ApprovalPolicyPicker + ApproverSelector + ApprovalChainStepper + SignerIdentityBinder + AuditTrailRow",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "JurisdictionExitPanel",
+      "ApprovalPolicyPicker",
+      "ApproverSelector",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "관할 이탈 대상자 큐와 자격/소속 갱신 대기 상태를 표시한다."
+      },
+      {
+        "state": "loading",
+        "description": "대상자 소속, 상품권 출처, 정책 회수 설정, 결재 상태 조회 중이다."
+      },
+      { "state": "empty", "description": "처리 대기 중인 관할 이탈 건이 없다." },
+      {
+        "state": "error",
+        "description": "자격/소속 갱신 실패, fundSourceType 불일치, 결재 미완료 또는 종결 기록 누락을 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "자격/소속 갱신 및 회수·상환·계속사용 종결 기록이 완료된다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "자격 상실 · 잔여 재원 정리(관할 이탈)" },
+      {
+        "key": "notMigrationNote",
+        "text": "전출은 유통 단위 간 이전이 아니에요. 출발 유통 단위 안에서 종결합니다"
+      },
+      {
+        "key": "topupFundInfo",
+        "text": "충전 원금은 계속 사용하거나 충전금 환불·상환 경로에서 처리돼요"
+      },
+      { "key": "outcomeLabel", "text": "종결 방식" },
+      { "key": "redeemOutcome", "text": "상환으로 종결" },
+      { "key": "continueUseOutcome", "text": "계속 사용으로 종결" },
+      { "key": "recoverOutcome", "text": "정책자금 회수로 종결" }
+    ],
+    "dataNeeds": [
+      "관할 이탈 이벤트(exitCaseId, citizenId, fromCirculationUnitId, effectiveAt)",
+      "Eligibility/Affiliation 상태 및 이력",
+      "상품권 projection(상품권별 fundSourceType:policyFund|topupPrincipal, policyRef, circulationUnitId)",
+      "Policy(recallExecutionMode:automatic|manual-required, approvalStatus='approved')",
+      "ConvertibilityRule(circulationUnitScope=fromCirculationUnitId, eligibleFundSourceTypes[], policyFundRefundOptInRefs[], accountPurposePriority, instrumentClassificationMappingRef, dailyRedeemCap, effectiveFrom, approvedBy)",
+      "ApprovalPolicy(appliesTo='settlement-exception', approvalStatus='active'); 화면 행위명은 sourceAction='jurisdiction-exit.close'로 보존",
+      "jurisdictionExit.closeExitCase canonical payload({exitCaseId, selectedOutcome:recover|redeem|continue-use, fromCirculationUnitId, authorityRecordRefs, approvalId?, approvalNotRequiredReason?, executorIdentity, executorTitle, executedAt, finalStatus:'closed'})"
+    ]
+  }
+}

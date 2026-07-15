@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/70",
+    "screenDigest": "2bd5c3f32fa5d451f139eaffccb96c6b8a65c5db3eb301e4445fc6570884955e"
+  },
+  "screen": {
+    "id": "admin-policy-list",
+    "route": "/admin/policy/list",
+    "surface": "관리 콘솔(웹)",
+    "title": "정책 목록 · 생애주기 · 버전",
+    "purpose": "작성된 모든 정책(일반 정책, policyKind='voucher-payout' 상품권 정책, policyType='topup' 충전 정책 포함)을 하나의 Policy 목록에서 관리한다. 승인 상태(approvalStatus draft|pending|approved|rejected), 생애주기 상태(lifecycleStatus active|expired|superseded), 실행 상태(executionStatus executable|blocked)를 분리해 표시한다. 최종 승인자(직책/역할·신원·일시)와 결재ID를 보여주고, 발행계획은 발행사 콘솔의 별도 인가 계보에 속하므로 관리 콘솔에서는 참조 ID와 존재 여부만 read-only로 표시한다. 정책 만료는 lifecycle 전이만 수행하며 공급 소각 후보 생성이나 burn 실행을 호출하지 않는다.",
+    "audience": "정책조건 등록자 · 정책총괄·책임관 · 감사 · 권한관리자",
+    "actors": ["act-policy-operator", "act-policy-approver", "act-auditor", "act-superadmin"],
+    "layout": "상단 chrome + 승인상태/생애주기/실행상태/정책 구분 필터 + 작성 CTA(일반 정책/충전 정책/상품권 정책) + 정책 목록 테이블(정책명·목적·담당부서·재원/집합계좌·유통 단위·policyType·policyKind·조건 요약·지급 실행 방식·발행 평가 대상 projection·disabledReason·연결 IssuancePlan 참조·연결 OperationPlan 수 포함) + 행 선택 시 버전 이력/비교 패널",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PolicyLifecycleTable",
+      "ApprovalChainStepper",
+      "AuditTrailRow",
+      "PermissionGate",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "정책 목록(approvalStatus·lifecycleStatus·executionStatus·버전·policyType·policyKind·정책명·목적·담당부서·재원/유통 단위 요약·conditionRefs 요약·지급 실행 방식·발행 평가 대상 projection·최종 승인자·연결 발행계획 참조·운영계획 수)을 표시한다."
+      },
+      {
+        "state": "empty",
+        "description": "등록된 정책이 없어 일반 정책 작성, 충전 정책 관리, 상품권 정책 설정을 안내한다."
+      },
+      { "state": "loading", "description": "목록/버전 이력 조회 중이다." },
+      {
+        "state": "error",
+        "description": "생애주기 전이 실패 또는 결재 상신 실패 사유를 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "생애주기 전이 요청 처리 또는 조회 성공 상태를 표시한다. 반려 결정은 approval.status='rejected'와 decision row로 별도 표시한다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "정책 목록 · 생애주기" },
+      { "key": "approvalStatusFilter", "text": "승인 상태" },
+      { "key": "lifecycleStatusFilter", "text": "생애주기 상태" },
+      { "key": "executionStatusFilter", "text": "실행 상태" },
+      { "key": "policyCategoryFilter", "text": "정책 구분" },
+      { "key": "policyCategoryAll", "text": "전체" },
+      { "key": "policyCategoryGeneral", "text": "일반 정책" },
+      { "key": "policyCategoryTopup", "text": "충전 정책" },
+      { "key": "policyCategoryVoucher", "text": "상품권 정책" },
+      { "key": "policyTypeTopup", "text": "충전 정책" },
+      { "key": "policyKindVoucherPayout", "text": "상품권 정책" },
+      { "key": "disabledReasonLabel", "text": "실행 차단 사유" },
+      { "key": "newPolicyCta", "text": "일반 정책 작성" },
+      { "key": "topupEntryCta", "text": "충전 정책 관리" },
+      { "key": "voucherEntryCta", "text": "상품권 정책 설정" },
+      { "key": "viewIssuanceRefsLabel", "text": "발행계획 참조" },
+      {
+        "key": "viewIssuanceRefsNote",
+        "text": "발행계획은 발행사 콘솔 권한에서만 열람·작성할 수 있어요. 이 목록에서는 참조 ID만 표시해요."
+      },
+      {
+        "key": "issuanceCandidateNote",
+        "text": "승인·활성·신규 발행 필요 정책은 발행사 콘솔이 후보로 조회하고 발행 가능성을 독립 평가해요."
+      },
+      { "key": "reviseCta", "text": "개정(새 버전 작성)" },
+      { "key": "expireCta", "text": "만료 처리" },
+      {
+        "key": "burnBoundaryNote",
+        "text": "공급 소각·정산은 발행계획의 burnSettlementPolicy와 발행사 콘솔 승인·대사·서명 흐름에서만 실행돼요."
+      },
+      {
+        "key": "successMsg",
+        "text": "정책 상태 전이 요청이 처리됐어요. 집행자 신원·일시가 기록됐어요."
+      }
+    ],
+    "dataNeeds": [
+      "Policy(정책ID·버전·policyType general|topup·policyKind general|voucher-payout?·policyName·policyPurpose·owningDepartment·grantSchedule?='one-time'·payoutExecutionMode? immediate-list-grant|application-based-grant·approvalStatus draft|pending|approved|rejected·lifecycleStatus active|expired|superseded·executionStatus executable|blocked·disabledReason?·eligibilityConditionSetRef prefix ecs-*·usageConditionSetRef? prefix ucs-*·conditionRefs[] including optional grantAmount·periodExpiryLifecycleRef?·payoutMethod·targetPooledAccountRef·targetCirculationUnitId·ConvertibilityRuleRef·topupPolicyConfig?·발효일시·최종승인자·needsNewIssuance)",
+      "PolicyVersionHistory",
+      "Policy list display summary(policyName·policyPurpose·owningDepartment·targetPooledAccountRef·targetCirculationUnitId·conditionRefs[].targetSummary·conditionRefs[].grantAmount·usageConditionSetRef·payoutExecutionMode·needsNewIssuance projection)",
+      "Policy category filter values: all, general(policyType='general' and policyKind!='voucher-payout'), topup(policyType='topup'), voucher(policyKind='voucher-payout')",
+      "ApprovalPolicy canonical appliesTo enum(policy-approval|topup-policy|settlement-exception|merchant-review|role-grant|account-change|platform-operation|authority-basis|refund-authority|onchain-wallet-provisioning|sod-floor); admin policy approval uses consoleSurface='admin' and grantedByRoot='act-superadmin'",
+      "IssuancePlan read-only 참조 ID prefix ip-*/상태 및 burnSettlementPolicyRef 존재 여부(발행사 콘솔 소유; issuer console는 approvalStatus='approved' && lifecycleStatus='active' && needsNewIssuance=true 정책을 발행계획 후보로 query 조회)",
+      "issuerReadGrantRef(grantedBy='act-issuer-principal', grantType='readonly', consoleSurface='issuer')",
+      "OperationPlan 참조 수",
+      "감사 read-only 접근"
+    ]
+  }
+}

@@ -15,7 +15,7 @@ AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration cat
 
 ## 현재 구현
 
-WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, `spec-to-demo` template, direct benchmark harness와 local AAWP Studio가 있다. Production 인증 gateway, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
 
 ## 시작하기
 
@@ -48,6 +48,8 @@ node apps/studio/dist/server.js \
 
 - [사용자 가이드](docs/user-guide.md): 설치, Studio, 실행, 결과 관리, 화면·플로우 선택과 version 사용법
 - [핵심 개념과 구조](docs/core-concepts.md): 다른 workflow 방식과의 차이, 구조와 선택 이유
+- [`spec-feedback-to-spec` 가이드](docs/spec-feedback-to-spec.md): feedback contract, patch, 검증과 승인 경계
+- [`spec-feedback-to-spec` 구현 결과](docs/spec-feedback-to-spec-implementation-report.md): 완료 범위, test와 미증명 경계
 - [Architecture decisions](docs/adr/README.md): 대안, 결정과 trade-off
 - [변경 기록](CHANGELOG.md): 사용자·운영자 관점의 update notes
 - [오류·교정 기록](docs/lessons-and-corrections.md): 유의미한 실수, 영향과 재발 방지
@@ -60,7 +62,7 @@ Milestone별 계약과 증거는 `docs/m*-implementation-contract.md`, `docs/m*-
 ## 저장소 구조
 
 - `apps/cli`, `apps/studio`: CLI와 local run console
-- `packages/*`: IR, compiler, runtime, storage, gateway와 control plane
+- `packages/*`: IR, compiler, runtime, storage, gateway, demo bundle과 control plane
 - `workflows/templates/*`: domain workflow template
 - `examples/*`: WIR, input과 결과 fixture
 - `benchmarks/*`: direct baseline과 workflow 비교 harness

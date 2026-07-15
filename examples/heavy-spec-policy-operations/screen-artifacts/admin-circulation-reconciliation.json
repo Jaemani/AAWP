@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/74",
+    "screenDigest": "750adba5d9028feabcbb00d14691cbe3ba3fb268f30e173c940c99730fd383c8"
+  },
+  "screen": {
+    "id": "admin-circulation-reconciliation",
+    "route": "/admin/circulation/reconciliation",
+    "surface": "관리 콘솔(웹)",
+    "title": "유통 단위 대사 · InternalLedger 검증",
+    "purpose": "단일 유통 단위의 InternalLedger를 기준으로 부채 합계 검증과 PooledAccount 재원 충분성 대사를 분리한다. 온체인 지갑 정보는 승인 후 시스템 발급 결과만 read-only로 확인한다.",
+    "audience": "감사, 정책조건 등록자, 권한관리자",
+    "actors": ["act-auditor", "act-policy-operator", "act-superadmin"],
+    "layout": "ConsoleNavRail + SessionActorBadge + AuthorityScopeBadge + CirculationUnitPicker + ReconciliationPanel + OnchainWalletProvisioningPanel(read-only) + InternalLedgerStatusPanel + AuditTrailRow + SignerIdentityBinder",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "CirculationUnitPicker",
+      "ReconciliationPanel",
+      "OnchainWalletProvisioningPanel",
+      "InternalLedgerStatusPanel",
+      "AuditTrailRow",
+      "SignerIdentityBinder",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "InternalLedger 검증 근거, 지갑 발급 상태, PooledAccount 재원 충분성 대사를 분리 표시한다."
+      },
+      {
+        "state": "loading",
+        "description": "liability proof, onchainWalletRef, provisioning record, PooledAccount 합산 데이터 조회·검증 중이다."
+      },
+      { "state": "empty", "description": "선택 기간에 대사할 활동이 없다." },
+      {
+        "state": "error",
+        "description": "liability proof 실패, 시스템 프로비저닝 지갑 참조 불일치, reserveProofRef 불일치 또는 재원 부족을 표시한다."
+      },
+      { "state": "success", "description": "검증 완료 및 감사자 sign-off 기록이 반영된다." }
+    ],
+    "copy": [
+      { "key": "title", "text": "유통 단위 대사 · InternalLedger 검증" },
+      { "key": "liabilitySection", "text": "부채 합계 검증(InternalLedger)" },
+      { "key": "walletProvisioningSection", "text": "지갑 발급 상태(읽기 전용)" },
+      { "key": "fundingSection", "text": "재원 충분성 대사(PooledAccount 합산)" },
+      {
+        "key": "noManualEdit",
+        "text": "InternalLedger 필드는 검증·대사·sign-off·지갑 프로비저닝 결과로만 바뀝니다"
+      }
+    ],
+    "dataNeeds": [
+      "InternalLedger(internalLedgerId, circulationUnitId, liabilitySum, batchCommitRef, liabilityProofRef, reserveProofRef, onchainWalletRef{chain,address,custodyType,provisionedBy:'system',providerRef,provisioningRecordRef,provisioningStatus:pending|provisioning|provisioned|failed,custodyMandateRef,keyControlPolicyRef}, reconcileStatus, lastVerifiedAt)",
+      "OnchainWalletProvisioningRecord(recordId, circulationUnitId, providerRef, providerType, returnedAddress, chain, custodyType, providerAuthorizationRef, custodyMandateRef, keyControlPolicyRef, externalMandateRef, legalBasisStatus, failureReason?, retryCount, idempotencyKey, status:pending|provisioning|provisioned|failed)",
+      "CanonicalProviderAllowlist(providerRef, providerType:custody-provider|ledger-connector|oracle-endpoint, allowedChains[], allowedCustodyTypes[], defaultChain, defaultCustodyType, isDefault, defaultPriority, approvalPolicyRef, providerAuthorizationRef, custodyMandateRef, keyControlPolicyRef, externalMandateRef, legalBasisStatus, status)",
+      "CirculationUnit(circulationUnitId, internalLedgerRef, pooledAccountRefs[])",
+      "PooledAccount 합산 데이터(policyFundAccount authorityStatus:confirmed|pending|rejected|expired, customerFundsAccount authorityStatus:confirmed|pending|rejected|expired, reserveAssets 오프체인 예치·전통 수탁·평가금·증명 참조, holderLegalEntityRef, custodianLegalEntityRef, controllerLegalEntityRef?)",
+      "reserveProof 결과 참조(read-only)",
+      "감사자 신원·직책/역할·관할·일시"
+    ]
+  }
+}

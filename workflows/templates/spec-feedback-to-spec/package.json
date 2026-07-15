@@ -1,0 +1,20 @@
+{
+  "name": "@awf/spec-feedback-to-spec",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@awf/ir": "0.1.0",
+    "@sinclair/typebox": "0.34.52",
+    "ajv": "8.20.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  }
+}

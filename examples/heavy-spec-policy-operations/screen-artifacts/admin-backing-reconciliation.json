@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/64",
+    "screenDigest": "7beebc3a93a01a202e4e834acdcf70a4bfc653bf839a7c0659c9c6c7e11a7b8a"
+  },
+  "screen": {
+    "id": "admin-backing-reconciliation",
+    "route": "/issuer/issuance/backing-report",
+    "surface": "발행사 콘솔(웹)",
+    "title": "발행량 ↔ 준비자산 대사",
+    "purpose": "발행 원장 총량과 오프체인 준비자산 충분성을 read-only로 대사하는 화면. legalStructureSetting 매핑에 따라 판정 기준과 문구가 달라지며, PoR 결과는 admin-issuance-por의 reserveProof를 참조한다. 이 화면은 발행량↔준비자산 대사만 다루며, 유통 단위 시민 잔액 지급의무 합계 검증은 circulation.internalLedgers[]를 조회하는 유통 대사가 소유한다.",
+    "audience": "발행사 감사 · 발행 관리자",
+    "actors": ["act-issuer-auditor", "act-issuance-manager"],
+    "layout": "IssuerConsoleNavRail, 기간·유통 단위 선택, ReconciliationPanel backing variant, PoR 링크, SignerIdentityBinder sign-off, AuditTrailRow",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReconciliationPanel",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "발행량↔준비자산 대사 결과 표시" },
+      { "state": "loading", "description": "대사 산술 조회 중" },
+      { "state": "empty", "description": "대사 대상 데이터 없음" },
+      { "state": "error", "description": "구조별 판정 기준 불일치 또는 PoR 근거 부족" },
+      { "state": "success", "description": "감사자 sign-off 완료" }
+    ],
+    "copy": [
+      { "key": "title", "text": "발행량 ↔ 준비자산 대사" },
+      { "key": "authorityBadge", "text": "판정 근거 리포트예요. 권위 원장은 발행 원장이에요" },
+      {
+        "key": "scopeBoundary",
+        "text": "시민 잔액 지급의무 합계 검증은 유통 단위 InternalLedger 대사에서 별도로 확인해요"
+      },
+      { "key": "equation", "text": "발행량 ≤ 오프체인 준비자산(법적 보유 구조별 판정 기준)" },
+      { "key": "porModuleLink", "text": "준비금별 PoR 검증 이력 보기" },
+      { "key": "signoff", "text": "감사 sign-off" }
+    ],
+    "dataNeeds": [
+      "issuanceLedger totals by circulationUnitId and period",
+      "ReserveBacking totals by legalStructureSetting from off-chain reserve assets only",
+      "legalStructureMapping(structureKey, resultLabel, reasonText)",
+      "YieldOwnershipPolicy disclosure references when used in reserve backing explanation",
+      "reserveProof refs from admin-issuance-por",
+      "auditor signOff(identity, role, title, jurisdiction, signedAt, notes)",
+      "issuerSession(consoleSurface=issuer, grantType, issuerReadGrantRef?, grantedByRoot=act-issuer-principal)"
+    ]
+  }
+}

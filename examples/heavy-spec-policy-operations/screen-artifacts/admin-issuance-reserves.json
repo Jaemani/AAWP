@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/62",
+    "screenDigest": "0a325276640bc7b036b41cfc3b901168b8eec28f29eb291f621024c84169c361"
+  },
+  "screen": {
+    "id": "admin-issuance-reserves",
+    "route": "/issuer/issuance/reserves",
+    "surface": "발행사 콘솔(웹)",
+    "title": "준비자산 관리",
+    "purpose": "발행을 받치는 오프체인 준비자산, 법적 보유 구조, 법적 효과 확정 여부, 운용수익 귀속 정책, 준비금↔발행분 N:M 매칭, InstrumentClassificationMapping을 관리하는 화면. 준비자산은 fiat 계좌, 전통 수탁, 평가금, 증명 참조로만 표현하며 유통 단위 InternalLedger.onchainWalletRef, 온체인 지갑 주소, chain, custodyType, onchainCustodyRef를 입력하거나 저장하지 않는다. 변경은 issuer surface 전용 결재된 버전으로만 발효된다.",
+    "audience": "발행 관리자 · 발행 승인자 · 발행사 감사",
+    "actors": ["act-issuance-manager", "act-issue-approver", "act-issuer-auditor"],
+    "layout": "IssuerConsoleNavRail, instrumentClassification 설정, ReserveAssetRegistry, ReserveIssuanceMatchPanel, ReserveBackingPanel, PoR 링크, ApprovalPolicyPicker issuer registry, ApprovalChainStepper, AuditTrailRow",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReserveAssetRegistry",
+      "ReserveIssuanceMatchPanel",
+      "ReserveBackingPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "오프체인 준비자산 구성·매칭·법적 분류·운용수익 귀속 정책 표시"
+      },
+      { "state": "loading", "description": "잔고·평가액 동기화 또는 변경 결재 진행 중" },
+      { "state": "empty", "description": "등록된 준비자산 없음" },
+      {
+        "state": "error",
+        "description": "동기화 실패, 필수값 누락, 법적 효과 미확정 항목의 확정 표시 시도, 결재 반려"
+      },
+      {
+        "state": "success",
+        "description": "최종 승인된 준비자산·매칭·법적 분류·수익 귀속 버전 발효"
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "준비자산 관리" },
+      {
+        "key": "authorityBadge",
+        "text": "준비자산 구성은 발행 판단 근거예요. 변경은 결재된 버전으로만 발효돼요"
+      },
+      { "key": "instrumentClassificationLabel", "text": "토큰 법적 분류" },
+      {
+        "key": "structureNote",
+        "text": "법적 보유 구조는 개방형 정책값이에요. 매핑이 없는 구조에서는 법적 효과를 단정하지 않아요"
+      },
+      {
+        "key": "reserveScopeNote",
+        "text": "준비자산은 오프체인 예치·전통 수탁·평가금·증명 참조로만 관리해요"
+      },
+      {
+        "key": "legalUnconfirmedNote",
+        "text": "법적 효과가 확인 전인 구조는 충전·환불·출금 실행 게이트에서 보수적으로 차단돼요"
+      },
+      {
+        "key": "yieldPolicyNote",
+        "text": "준비자산 운용수익 귀속은 승인된 YieldOwnershipPolicy가 있을 때만 확정 표시해요"
+      },
+      {
+        "key": "walletBoundaryNote",
+        "text": "유통 단위 온체인 지갑 상태는 InternalLedger 조회 화면에서만 확인하고, 이 화면에서는 지갑 주소·체인·커스터디 방식을 입력하지 않아요"
+      },
+      {
+        "key": "mappingNote",
+        "text": "법적 분류 변경은 승인된 InstrumentClassificationMapping 버전으로만 하류 충전·환불·상환 정책 projection을 재계산해요"
+      },
+      {
+        "key": "unsupportedClassificationNote",
+        "text": "화면·원장·처분 모델이 준비되지 않았거나 규제 근거가 확인 전인 분류는 launchBlocked로 표시하고 실행 화면 진입을 막아요"
+      },
+      { "key": "matchingHeader", "text": "준비금 ↔ 발행분 매칭" },
+      { "key": "porLink", "text": "준비금별 PoR 검증은 준비금 증빙 관리에서 확인하세요" },
+      { "key": "changeCta", "text": "준비자산·매칭·법적 분류 변경 요청" }
+    ],
+    "dataNeeds": [
+      "ReserveAsset rows(reserveId, assetType=fiat-deposit|traditional-custody|valuation, legalStructureSetting, legalEffectConfirmed, legalBasisStatus=unconfirmed|approved|rejected, regulatorySource, valuation, balance, reserveRef, custodianLegalEntityRef, controllerLegalEntityRef, holderLegalEntityRef, licenseRef, controlStructureRef, status, legalStructureRef)",
+      "CustomerFundsLegalStructure(optional legalStructureRef using cfa-* namespace, safeguardingStructureType=trust|segregated-deposit|guarantee-backed|reserve-backed|unconfirmed, customerFundsAccountRef, controllerLegalEntityRef, holderLegalEntityRef, legalEffectConfirmed=false by default, legalBasisStatus=unconfirmed|approved|rejected, regulatorySource=unconfirmed-regulatory-source unless separately approved, approvalId?, effectMapRef?)",
+      "CustomerFundsLegalEffectMap(effectMapRef, claimPriority, segregationEffect, refundFundingSource, insolvencyTreatment, yieldTreatment, effectiveScope{topup:boolean,exchange:boolean,accountWithdrawal:boolean,autoTopup:boolean})",
+      "YieldOwnershipPolicy(policyRef, reserveId, yieldOwner, regulatorySource, legalEffectConfirmed, effectiveFrom, effectiveUntil, approvedBy, approvalId, disclosureCopy)",
+      "InstrumentClassificationMapping(mappingId=icm-e-money-claim-default or approved mappingId, mappingVersion, classification, launchBlocked, exchangeDirection=refund-to-krw|blocked, allowedTransferRestriction, redeemEligibility, disclosureCopy, legalBasisPolicyRef, legalBasisStatus=unconfirmed|approved|rejected, effectiveRegimeVersion, requiredApprovalPolicyRef, approvalStatus=approved|pending|rejected|expired, licenseStatus=valid|pending|suspended|expired, productSupportMatrix)",
+      "productSupportMatrix boolean map exactly: topup, exchange, payQr, accountWithdrawal, p2pTransfer, mint, burn; blockedReason only when launchBlocked=true",
+      "legalStructureMapping(structureKey, label, controlDefaults, consumerDisclosureFallback)",
+      "ReserveIssuanceMatch(reserveId, issuancePlanId uses ip-* prefix|circulationUnitId, amount, version)",
+      "ReserveBacking calculation using off-chain ReserveAsset rows only",
+      "PoR summary refs",
+      "Issuer ApprovalPolicy registry row(appliesTo=policy-approval, consoleSurface=issuer, grantedByRoot=act-issuer-principal, approvalPolicyRef, approverCandidates, quorum, sodOptInAvailable, sourceActionAliases include reserve-change|instrument-classification-change|reserve-match-change only for issuer registry lookup)",
+      "ApprovalRequest payload(subjectType=ReserveChange, sourceScreenId=admin-issuance-reserves, sourceAction=reserve-change|instrument-classification-change|reserve-match-change, requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, onFinalApproved.actionRefs[{slice:'issuance',action:'applyApprovedReserveChange',args:{changeId,approvalId},idempotencyKey,onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}])"
+    ]
+  }
+}

@@ -44,6 +44,13 @@
 - 교정: normalized spec `screenGroups`, structured `scopeSelection`과 fail-closed unresolved request를 추가했다.
 - 재발 방지: domain workflow의 자연어 해석 결과는 prompt가 아니라 typed selection artifact로 저장한다.
 
+## 선택한 22개 화면을 공통 panel template로 축약했다
+
+- 관찰: screen ID 선택은 맞았지만 관리 콘솔 13개와 발행사 콘솔 9개를 같은 shell에 넣고, source의 22개 고유 layout을 dashboard/form/workflow/table 네 template로 축약했다. Source에 없는 운영 수치와 record도 임의로 추가해 panel 정보가 달라졌다.
+- 원인: scope selection과 결과 bundle packaging을 같은 문제로 보고, 여러 화면을 빠르게 탐색하는 UX를 screen content 합성과 혼동했다.
+- 교정: 임의 수치와 공통 content template을 제거했다. Platform-owned bundle manifest, surface와 독립 screen artifact를 추가하고 source screen object를 그대로 packaging한다.
+- 재발 방지: 화면 묶음은 navigation collection으로만 취급한다. Screen builder는 screen별 route·surface·layout contract를 독립적으로 구현하며 bundle viewer는 content를 재해석하지 않는다.
+
 ## Local simulation이 production workflow처럼 오해될 수 있었다
 
 - 관찰: run과 event가 기록되므로 실제 model/tool workflow가 수행된 것으로 받아들일 여지가 있었다.

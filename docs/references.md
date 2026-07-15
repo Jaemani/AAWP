@@ -25,6 +25,11 @@ AAWP의 설계 판단에 사용한 공개 자료다. Dependency의 exact version
 - OpenTelemetry, [Generative AI conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/): model/tool telemetry vocabulary
 - OWASP, [Agentic AI threats and mitigations](https://genai.owasp.org/): agentic system threat modeling과 security test 기준
 
+## Spec revision semantics
+
+- IETF, [RFC 6901 JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901): spec 내부 변경 대상 주소 표현
+- IETF, [RFC 6902 JSON Patch](https://www.rfc-editor.org/rfc/rfc6902): add, replace, remove operation 의미 참고. AAWP는 authority, feedback provenance와 approval을 추가한 제한 subset만 사용한다.
+
 ## 사용 원칙
 
 - 공개 자료의 behavior와 개념을 참고하되 타 프로젝트의 함수명, schema, prompt, 파일 구조와 test 문구를 복제하지 않는다.

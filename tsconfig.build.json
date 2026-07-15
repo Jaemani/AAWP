@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/ir" },
+    { "path": "./packages/demo-bundle" },
     { "path": "./packages/compiler" },
     { "path": "./packages/runtime-core" },
     { "path": "./packages/artifact-store" },
@@ -19,6 +20,7 @@
     { "path": "./apps/studio" },
     { "path": "./apps/verifier-worker" },
     { "path": "./workflows/templates/spec-to-demo" },
+    { "path": "./workflows/templates/spec-feedback-to-spec" },
     { "path": "./benchmarks/direct-v0" }
   ]
 }

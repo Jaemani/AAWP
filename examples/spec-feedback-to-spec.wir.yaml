@@ -1,0 +1,329 @@
+apiVersion: awf/v1
+id: spec-feedback-to-spec
+version: 0.1.0
+mode: CONTRACT
+artifactSchemas:
+  - type: artifact.spec
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.spec-feedback
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.spec-feedback-contract
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.spec-patch-proposal
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.spec-revision-candidate
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.verdict
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.approved-spec-revision
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+inputs:
+  source:
+    type: artifact.spec
+    schemaVersion: 1.0.0
+    visibility: public
+  feedback:
+    type: artifact.spec-feedback
+    schemaVersion: 1.0.0
+    visibility: public
+outputs:
+  revision:
+    type: artifact.approved-spec-revision
+    schemaVersion: 1.0.0
+    visibility: public
+verifierDefinitions:
+  - id: spec-revision-check
+    owner:
+      id: spec-verifier
+      role: verifier
+    visibility: hidden
+scopePolicy:
+  sourceMutation: forbidden
+  promotionRequiresApproval: true
+  allowedSecrets: []
+  allowedNetworkHosts: []
+  maxWorkflowCostUsd: 1
+nodes:
+  - id: compile-feedback
+    kind: deterministic
+    version: 1.0.0
+    owner:
+      id: spec-maintainer
+      role: builder
+    inputs:
+      feedback:
+        type: artifact.spec-feedback
+        schemaVersion: 1.0.0
+        visibility: public
+    outputs:
+      contract:
+        type: artifact.spec-feedback-contract
+        schemaVersion: 1.0.0
+        visibility: public
+    reads: []
+    writes: []
+    capabilities:
+      filesystemRead: []
+      filesystemWrite: []
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 30
+      maxCostUsd: 0
+    cache:
+      mode: exact
+      includeModelRevision: false
+      includeEnvironmentDigest: true
+    verifiers: []
+    retryPolicy:
+      retryableClasses: []
+      backoff: fixed
+  - id: propose-patch
+    kind: llm
+    version: 1.0.0
+    owner:
+      id: spec-editor
+      role: builder
+    inputs:
+      source:
+        type: artifact.spec
+        schemaVersion: 1.0.0
+        visibility: public
+      contract:
+        type: artifact.spec-feedback-contract
+        schemaVersion: 1.0.0
+        visibility: public
+    outputs:
+      proposal:
+        type: artifact.spec-patch-proposal
+        schemaVersion: 1.0.0
+        visibility: public
+    reads: []
+    writes: []
+    capabilities:
+      filesystemRead: []
+      filesystemWrite: []
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 180
+      maxTokens: 12000
+      maxCostUsd: 0.5
+    cache:
+      mode: exact
+      includeModelRevision: true
+      includeEnvironmentDigest: true
+    verifiers: []
+    retryPolicy:
+      retryableClasses: [capacity]
+      backoff: fixed
+  - id: materialize-revision
+    kind: deterministic
+    version: 1.0.0
+    owner:
+      id: spec-maintainer
+      role: builder
+    inputs:
+      source:
+        type: artifact.spec
+        schemaVersion: 1.0.0
+        visibility: public
+      proposal:
+        type: artifact.spec-patch-proposal
+        schemaVersion: 1.0.0
+        visibility: public
+    outputs:
+      candidate:
+        type: artifact.spec-revision-candidate
+        schemaVersion: 1.0.0
+        visibility: public
+    reads: []
+    writes: []
+    capabilities:
+      filesystemRead: []
+      filesystemWrite: []
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 30
+      maxCostUsd: 0
+    cache:
+      mode: exact
+      includeModelRevision: false
+      includeEnvironmentDigest: true
+    verifiers: []
+    retryPolicy:
+      retryableClasses: []
+      backoff: fixed
+  - id: verify-revision
+    kind: judge
+    version: 1.0.0
+    owner:
+      id: spec-verifier
+      role: verifier
+    inputs:
+      candidate:
+        type: artifact.spec-revision-candidate
+        schemaVersion: 1.0.0
+        visibility: public
+    outputs:
+      verdict:
+        type: artifact.verdict
+        schemaVersion: 1.0.0
+        visibility: hidden
+    reads: []
+    writes: []
+    capabilities:
+      filesystemRead: []
+      filesystemWrite: []
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 120
+      maxCostUsd: 0.1
+    cache:
+      mode: verified
+      includeModelRevision: true
+      includeEnvironmentDigest: true
+    verifiers:
+      - verifierId: spec-revision-check
+        required: true
+        phase: release
+    retryPolicy:
+      retryableClasses: [capacity]
+      backoff: fixed
+  - id: approve-revision
+    kind: approval
+    version: 1.0.0
+    owner:
+      id: spec-owner
+      role: operator
+    inputs:
+      candidate:
+        type: artifact.spec-revision-candidate
+        schemaVersion: 1.0.0
+        visibility: public
+      verdict:
+        type: artifact.verdict
+        schemaVersion: 1.0.0
+        visibility: hidden
+    outputs:
+      revision:
+        type: artifact.approved-spec-revision
+        schemaVersion: 1.0.0
+        visibility: public
+    reads: []
+    writes: []
+    capabilities:
+      filesystemRead: []
+      filesystemWrite: []
+      network: []
+      tools: []
+      secretRefs: []
+    budget:
+      maxAttempts: 1
+      timeoutSec: 3600
+      maxCostUsd: 0
+    cache:
+      mode: disabled
+      includeModelRevision: false
+      includeEnvironmentDigest: true
+    verifiers: []
+    retryPolicy:
+      retryableClasses: []
+      backoff: fixed
+edges:
+  - source:
+      kind: workflowInput
+      port: feedback
+    target:
+      kind: nodeInput
+      nodeId: compile-feedback
+      port: feedback
+  - source:
+      kind: workflowInput
+      port: source
+    target:
+      kind: nodeInput
+      nodeId: propose-patch
+      port: source
+  - source:
+      kind: nodeOutput
+      nodeId: compile-feedback
+      port: contract
+    target:
+      kind: nodeInput
+      nodeId: propose-patch
+      port: contract
+  - source:
+      kind: workflowInput
+      port: source
+    target:
+      kind: nodeInput
+      nodeId: materialize-revision
+      port: source
+  - source:
+      kind: nodeOutput
+      nodeId: propose-patch
+      port: proposal
+    target:
+      kind: nodeInput
+      nodeId: materialize-revision
+      port: proposal
+  - source:
+      kind: nodeOutput
+      nodeId: materialize-revision
+      port: candidate
+    target:
+      kind: nodeInput
+      nodeId: verify-revision
+      port: candidate
+  - source:
+      kind: nodeOutput
+      nodeId: materialize-revision
+      port: candidate
+    target:
+      kind: nodeInput
+      nodeId: approve-revision
+      port: candidate
+  - source:
+      kind: nodeOutput
+      nodeId: verify-revision
+      port: verdict
+    target:
+      kind: nodeInput
+      nodeId: approve-revision
+      port: verdict
+  - source:
+      kind: nodeOutput
+      nodeId: approve-revision
+      port: revision
+    target:
+      kind: workflowOutput
+      port: revision
+releasePolicy:
+  requiredVerifiers: [spec-revision-check]
+  maxBlockingFindings: 0
+  requireDirectBaseline: false

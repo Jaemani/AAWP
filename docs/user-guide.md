@@ -155,7 +155,45 @@ node apps/studio/dist/server.js \
 
 Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selection-manifest.json`이 고정한다. 새 run은 offboard 상태이므로 dashboard에서 `Onboard demo`를 눌러야 preview와 run ID URL이 열린다.
 
-## 4. Spec version과 revision
+이 예제의 `bundle-manifest.json`은 정책, 유통, 발행·준비자산을 별도 bundle로 제공한다. Bundle을 고른 뒤 surface와 화면을 전환한다. 관리 콘솔과 발행사 콘솔은 서로 다른 surface이고, 각 화면은 독립 `screen-artifacts/<screen-id>.json`과 route를 가진다. 향후 mobile screen은 같은 manifest에 `formFactor: "mobile"` surface로 추가한다.
+
+## 4. `spec-feedback-to-spec`
+
+Workflow IR 검사:
+
+```bash
+node apps/cli/dist/index.js check examples/spec-feedback-to-spec.wir.yaml
+```
+
+실행 순서는 pinned source → feedback contract → patch proposal → deterministic candidate → independent verdict → 사람 승인이다. Source는 직접 변경하지 않는다.
+
+```json
+{
+  "schemaVersion": "aawp/spec-feedback-intent/v1",
+  "sourceArtifactId": "spec-wallet-v3",
+  "sourceDigest": "<canonical sha256>",
+  "requestText": "정책 목록의 빈 상태 문구를 바꿔줘",
+  "feedback": [
+    {
+      "id": "feedback-1",
+      "text": "빈 상태에서 다음 행동을 안내해줘",
+      "targetPointer": "/screens/0/copy/empty"
+    }
+  ],
+  "authority": {
+    "allowedPathPrefixes": ["/screens/0"],
+    "allowRemove": false
+  },
+  "profile": {
+    "id": "wallet-spec",
+    "requiredPointers": ["/meta", "/screens"]
+  }
+}
+```
+
+Spec field 표준은 profile validator가 소유한다. 현재 template은 revision substrate까지 구현됐고 production model activity, Studio diff/approval UI와 heavy spec 전용 semantic validator는 아직 연결되지 않았다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
+
+## 5. Spec version과 revision
 
 - `documentId`: 같은 논리 spec 계보에서 유지한다.
 - `sourceArtifactId`: immutable spec content/version마다 바뀐다.
@@ -165,16 +203,17 @@ Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selec
 
 다른 spec version을 실행하려면 새 source artifact를 만들고 입력의 `specArtifactId`를 바꾼다. Artifact ID가 document와 맞지 않으면 compile을 거부한다. Revision engine은 변경된 requirement와 downstream builder/verifier를 무효화하고, fingerprint가 같은 scaffold·dependency artifact는 재사용한다.
 
-## 5. Workflow 선택
+## 6. Workflow 선택
 
 - 한 번의 작은 수정: `DIRECT`
 - 명세에서 제한된 demo 생성: `spec-to-demo` (`CONTRACT`)
-- demo feedback을 source spec에 반영: 향후 `spec-feedback-to-spec`
+- 오탈자처럼 작은 spec feedback: `DIRECT` 실행자 + 동일한 typed revision contract
+- 여러 화면·요구사항의 spec feedback: `spec-feedback-to-spec` (`CONTRACT`)
 - 열린 조사와 여러 가설: `EXPLORER`
 
 `spec-divide`는 현재 사용하지 않는다. Topic/flow taxonomy 생성이 여러 workflow에서 재사용되고 독립 승인·benchmark가 필요할 때 별도 template로 만든다.
 
-## 6. 결과와 삭제
+## 7. 결과와 삭제
 
 - Replay: 기존 기록 결과를 반환하고 effect를 다시 실행하지 않는다.
 - Rerun: 같은 node를 다시 실행한다.
@@ -183,7 +222,7 @@ Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selec
 
 Demo snapshot은 파생 결과이므로 offboard하거나 삭제할 수 있다. `Offboard`는 되돌릴 수 있고 파일을 보존한다. `Delete demo`는 snapshot만 제거한다. Input file, source artifact, run/event와 lineage는 별도 retention policy 없이는 삭제하지 않는다.
 
-## 7. 문제 해결
+## 8. 문제 해결
 
 - `UNKNOWN_SCOPE_SELECTOR`: screen/requirement ID와 spec version을 확인한다.
 - `UNKNOWN_SCREEN_GROUP`: normalized spec의 `screenGroups` ID를 확인한다.

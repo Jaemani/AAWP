@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/77",
+    "screenDigest": "248b913de51af9ce0f899930f90be34a2c77d05a299ec3963a8db2b0ec922e93"
+  },
+  "screen": {
+    "id": "admin-settlement-batch",
+    "route": "/admin/circulation/settlement-batch",
+    "surface": "관리 콘솔(웹)",
+    "title": "정산 배치 · 사후 환급 실행",
+    "purpose": "유통 단위별 정산 배치를 실행하고 post-purchase-payback 정책의 완료 거래 기반 환급을 triggerMode='batch-schedule' 또는 'manual-approval'로 기록한다. 모든 항목은 circulationUnitId, subSettlementId, targetPooledAccountRef에 귀속된다.",
+    "audience": "정산 운영자, 감사",
+    "actors": ["act-settlement-operator", "act-auditor"],
+    "layout": "ConsoleNavRail + SessionActorBadge + AuthorityScopeBadge + SettlementBatchRunPanel + ApprovalPolicyPicker + ApproverSelector + ApprovalChainStepper + SignerIdentityBinder + AuditTrailRow",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "SettlementBatchRunPanel",
+      "ApprovalPolicyPicker",
+      "ApproverSelector",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "정산 배치와 사후 환급 후보 거래 목록을 표시한다." },
+      {
+        "state": "loading",
+        "description": "정산 대상, POS 할인 보전액, 사후 환급 후보 조회·실행 중이다."
+      },
+      { "state": "empty", "description": "실행할 정산 배치 또는 사후 환급 후보가 없다." },
+      {
+        "state": "error",
+        "description": "결재 미완료, 승인자 기록 누락, subSettlementId/targetPooledAccountRef 누락, 중복 환급 또는 권한 오류를 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "정산 배치 job 접수 또는 사후 환급 결재 요청 생성이 완료된다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "정산 배치 · 사후 환급 실행" },
+      {
+        "key": "closedBoundaryNote",
+        "text": "환급과 보전은 각 유통 단위의 sub-settlement 안에서만 처리돼요"
+      },
+      { "key": "runBatchCta", "text": "정산 배치 실행" },
+      { "key": "recordPaybackCta", "text": "사후 환급 기록 생성" }
+    ],
+    "dataNeeds": [
+      "SettlementBatch(batchId, period, circulationUnitId, status, approvalId)",
+      "PaybackCandidate(transactionId, citizenId, amount, policyRef, circulationUnitId, subSettlementId, targetPooledAccountRef, triggerMode:batch-schedule|manual-approval)",
+      "PolicyCondition(payoutMethod='post-purchase-payback')",
+      "ApprovalPolicy(appliesTo='settlement-exception', approvalStatus='active'); settlement-batch 및 manual-payback은 sourceAction으로 보존",
+      "ApprovalChain 및 SignerIdentityBinder(수동 트리거 필수)"
+    ]
+  }
+}

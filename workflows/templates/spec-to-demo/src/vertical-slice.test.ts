@@ -37,6 +37,10 @@ describe("spec-to-demo vertical slice policies", () => {
       expect(prepared.acceptance.hiddenPackage.verifier.visibility).toBe("hidden");
       expect(prepared.scaffold.files.some((file) => file.path === "src/App.tsx")).toBe(true);
       expect(prepared.verificationPlan.checks).toHaveLength(6);
+      expect(prepared.bundleManifest.screens.map((screen) => screen.id)).toEqual(
+        prepared.contracts.scope.includedScreenIds
+      );
+      expect(prepared.bundleManifest.digest).toMatch(/^[a-f0-9]{64}$/);
     }
   });
 

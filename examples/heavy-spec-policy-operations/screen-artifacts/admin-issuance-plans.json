@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/57",
+    "screenDigest": "1880b8d8127181d5ea3db4f4b01cba6a16a57cc12d8345c34993746ef7e83072"
+  },
+  "screen": {
+    "id": "admin-issuance-plans",
+    "route": "/issuer/issuance/plans",
+    "surface": "발행사 콘솔(웹)",
+    "title": "발행 계획 목록",
+    "purpose": "승인된 정책 중 approvalStatus='approved', lifecycleStatus='active', needsNewIssuance=true이고 아직 발행 계획이 없는 정책을 발행 후보로 조회한다. 정책 도메인은 발행 필요 신호와 targetCirculationUnitId만 제공하며, 발행 인가·라이선스·상품 분류·준비자산·masterMinter 조건은 발행사 콘솔에서 독립 평가한다. issuer surface는 consoleSurface='issuer', grantedByRoot='act-issuer-principal'인 별도 결재 권한 계보만 사용한다.",
+    "audience": "발행 관리자 · 발행 승인자 · 발행사 감사",
+    "actors": ["act-issuance-manager", "act-issue-approver", "act-issuer-auditor"],
+    "layout": "IssuerConsoleNavRail, SessionActorBadge, AuthorityScopeBadge, 검색·상태 필터, 발행 필요 정책 섹션, IssuancePlanTable",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "IssuancePlanTable",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "관할 내 발행 계획과 발행 필요 정책을 표시한다" },
+      { "state": "loading", "description": "발행 계획과 발행 필요 정책 조회 중" },
+      { "state": "empty", "description": "발행 계획과 발행 필요 정책이 없다" },
+      { "state": "error", "description": "조회 실패 또는 issuerSession 만료" },
+      { "state": "success", "description": "필터·검색 결과를 표시한다" }
+    ],
+    "copy": [
+      { "key": "title", "text": "발행 계획" },
+      { "key": "authorityBadge", "text": "발행사 콘솔 권위 영역이에요" },
+      { "key": "newPlanCta", "text": "새 발행 계획 작성" },
+      { "key": "unplannedSectionTitle", "text": "발행 필요 정책" },
+      {
+        "key": "unplannedSectionNote",
+        "text": "신규 발행이 필요한 승인 정책이에요. 발행 가능 여부는 이 콘솔에서 별도로 검토해요"
+      },
+      { "key": "unplannedCreatePlanCta", "text": "이 정책으로 발행 계획 작성" },
+      { "key": "readonlyGate", "text": "read-only 세션에서는 계획 작성과 결재를 할 수 없어요" },
+      { "key": "searchPlaceholder", "text": "사업명·발행주체·유통 단위·정책명으로 검색" }
+    ],
+    "dataNeeds": [
+      "IssuancePlan rows(planId uses ip-* prefix, policyRef, issuerRef, circulationUnitIds, supplyAmount, author, approvalStatus=draft|pending|approved|rejected, issuanceStatus=draft|ready|executed|failed, issuerAuthorizationRef uses iauth-* prefix, instrumentClassificationMappingRef?, burnSettlementPolicyRef?, burnSettlementPolicy.summary)",
+      "unplannedPolicyRows query: Policy where approvalStatus='approved' && lifecycleStatus='active' && needsNewIssuance=true && no linked IssuancePlan(policyRef, policyName, policyKind='voucher-payout'|general, approvedAt, targetCirculationUnitId|circulationUnitIds, targetPooledAccountRef?, grantSchedule?, payoutExecutionMode?, periodExpiryLifecycleRef='pel-period-expiry-fixed-voucher'?)",
+      "IssuerAuthorization summary(issuerAuthorizationRef uses iauth-* prefix, issuerRef, licenseRef, authorizationType, instrumentClassification, licenseStatus=valid|suspended|expired, validity{validFrom,validUntil}, auditBasis, status=active|suspended|expired|revoked)",
+      "InstrumentClassificationMapping summary(mappingId, mappingVersion, approvalStatus=approved|pending|rejected|expired, licenseStatus=valid|pending|suspended|expired, legalBasisPolicyRef, legalBasisStatus=unconfirmed|approved|rejected, effectiveRegimeVersion, launchBlocked, productSupportMatrix.mint)",
+      "productSupportMatrix boolean map exactly: topup, exchange, payQr, accountWithdrawal, p2pTransfer, mint, burn; blockedReason only when launchBlocked=true",
+      "issuerSession(consoleSurface=issuer, routeRegistry=issuer, role, roleTitle, jurisdictionScope, grantType, grantedByRoot=act-issuer-principal, issuerReadGrantRef?)"
+    ]
+  }
+}

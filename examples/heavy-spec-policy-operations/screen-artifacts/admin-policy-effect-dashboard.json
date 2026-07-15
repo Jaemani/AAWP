@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/71",
+    "screenDigest": "f01b8e2cc6876d4ff3a85b95b092f0d16f07c3ceeaac085f939e9fb995598ae5"
+  },
+  "screen": {
+    "id": "admin-policy-effect-dashboard",
+    "route": "/admin/policy/effects",
+    "surface": "관리 콘솔(웹)",
+    "title": "정책 효과 대시보드",
+    "purpose": "활성 정책별 대상자 수·지급 총액·사용률·회수액을 지표 카드로 제시한다. payoutMethod에 따라 direct-grant 지급액, 결제 시점 즉시 할인액, 사후 환급 예정/완료액을 분리 집계하고, voucher-payout 정책은 conditionRefs[]의 grantAmount와 지급 projection을 기준으로 지급 총액·사용률·만료 예정 잔액을 집계한다. 집계 대상은 approvalStatus='approved', lifecycleStatus='active', executionStatus='executable'인 정책으로 제한한다. 모든 수치는 원장·정산 집계 projection이며 실시간 권위값이 아니라 as-of 기준 집계임을 표기한다.",
+    "audience": "정책조건 등록자 · 정책총괄·책임관 · 감사 · 권한관리자",
+    "actors": ["act-policy-operator", "act-policy-approver", "act-auditor", "act-superadmin"],
+    "layout": "상단 chrome + 정책 선택 필터 + 지표 카드 그리드(대상자수/지급총액/즉시할인/사후환급/상품권 지급액/사용률/회수액/미사용 만료 예정액) + 기간·유통 단위 필터",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PolicyEffectMetricCard",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "선택된 정책의 지표 카드를 표시한다." },
+      { "state": "empty", "description": "집계 가능한 승인·활성·실행 가능 정책이 없다." },
+      { "state": "loading", "description": "집계 데이터 조회 중이다." },
+      {
+        "state": "error",
+        "description": "집계 데이터 조회 실패(정산/원장 연동 오류) 사유를 표시한다."
+      },
+      { "state": "success", "description": "최신 as-of 집계 반영 완료 상태를 표시한다." }
+    ],
+    "copy": [
+      { "key": "title", "text": "정책 효과 대시보드" },
+      { "key": "metricPosDiscount", "text": "결제 시점 즉시 할인액" },
+      { "key": "metricPayback", "text": "사후 환급액" },
+      { "key": "metricVoucherGrant", "text": "상품권 지급액" },
+      { "key": "metricUnusedExpiry", "text": "미사용 만료 예정액" },
+      {
+        "key": "asOfNote",
+        "text": "이 지표는 정산·원장 집계 기준의 참고값이에요(as-of {asOf}). 실시간 권위값이 아니에요."
+      }
+    ],
+    "dataNeeds": [
+      "PolicyEffectAggregate(대상자수·지급총액·posDiscountAmount·postPurchasePaybackAmount·voucherGrantAmount·사용률·회수액·unusedExpiryAmount·as-of 시각)",
+      "Policy 필터(approvalStatus='approved'·lifecycleStatus='active'·executionStatus='executable')",
+      "CirculationUnit 필터",
+      "PayoutMethod별 정산 집계",
+      "VoucherPayout projection(conditionRefs[].grantAmount·issuedAmount·spentAmount·expiredUnusedBalance·recoveredPolicyFundAmount·burnSettlementCandidateSupply)"
+    ]
+  }
+}

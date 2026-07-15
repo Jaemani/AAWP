@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/79",
+    "screenDigest": "d299564b4768eb976738711feb93c0e083308a28de7c5667eeaddf7971fd277b"
+  },
+  "screen": {
+    "id": "admin-redeem-console",
+    "route": "/admin/circulation/redeem",
+    "surface": "관리 콘솔(웹)",
+    "title": "상환(redeem) 집행",
+    "purpose": "결재 완료된 상환 요청에 대해 InternalLedger 잔액을 차감하고 유통 단위에 연결된 목적별 PooledAccount 계좌에서 fiat 출금을 처리한다. 고객충전금 계좌 운용 권한이 확인되지 않으면 집행 CTA를 차단한다.",
+    "audience": "정산 운영자, 감사",
+    "actors": ["act-settlement-operator", "act-auditor"],
+    "layout": "ConsoleNavRail + SessionActorBadge + AuthorityScopeBadge + RedeemBurnConsole + PooledAccountPanel + ApprovalChainStepper + SignerIdentityBinder + LedgerTable",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "RedeemBurnConsole",
+      "PooledAccountPanel",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "LedgerTable",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "결재 완료된 상환 요청 큐를 표시한다." },
+      {
+        "state": "loading",
+        "description": "ConvertibilityRule, InternalLedger 차감 가능액, 목적별 PooledAccount 출금 가능액 조회 중이다."
+      },
+      { "state": "empty", "description": "집행 대기 중인 상환 요청이 없다." },
+      {
+        "state": "error",
+        "description": "결재 미완료, 한도 초과, 계좌 잔고 부족, 계좌 운용 권한 미확인, AuthorityBasisPolicy 또는 legalInstrumentRef 누락을 표시한다."
+      },
+      { "state": "success", "description": "상환 집행 완료 및 원장 행 기록이 완료된다." }
+    ],
+    "copy": [
+      { "key": "title", "text": "상환(redeem) 집행" },
+      {
+        "key": "fundingSource",
+        "text": "출금 재원은 fundSourceType과 PooledAccount에서 자동 판정합니다."
+      },
+      {
+        "key": "safeguardingRequired",
+        "text": "고객충전금 계좌 운용 권한이 확인되어야 환불·상환을 집행할 수 있어요."
+      },
+      { "key": "executeCta", "text": "상환 집행" }
+    ],
+    "dataNeeds": [
+      "RedeemRequest(requestId, targetId, amount, fundSourceType:topupPrincipal|policyFund, circulationUnitId, reason, approvalId)",
+      "ConvertibilityRule(circulationUnitScope=circulationUnitId, eligibleFundSourceTypes[], policyFundRefundOptInRefs[], dailyRedeemCap, accountPurposePriority:['customerTopupPrincipal'], instrumentClassificationMappingRef optional read-only projection ref, effectiveFrom, approvedBy)",
+      "ConvertibilityRule execution validation: accountPurposePriority entries must resolve within circulationUnitScope to customerFundsAccount(accountPurpose='customerTopupPrincipal', fiatAccountRef, legalStructureRef, safeguardingRuleRef, controllerLegalEntityRef, authorityStatus='confirmed') with legalBasisStatus='approved', legalEffectConfirmed=true, and effectiveScope.exchange/accountWithdrawal=true for the requested operation",
+      "InstrumentClassificationMapping(mappingId, approvalStatus='approved', redeemEligibility, legalBasisStatus='approved', productSupportMatrix {topup,exchange,payQr,accountWithdrawal,p2pTransfer,mint,burn})",
+      "PooledAccount(policyFundAccount?, customerFundsAccount{fiatAccountRef, accountPurpose='customerTopupPrincipal', legalStructureRef, safeguardingRuleRef, controllerLegalEntityRef, authorityStatus:confirmed|pending|rejected|expired}, accountId, policyRef, fundNature:policyFund|reserveAsset|mixed)",
+      "CustomerFundsLegalStructure(legalEffectConfirmed, legalBasisStatus:unconfirmed|approved|rejected, controllerLegalEntityRef, effectiveFrom, effectiveUntil); legalEffectConfirmed=false 또는 legalBasisStatus!='approved'이면 CTA disabled",
+      "approved AuthorityBasisPolicy 및 legalInstrumentRef(처분 기반 강제 상환일 때)"
+    ]
+  }
+}

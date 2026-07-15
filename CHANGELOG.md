@@ -25,6 +25,20 @@
 - 102-screen production spec에서 “정책, 유통, 발행, 준비” 요청을 정책 6개, 유통 7개, 발행·준비자산 9개의 명시적 22-screen selection manifest로 고정한 demo fixture를 추가했다.
 - 이 fixture는 source spec의 흐름·논리 교정을 하지 않는다. 해당 책임은 별도 `spec-feedback-to-spec` workflow 경계로 남겼다.
 
+### Demo bundle과 screen 보존
+
+- `@awf/demo-bundle`과 `aawp/demo-bundle/v1`을 추가해 bundle, surface, topic/flow group과 독립 screen artifact를 platform contract로 만들었다.
+- 22-screen demo를 정책, 유통, 발행·준비자산 세 bundle로 나누고 관리 콘솔 13개와 발행사 콘솔 9개 surface를 분리했다.
+- 기존 4개 공통 layout과 임의 mock 수치를 제거하고 각 screen artifact가 source screen의 layout, components, states, copy와 dataNeeds를 그대로 보존하게 했다.
+- Viewer는 bundle → surface → screen을 전환하며 web/mobile/tablet form factor를 같은 manifest로 처리한다.
+
+### `spec-feedback-to-spec`
+
+- Pinned source와 feedback을 allowed JSON Pointer contract로 compile하는 새 workflow template을 추가했다.
+- Add/replace/remove patch materialization, source drift·권한 이탈·unknown feedback·no-op 거부를 구현했다.
+- Domain profile validator와 required pointer 검증을 통과하고 사람 승인을 받은 candidate만 새 spec artifact로 승격한다.
+- 원본 spec은 직접 수정하지 않으며 WIR check와 focused test를 추가했다.
+
 ### 문서
 
 - 루트 README를 플랫폼 핵심과 현재 증명 경계 중심으로 재구성했다.

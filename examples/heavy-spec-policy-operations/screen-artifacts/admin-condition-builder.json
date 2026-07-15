@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/67",
+    "screenDigest": "2f28dedd9638dd3d5e17f50ec8a482c5b8a7b80c70250241a07edd5e398afbef"
+  },
+  "screen": {
+    "id": "admin-condition-builder",
+    "route": "/admin/policy/conditions",
+    "surface": "관리 콘솔(웹)",
+    "title": "조건 빌더 — 대상 조건 · 사용 조건",
+    "purpose": "대상 조건과 사용 조건을 공통 빌더 UI에서 작성해 재사용 조건 세트로 저장한다. 저장 ref는 EligibilityConditionSet은 ecs-*, UsageConditionSet은 ucs-* 네임스페이스를 사용한다. 허용업종은 merchantCategoryCodeRefs[]=ISO 18245 4자리 MerchantCategoryCode.code로, 품목분류는 itemCategoryCodeRefs[]=UNSPSC ItemCategoryCode.code로만 저장한다. payoutMethod는 direct-grant, point-of-sale-discount, post-purchase-payback 중 하나로 저장하며 사용자 노출 카피는 사후 환급으로 통일한다. 정책 작성 화면은 conditionSetStatus='published' && approvalStatus='approved'인 조건 세트만 선택할 수 있다.",
+    "audience": "정책조건 등록자 · 정책총괄·책임관",
+    "actors": ["act-policy-operator", "act-policy-approver"],
+    "layout": "상단 chrome + 좌측 탭(대상 조건/사용 조건) + 중앙 조건 빌더 캔버스 + 우측 표준 코드 선택 패널/예상 규모 참고 집계 + 하단 저장된 조건 세트 목록",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "EligibilityRuleBuilder",
+      "PolicyConditionBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "대상/사용 조건 탭과 빌더 캔버스, 저장된 조건 세트 목록을 표시한다. 조건 세트 목록은 conditionSetStatus와 approvalStatus를 별도 배지로 표시한다."
+      },
+      { "state": "empty", "description": "저장된 조건 세트가 없어 최초 조건 작성을 안내한다." },
+      { "state": "loading", "description": "조건 저장/참고 집계 계산 중이다." },
+      {
+        "state": "error",
+        "description": "PII 동의근거 미확인 속성 추가, 비활성 표준 코드 선택, payoutMethod별 필수 정산 입력 누락 등 검증 실패를 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "조건 세트 저장 완료 후 작성자 신원·직책/역할·일시를 기록한다. 승인·게시 전에는 정책 작성 picker에 노출하지 않는다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "조건 빌더" },
+      { "key": "tabEligibility", "text": "대상 조건" },
+      { "key": "tabUsage", "text": "사용 조건" },
+      { "key": "merchantCategoryLabel", "text": "허용 업종코드" },
+      { "key": "itemCategoryLabel", "text": "허용 품목코드" },
+      { "key": "payoutMethodLabel", "text": "정책 지원 적용 방식" },
+      { "key": "payoutDirectGrant", "text": "명부 승인 후 즉시 지급" },
+      { "key": "payoutPosDiscount", "text": "결제 시점 즉시 할인" },
+      { "key": "payoutPayback", "text": "결제 후 사후 환급" },
+      {
+        "key": "codeOnlyNote",
+        "text": "업종·품목은 표준 코드로만 선택해요. 화면에는 표준 표시명이 보이고, 판정은 code 값으로 이뤄져요."
+      },
+      {
+        "key": "statusNote",
+        "text": "정책 작성에서는 게시 완료·승인 완료 조건 세트만 선택할 수 있어요."
+      },
+      { "key": "saveCta", "text": "조건 세트로 저장" },
+      {
+        "key": "successMsg",
+        "text": "조건 세트가 저장됐어요. 승인·게시가 끝나면 정책 작성에서 선택할 수 있어요."
+      }
+    ],
+    "dataNeeds": [
+      "EligibilityConditionSet(setId prefix ecs-*·conditionSetStatus draft|published|retired·approvalStatus approved|pending|rejected|expired·predicateTree·referencedAttributes·author identity/title·createdAt·approvalId?)",
+      "UsageConditionSet(setId prefix ucs-*·conditionSetStatus draft|published|retired·approvalStatus approved|pending|rejected|expired·사용지역·사용기간·구매한도·merchantCategoryCodeRefs[]=ISO18245 4자리·itemCategoryCodeRefs[]=UNSPSC standardCode·payoutMethod direct-grant|point-of-sale-discount|post-purchase-payback·posDiscountSettlementCycle?·targetPooledAccountRef?·postPurchasePaybackTriggerMode batch-schedule|manual-approval·approvalId?·circulationScope?)",
+      "MerchantCategoryCode active 목록(code·displayCode='ISO 18245 {code}'·label·sourceStandard='ISO18245')",
+      "ItemCategoryCode active 목록(code·standardCode·label·sourceStandard='UNSPSC')",
+      "참고 집계(예상 대상 규모)"
+    ]
+  }
+}

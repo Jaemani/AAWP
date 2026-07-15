@@ -1,0 +1,320 @@
+{
+  "bundles": [
+    {
+      "description": "6개 독립 화면",
+      "groupIds": ["policy"],
+      "id": "policy-bundle",
+      "screenIds": [
+        "admin-policy-list",
+        "admin-circulation-policy-composer",
+        "admin-circulation-topup-policy",
+        "admin-voucher-policy-setup",
+        "admin-condition-builder",
+        "admin-policy-effect-dashboard"
+      ],
+      "title": "정책 화면 묶음"
+    },
+    {
+      "description": "7개 독립 화면",
+      "groupIds": ["circulation"],
+      "id": "circulation-bundle",
+      "screenIds": [
+        "admin-circulation-dashboard",
+        "admin-circulation-reconciliation",
+        "admin-roster-builder",
+        "admin-settlement-batch",
+        "admin-jurisdiction-exit",
+        "admin-redeem-console",
+        "admin-transaction-trace"
+      ],
+      "title": "유통 화면 묶음"
+    },
+    {
+      "description": "9개 독립 화면",
+      "groupIds": ["issuance-reserve"],
+      "id": "issuance-reserve-bundle",
+      "screenIds": [
+        "admin-issuance-plans",
+        "admin-issuance-plan",
+        "admin-issuance-execute",
+        "admin-issuance-ledger",
+        "admin-issuance-limit",
+        "admin-issuance-reserves",
+        "admin-issuance-por",
+        "admin-backing-reconciliation",
+        "admin-supply-burn-settlement"
+      ],
+      "title": "발행 · 준비자산 화면 묶음"
+    }
+  ],
+  "groups": [
+    {
+      "id": "policy",
+      "kind": "topic",
+      "label": "정책",
+      "screenIds": [
+        "admin-policy-list",
+        "admin-circulation-policy-composer",
+        "admin-circulation-topup-policy",
+        "admin-voucher-policy-setup",
+        "admin-condition-builder",
+        "admin-policy-effect-dashboard"
+      ]
+    },
+    {
+      "id": "circulation",
+      "kind": "topic",
+      "label": "유통",
+      "screenIds": [
+        "admin-circulation-dashboard",
+        "admin-circulation-reconciliation",
+        "admin-roster-builder",
+        "admin-settlement-batch",
+        "admin-jurisdiction-exit",
+        "admin-redeem-console",
+        "admin-transaction-trace"
+      ]
+    },
+    {
+      "id": "issuance-reserve",
+      "kind": "topic",
+      "label": "발행 · 준비자산",
+      "screenIds": [
+        "admin-issuance-plans",
+        "admin-issuance-plan",
+        "admin-issuance-execute",
+        "admin-issuance-ledger",
+        "admin-issuance-limit",
+        "admin-issuance-reserves",
+        "admin-issuance-por",
+        "admin-backing-reconciliation",
+        "admin-supply-burn-settlement"
+      ]
+    }
+  ],
+  "manifestId": "gyeonggi-policy-operations-20260715",
+  "requestText": "정책, 유통, 발행, 준비 관련 페이지 만들어줘",
+  "schemaVersion": "aawp/demo-bundle/v1",
+  "screens": [
+    {
+      "artifactPath": "screen-artifacts/admin-policy-list.json",
+      "groupIds": ["policy"],
+      "id": "admin-policy-list",
+      "route": "/admin/policy/list",
+      "surfaceId": "admin-web",
+      "title": "정책 목록 · 생애주기 · 버전"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-circulation-policy-composer.json",
+      "groupIds": ["policy"],
+      "id": "admin-circulation-policy-composer",
+      "route": "/admin/policy/circulation/new",
+      "surfaceId": "admin-web",
+      "title": "정책 작성 — 대상·사용조건·재원·유통 단위"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-circulation-topup-policy.json",
+      "groupIds": ["policy"],
+      "id": "admin-circulation-topup-policy",
+      "route": "/admin/circulation/topup-policy",
+      "surfaceId": "admin-web",
+      "title": "충전 정책 관리"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-voucher-policy-setup.json",
+      "groupIds": ["policy"],
+      "id": "admin-voucher-policy-setup",
+      "route": "/admin/policy/voucher/setup",
+      "surfaceId": "admin-web",
+      "title": "상품권 정책 설정"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-condition-builder.json",
+      "groupIds": ["policy"],
+      "id": "admin-condition-builder",
+      "route": "/admin/policy/conditions",
+      "surfaceId": "admin-web",
+      "title": "조건 빌더 — 대상 조건 · 사용 조건"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-policy-effect-dashboard.json",
+      "groupIds": ["policy"],
+      "id": "admin-policy-effect-dashboard",
+      "route": "/admin/policy/effects",
+      "surfaceId": "admin-web",
+      "title": "정책 효과 대시보드"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-circulation-dashboard.json",
+      "groupIds": ["circulation"],
+      "id": "admin-circulation-dashboard",
+      "route": "/admin/circulation/dashboard",
+      "surfaceId": "admin-web",
+      "title": "유통 현황 · 유통 지갑"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-circulation-reconciliation.json",
+      "groupIds": ["circulation"],
+      "id": "admin-circulation-reconciliation",
+      "route": "/admin/circulation/reconciliation",
+      "surfaceId": "admin-web",
+      "title": "유통 단위 대사 · InternalLedger 검증"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-roster-builder.json",
+      "groupIds": ["circulation"],
+      "id": "admin-roster-builder",
+      "route": "/admin/circulation/rosters/build",
+      "surfaceId": "admin-web",
+      "title": "대상 명부 확정 · 운영계획서(OperationPlan)"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-settlement-batch.json",
+      "groupIds": ["circulation"],
+      "id": "admin-settlement-batch",
+      "route": "/admin/circulation/settlement-batch",
+      "surfaceId": "admin-web",
+      "title": "정산 배치 · 사후 환급 실행"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-jurisdiction-exit.json",
+      "groupIds": ["circulation"],
+      "id": "admin-jurisdiction-exit",
+      "route": "/admin/circulation/jurisdiction-exit",
+      "surfaceId": "admin-web",
+      "title": "자격 상실 · 잔여 재원 정리(관할 이탈)"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-redeem-console.json",
+      "groupIds": ["circulation"],
+      "id": "admin-redeem-console",
+      "route": "/admin/circulation/redeem",
+      "surfaceId": "admin-web",
+      "title": "상환(redeem) 집행"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-transaction-trace.json",
+      "groupIds": ["circulation"],
+      "id": "admin-transaction-trace",
+      "route": "/admin/circulation/transactions",
+      "surfaceId": "admin-web",
+      "title": "거래 추적 · 검색"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-plans.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-plans",
+      "route": "/issuer/issuance/plans",
+      "surfaceId": "issuer-web",
+      "title": "발행 계획 목록"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-plan.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-plan",
+      "route": "/issuer/issuance/plans/:planId",
+      "surfaceId": "issuer-web",
+      "title": "발행 계획 · 작성 · 결재"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-execute.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-execute",
+      "route": "/issuer/issuance/plans/:planId/execute",
+      "surfaceId": "issuer-web",
+      "title": "발행 실행 · mint 집행"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-ledger.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-ledger",
+      "route": "/issuer/issuance/ledger",
+      "surfaceId": "issuer-web",
+      "title": "발행 원장 열람"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-limit.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-limit",
+      "route": "/issuer/issuance/limits",
+      "surfaceId": "issuer-web",
+      "title": "발행한도 관리"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-reserves.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-reserves",
+      "route": "/issuer/issuance/reserves",
+      "surfaceId": "issuer-web",
+      "title": "준비자산 관리"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-issuance-por.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-issuance-por",
+      "route": "/issuer/issuance/por-registry",
+      "surfaceId": "issuer-web",
+      "title": "준비금 증빙(PoR) 관리"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-backing-reconciliation.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-backing-reconciliation",
+      "route": "/issuer/issuance/backing-report",
+      "surfaceId": "issuer-web",
+      "title": "발행량 ↔ 준비자산 대사"
+    },
+    {
+      "artifactPath": "screen-artifacts/admin-supply-burn-settlement.json",
+      "groupIds": ["issuance-reserve"],
+      "id": "admin-supply-burn-settlement",
+      "route": "/issuer/issuance/supply-burn",
+      "surfaceId": "issuer-web",
+      "title": "공급 소각 · 정산"
+    }
+  ],
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33"
+  },
+  "surfaces": [
+    {
+      "formFactor": "web",
+      "id": "admin-web",
+      "label": "관리 콘솔(웹)",
+      "screenIds": [
+        "admin-policy-list",
+        "admin-circulation-policy-composer",
+        "admin-circulation-topup-policy",
+        "admin-voucher-policy-setup",
+        "admin-condition-builder",
+        "admin-policy-effect-dashboard",
+        "admin-circulation-dashboard",
+        "admin-circulation-reconciliation",
+        "admin-roster-builder",
+        "admin-settlement-batch",
+        "admin-jurisdiction-exit",
+        "admin-redeem-console",
+        "admin-transaction-trace"
+      ]
+    },
+    {
+      "formFactor": "web",
+      "id": "issuer-web",
+      "label": "발행사 콘솔(웹)",
+      "screenIds": [
+        "admin-issuance-plans",
+        "admin-issuance-plan",
+        "admin-issuance-execute",
+        "admin-issuance-ledger",
+        "admin-issuance-limit",
+        "admin-issuance-reserves",
+        "admin-issuance-por",
+        "admin-backing-reconciliation",
+        "admin-supply-burn-settlement"
+      ]
+    }
+  ],
+  "title": "경기 통합월렛 운영 화면 묶음",
+  "digest": "30745e4fdc956cd27fa9dcb07b373978edc170eddfad95b4f43f3dbe885d3e19"
+}

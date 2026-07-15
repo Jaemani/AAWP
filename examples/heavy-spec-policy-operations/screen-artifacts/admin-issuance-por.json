@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/63",
+    "screenDigest": "1bff1e21fbfb8337879d73654bc3f27c20dc737ad29d6ddee7f3e35d1c9dd51a"
+  },
+  "screen": {
+    "id": "admin-issuance-por",
+    "route": "/issuer/issuance/por-registry",
+    "surface": "발행사 콘솔(웹)",
+    "title": "준비금 증빙(PoR) 관리",
+    "purpose": "준비금별 PoR 방식을 관리하고 검증 결과를 기록하는 판정 근거 화면. 준비금마다 on-chain-oracle 또는 off-chain-certificate 방식의 증빙을 둘 수 있지만, 준비자산 자체를 온체인 보관 자산으로 등록하지는 않는다. PoR 방식 변경은 reserveProof 변경 요청이 issuer surface 전용 결재 요청을 1회 생성하는 단일 경로를 사용한다.",
+    "audience": "발행 관리자 · 발행 승인자 · 발행사 감사",
+    "actors": ["act-issuance-manager", "act-issue-approver", "act-issuer-auditor"],
+    "layout": "IssuerConsoleNavRail, ProofOfReserveRegistry, ApprovalPolicyPicker issuer registry, ApprovalChainStepper, 오프체인 증명서 기록 폼, AuditTrailRow",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ProofOfReserveRegistry",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "준비금별 PoR 방식과 최근 검증 결과 표시" },
+      {
+        "state": "loading",
+        "description": "오라클 동기화, 증명서 검증 기록, 방식 변경 결재 진행 중"
+      },
+      { "state": "empty", "description": "등록된 준비금 없음" },
+      { "state": "error", "description": "동기화 실패, 증명서 만료, 권한 부족, 결재 반려" },
+      { "state": "success", "description": "PoR 방식 변경 또는 검증 기록 완료" }
+    ],
+    "copy": [
+      { "key": "title", "text": "준비금 증빙(PoR) 관리" },
+      {
+        "key": "authorityBadge",
+        "text": "판정 근거이며 원장 아님. 권위 잔고는 보관기관 기록과 발행 원장이에요"
+      },
+      { "key": "methodOnchain", "text": "오라클 증빙" },
+      { "key": "methodOffchain", "text": "오프체인 증명서" },
+      { "key": "recordVerificationCta", "text": "증명서 검증 결과 기록" },
+      { "key": "syncOnchainCta", "text": "오라클 동기화" },
+      {
+        "key": "approvalBoundary",
+        "text": "방식 변경은 이 화면의 변경 요청이 결재를 한 번만 생성해요"
+      },
+      { "key": "backToReserves", "text": "준비자산 관리로 돌아가기" }
+    ],
+    "dataNeeds": [
+      "reserveProof rows(reserveId, porMethod=on-chain-oracle|off-chain-certificate, lastVerifiedAt, result, txHash?, contractRef?, certificateRef?, verifierIdentity, verifierTitle)",
+      "porMethod change draft(changeType, reserveId, beforeMethod, afterMethod, oracleRef?, certificateTemplateRef?, reason)",
+      "Issuer ApprovalPolicy registry row(appliesTo=policy-approval, consoleSurface=issuer, grantedByRoot=act-issuer-principal, approvalPolicyRef, approverCandidates, quorum, sodOptInAvailable, sourceActionAliases include por-method-or-reserve-match only for issuer registry lookup)",
+      "ApprovalRequest payload(subjectType=ProofOfReserveMethodChange, sourceScreenId=admin-issuance-por, sourceAction=por-method-or-reserve-match, requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, onFinalApproved.actionRefs[{slice:'reserveProof',action:'applyApprovedReserveMatch',args:{changeId,approvalId},idempotencyKey,onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}])",
+      "approvalSteps and audit trail",
+      "ReserveIssuanceMatch refs"
+    ]
+  }
+}

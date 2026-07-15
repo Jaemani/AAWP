@@ -1,0 +1,171 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/69",
+    "screenDigest": "849862c0bd90350d97377e2b0c3f7d899e9ffc860510087d1d4e50723f019c62"
+  },
+  "screen": {
+    "id": "admin-voucher-policy-setup",
+    "route": "/admin/policy/voucher/setup",
+    "surface": "관리 콘솔(웹)",
+    "title": "상품권 정책 설정",
+    "purpose": "정책지급 상품권 정책을 고정형 입력 틀로 작성한다. 이 화면은 PolicyTemplateDefinition, 자유 조립형 composer, 템플릿 정의 엔진을 만들지 않고 기존 PolicyDraft/Policy 구조로 policyKind='voucher-payout' 초안을 만든다. 운영자는 정책명·목적·기간, 대상+금액, 사용 조건 ref, 대상 유통 단위, 기존 재원/집합계좌, 지급 실행 방식, 결재 정책을 입력하고 검토 후 상신한다. 발행 가능성, 발행사 인가, 상품 분류, 준비자산, masterMinter 조건은 승인된 정책을 발행 도메인이 IssuancePlan에서 독립 평가한다. 지급 record 생성, 발행계획 생성, 환불 권위 record, 소각 batch 생성은 이 화면이 직접 수행하지 않는다.",
+    "audience": "정책조건 등록자 · 정책총괄·책임관 · 감사(read-only)",
+    "actors": ["act-policy-operator", "act-policy-approver", "act-auditor"],
+    "layout": "상단 chrome + 고정 섹션 폼(1. 기본 정보 2. 지급 대상 및 금액 3. 사용 조건 4. 유통 단위 설정 5. 재원/집합계좌 6. 지급 실행 방식 7. 시스템 고정 규칙 8. 결재 정책 9. 검토 및 상신) + 우측 결재선/검증 요약 + 하단 변경 이력",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "VoucherPolicySetupPanel",
+      "PolicyConditionBinder",
+      "PooledAccountPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "고정형 상품권 정책 설정 섹션을 표시한다. 시스템 고정값, finalizer, 조건 raw field는 운영자가 편집하지 않는다."
+      },
+      {
+        "state": "empty",
+        "description": "선택 가능한 published+approved 대상 조건 세트 또는 선택 가능한 기존 재원/집합계좌가 없다. 빈 상태는 유통 단위 불일치, 정책재원 계좌 권한 미확정, 준비자산 필수 정보 누락, 혼합 재원 필수값 누락, 선택 가능한 유통 단위 없음 중 계산된 사유를 함께 표시한다."
+      },
+      { "state": "loading", "description": "초안 저장, 검증, 결재 상신 처리 중이다." },
+      {
+        "state": "error",
+        "description": "필수 기본 정보 누락, 기간 검증 실패, 조건 세트 미게시·미승인, 대상+금액 행 누락, grantAmount 오류, 대상 유통 단위 누락, 선택 가능한 재원/집합계좌 미선택, fundNature별 필수 입력 미충족, 유통 단위 scope 불일치, 기간 종료형 법적 근거 미승인, ApprovalPolicy 미선택, 결재선 누락, forbidden issuer/onchain/classification raw 입력 전달을 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "PolicyDraft가 생성되고 결재 상신이 완료된 상태다. 아직 지급·발행은 실행되지 않았고 상태는 결재 대기다. 최종 승인 뒤 approvals.runOnFinalApprovedOnce는 정책 활성화만 한 번 실행한다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "상품권 정책 설정" },
+      { "key": "sectionBasics", "text": "1. 기본 정보" },
+      { "key": "sectionBasicsSrLabel", "text": "1단계 기본 정보" },
+      { "key": "sectionTargetAmount", "text": "2. 지급 대상 및 금액" },
+      { "key": "sectionTargetAmountSrLabel", "text": "2단계 지급 대상 및 금액" },
+      {
+        "key": "targetAmountNote",
+        "text": "대상과 지급 금액은 한 행으로 관리해요. 승인된 대상 조건 또는 시스템 대상군만 선택할 수 있어요."
+      },
+      { "key": "grantScheduleFixed", "text": "지급 주기: 1회 지급" },
+      { "key": "sectionUsage", "text": "3. 사용 조건" },
+      { "key": "sectionUsageSrLabel", "text": "3단계 사용 조건" },
+      {
+        "key": "usageConditionNote",
+        "text": "사용처 제한이 필요한 정책만 승인된 사용 조건을 연결해요. 업종·품목 코드는 미리보기로만 확인해요."
+      },
+      { "key": "sectionCirculationUnit", "text": "4. 유통 단위 설정" },
+      { "key": "sectionCirculationUnitSrLabel", "text": "4단계 유통 단위 설정" },
+      {
+        "key": "circulationUnitNote",
+        "text": "상품권이 유통될 단위를 선택해요. 유통·정산·정책은 선택한 유통 단위 안에서 종결돼요."
+      },
+      { "key": "sectionFunding", "text": "5. 재원/집합계좌" },
+      { "key": "sectionFundingSrLabel", "text": "5단계 재원 및 집합계좌" },
+      {
+        "key": "fundingNote",
+        "text": "선택한 유통 단위 안의 기존 재원/집합계좌만 선택해요. 이 화면 안에서 신규 계좌를 등록하지 않아요."
+      },
+      {
+        "key": "fundingReadyNote",
+        "text": "선택 가능 여부는 재원 성격별 필수 입력과 계좌 운용 권한에서 계산된 참고값이에요."
+      },
+      {
+        "key": "emptyFundingScopeMismatch",
+        "text": "선택한 유통 단위 안에 있는 재원/집합계좌만 선택할 수 있어요."
+      },
+      {
+        "key": "emptyFundingPolicyFundPending",
+        "text": "정책재원 계좌 운용 권한이 확인되지 않았어요."
+      },
+      {
+        "key": "emptyFundingReserveMissing",
+        "text": "준비자산 필수 정보가 부족해 선택할 수 없어요."
+      },
+      {
+        "key": "emptyFundingMixedMissing",
+        "text": "혼합 재원은 정책재원 계좌와 준비자산 정보가 모두 필요해요."
+      },
+      { "key": "sectionExecution", "text": "6. 지급 실행 방식" },
+      { "key": "sectionExecutionSrLabel", "text": "6단계 지급 실행 방식" },
+      { "key": "executionImmediate", "text": "명부 바로 지급" },
+      { "key": "executionApplication", "text": "신청 후 지급" },
+      { "key": "sectionLifecycle", "text": "7. 시스템 고정 규칙" },
+      { "key": "sectionLifecycleSrLabel", "text": "7단계 시스템 고정 규칙" },
+      {
+        "key": "issuanceEvaluationNotice",
+        "text": "이 정책은 승인 후 발행 도메인 평가 대상입니다."
+      },
+      {
+        "key": "fixedLifecycleNote",
+        "text": "기간 종료형으로 고정돼요. 사용자 현금 상환/환불은 없고, 기간 내 정상 거래는 정산 기간 안에서 가맹점 정산을 허용해요."
+      },
+      {
+        "key": "fixedRecoveryNote",
+        "text": "정책 기간 종료 후 미사용 사용자 잔액은 만료 처리하고, 미사용 정책 재원은 정책 재원으로 회수하며, 미사용 발행 공급량은 소각 정산 후보로 넘겨요."
+      },
+      {
+        "key": "legalBasisPendingNote",
+        "text": "기간 종료형 규칙의 법적 근거가 승인되지 않으면 정책 활성화가 차단돼요."
+      },
+      { "key": "noExtensionNote", "text": "이번 정책은 연장 가능형을 지원하지 않아요." },
+      { "key": "sectionApproval", "text": "8. 결재 정책" },
+      { "key": "sectionApprovalSrLabel", "text": "8단계 결재 정책" },
+      { "key": "sectionReview", "text": "9. 검토 및 상신" },
+      { "key": "sectionReviewSrLabel", "text": "9단계 검토 및 상신" },
+      { "key": "reviewDiffLabel", "text": "생성될 정책 초안" },
+      {
+        "key": "reviewAmountSummary",
+        "text": "대상·금액 행, 예상 지급 총액, 선택 재원 확인 상태를 검토해요."
+      },
+      {
+        "key": "reviewScopeSummary",
+        "text": "선택한 유통 단위와 재원/집합계좌, 조건 scope가 서로 맞는지 확인해요."
+      },
+      {
+        "key": "periodValidationNote",
+        "text": "시행 시작일은 종료일보다 앞서야 하고, 상품권 유효기간은 정책 기간 안에 있어야 해요. 가맹점 정산 기간은 정책 종료 후 시스템 규칙으로 계산돼요."
+      },
+      { "key": "emptyConditionCta", "text": "조건 빌더로 이동" },
+      { "key": "emptyFundingCta", "text": "재원/집합계좌 확인" },
+      { "key": "submitCta", "text": "결재 상신" },
+      { "key": "disabledSubmit", "text": "필수 항목을 모두 완료해야 결재 상신할 수 있어요." },
+      {
+        "key": "successMsg",
+        "text": "상품권 정책 초안이 결재 상신됐어요. 아직 지급·발행은 실행되지 않았어요."
+      },
+      { "key": "approvalStatusCta", "text": "결재함에서 진행 상태 보기" },
+      { "key": "policyListStatusCta", "text": "정책 목록에서 상태 보기" }
+    ],
+    "dataNeeds": [
+      "PolicyDraft(policyDraftId prefix pdraft-*·policyKind='voucher-payout'·policyType='general'·policyName·description·policyPurpose·effectivePeriod{effectiveFrom,effectiveUntil}·voucherValidityPeriod{startsAt,endsAt}·owningDepartment 또는 departmentRef·targetCirculationUnitId·grantSchedule='one-time'·needsNewIssuance=true backend invariant·payoutExecutionMode immediate-list-grant|application-based-grant·targetPooledAccountRef·usageConditionSetRef?·periodExpiryLifecycleRef='pel-period-expiry-fixed-voucher'·approvalPolicyRef='appr-policy-approval-default' 또는 선택된 appliesTo='policy-approval' 정책·executionStatus executable|blocked·disabledReason?)",
+      "운영자 입력: policyName, description, policyPurpose, effectivePeriod, voucherValidityPeriod, owningDepartment/departmentRef, conditionRefs[], usageConditionSetRef?, targetCirculationUnitId, targetPooledAccountRef, payoutExecutionMode, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in",
+      "read-only resolved summary: selected PooledAccount funding summary, selected PooledAccount circulation scope, condition set approval/version summary, period expiry lifecycle summary, review diff, empty funding reason codes(scope-mismatch|policyFund-authority-pending|reserveAsset-required-missing|mixed-required-missing)",
+      "hidden/system invariant: policyKind='voucher-payout', grantSchedule='one-time', needsNewIssuance=true, periodExpiryLifecycleRef='pel-period-expiry-fixed-voucher', finalizer actionRefs=[policy.activateApprovedDraft only]",
+      "conditionRefs[] 대상+금액 반복 item({eligibilityConditionSetRef? prefix ecs-* 또는 conditionRef? 또는 targetGroupRef?, targetSummary, grantAmount:{amount,currency:'KRW'}}); 단일 대상 정책은 eligibilityConditionSetRef 단일 ref와 호환되며 저장 시 동일 conditionRefs[0]로 정규화",
+      "EligibilityConditionSet picker(conditionSetStatus='published'·approvalStatus='approved'·setId prefix ecs-*·name·version·summary·approvalId·conditionsPreview read-only·circulationScope?)",
+      "UsageConditionSet picker(conditionSetStatus='published'·approvalStatus='approved'·setId prefix ucs-*·name·version·summary·merchantCategoryCodeRefs/itemCategoryCodeRefs read-only preview·approvalId·circulationScope?·targetPooledAccountRef?)",
+      "CirculationUnit picker(targetCirculationUnitId operator-selected and stored on PolicyDraft/Policy; 닫힌 circulation 단위 내부에서 유통·정산·정책 종결; 유통 단위 간 이전·순결제 없음)",
+      "PooledAccount existing picker(targetPooledAccountRef only; 신규 등록 없음; fundNature policyFund|reserveAsset|mixed; selectableForVoucherPolicy computed projection only, not canonical storage)",
+      "selectableForVoucherPolicy computed: fundNature='policyFund' requires policyFundAccount.fiatAccountRef and policyFundAccount.authorityStatus='confirmed'; fundNature='reserveAsset' requires reserveAssets minItems=1 and each reserve asset has required validation fields; fundNature='mixed' requires both policyFund and reserveAsset conditions; customerFundsAccount/topup is not a fundNature and is not selectable for voucher policy funding",
+      "PooledAccount scope validation: selected targetPooledAccountRef.circulationUnitId must equal selected targetCirculationUnitId; condition/usage condition circulationScope, if present, must match or be compatible with selected targetCirculationUnitId; usageConditionSet.targetPooledAccountRef, if present, must equal selected targetPooledAccountRef or be compatible with selected targetCirculationUnitId",
+      "PeriodExpiryLifecycle(periodExpiryLifecycleRef='pel-period-expiry-fixed-voucher'·mode='period-expiry-fixed'·legalBasisStatus unconfirmed|approved|rejected·approvalId='apv-period-expiry-fixed-voucher-2026' required when active·effectiveFrom·effectiveUntil·allowUserCashRedemption=false·allowUserRefund=false·expireUnusedUserBalanceAtPolicyEnd=true·recoverUnusedPolicyFundsToPolicyFund=true·passUnusedIssuedSupplyToBurnSettlementCandidates=true·merchantSettlementWindowDays read-only calculated)",
+      "ReviewDiff computed summary(rowCount·conditionRefs[].targetSummary·conditionRefs[].grantAmount·estimatedRecipientCount?·estimatedTotalGrantAmount?·targetCirculationUnitId·targetPooledAccountRef·fundingReadyStatus·circulationScopeMatch·conditionScopeMatch·usageConditionScopeMatch·periodExpiryLifecycleSummary)",
+      "ValidationErrors(effectiveFrom < effectiveUntil, voucherValidityPeriod inside effectivePeriod, conditionRefs minItems=1, grantAmount.amount > 0, selected condition sets are published+approved, selected PooledAccount selectableForVoucherPolicy=true, selected PooledAccount inside targetCirculationUnitId, condition/usage condition scope not conflicting with targetCirculationUnitId, periodExpiryLifecycleRef exists, active lifecycle has legalBasisStatus='approved' and approvalId, forbidden fields absent)",
+      "ApprovalPolicyPicker(appliesTo='policy-approval'·consoleSurface='admin'·grantedByRoot='act-superadmin'·sourceScreenId='admin-voucher-policy-setup'·sourceAction='voucher-policy-submit'·sourceActionAliases=['voucher-payout-policy-setup']·approverAssignments·signerBindings·sodPolicyResult opt-in)",
+      "ApprovalRequest.onFinalApproved.actionRefs structured array only: {slice:'policy', action:'activateApprovedDraft', args, idempotencyKey, onlyWhen}; voucher setup finalizer only activates the approved PolicyDraft and does not enqueue issuance, create payout records, create refund authority records, or create burn batches",
+      "Forbidden draft inputs: PolicyTemplateDefinition, admin-voucher-policy-template-composer, targetAmountRules[], issuerAuthorizationRef as policy gate, IssuerAuthorization.scopeCirculationUnitIds, InstrumentClassificationMapping edit, chain, custodyType, providerRef, address, onchain wallet creation fields, user cash redemption/refund option, extension mode option, circulationUnitMode, circulationUnitDraft, pooledAccountDraft, convertibilityRuleDraft"
+    ]
+  }
+}

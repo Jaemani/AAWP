@@ -10,6 +10,7 @@
     { "path": "../../../packages/agent-gateway" },
     { "path": "../../../packages/artifact-store" },
     { "path": "../../../packages/compiler" },
+    { "path": "../../../packages/demo-bundle" },
     { "path": "../../../packages/impact-engine" },
     { "path": "../../../packages/ir" },
     { "path": "../../../packages/verifier-sdk" }

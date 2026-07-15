@@ -104,6 +104,12 @@ design_references:
   - name: OWASP GenAI Security Project
     source_url: https://genai.owasp.org/
     used_for: agentic threat modeling baseline
+  - name: IETF RFC 6901 JSON Pointer
+    source_url: https://www.rfc-editor.org/rfc/rfc6901
+    used_for: spec revision target addressing
+  - name: IETF RFC 6902 JSON Patch
+    source_url: https://www.rfc-editor.org/rfc/rfc6902
+    used_for: restricted add, replace and remove operation semantics
 excluded_references:
   - durable-agents source code
   - durable-agents schema definitions

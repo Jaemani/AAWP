@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/59",
+    "screenDigest": "2cb0233e831b3de64c6104b6a43161610096a801f41d4ac4dbad837bc37a4b15"
+  },
+  "screen": {
+    "id": "admin-issuance-execute",
+    "route": "/issuer/issuance/plans/:planId/execute",
+    "surface": "발행사 콘솔(웹)",
+    "title": "발행 실행 · mint 집행",
+    "purpose": "결재 완료된 발행 계획의 mint를 집행하는 권위 화면. 발행 인가, licenseStatus, 승인된 InstrumentClassificationMapping, legalBasisStatus, 준비자산, 발행한도, issuerSession step-up, masterMinter 온체인 서명을 모두 충족해야 mint가 확정된다. 실행 결과는 발행 원장에 기록되며 소비자 잔액 projection이나 유통 단위 InternalLedger를 직접 수정하지 않는다.",
+    "audience": "발행 관리자 · 온체인 발행 통제자(masterMinter)",
+    "actors": ["act-issuance-manager", "act-master-minter"],
+    "layout": "IssuerConsoleNavRail, 계획 요약, ReserveBackingPanel, IssuanceExecutionPanel, AdminAuthPanel step-up variant, SignerIdentityBinder masterMinter, LedgerTable preview",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "IssuanceExecutionPanel",
+      "ReserveBackingPanel",
+      "SignerIdentityBinder",
+      "AdminAuthPanel",
+      "LedgerTable",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "결재 완료 계획의 실행 전 체크 대기" },
+      {
+        "state": "loading",
+        "description": "발행 인가·상품 지원 상태·준비자산 재확인, step-up, masterMinter 서명, mint 처리 중"
+      },
+      { "state": "empty", "description": "실행 가능한 결재 완료 계획 없음" },
+      {
+        "state": "error",
+        "description": "결재 미완료, 인가 만료·정지, 상품 분류 미지원, 법적 근거 미승인, 준비자산 부족, step-up 실패, masterMinter 서명 실패"
+      },
+      { "state": "success", "description": "mint 완료 및 발행 원장 반영" }
+    ],
+    "copy": [
+      { "key": "title", "text": "발행 실행" },
+      { "key": "authorityBadge", "text": "mint 결과는 발행 원장에 기록돼요" },
+      {
+        "key": "authorizationGate",
+        "text": "발행 인가가 유효하고 이 상품 분류에서 mint가 허용된 경우에만 실행할 수 있어요"
+      },
+      {
+        "key": "legalBasisGate",
+        "text": "상품 분류의 법적 근거가 승인되지 않았거나 launchBlocked 상태이면 실행할 수 없어요"
+      },
+      {
+        "key": "masterMinterGate",
+        "text": "masterMinter 서명은 발행총량 통제 권한이며 유통 단위 온체인 지갑 참조가 아니에요"
+      },
+      { "key": "executeCta", "text": "mint 실행" },
+      {
+        "key": "resultLabel",
+        "text": "mintTxID · txHash · keyRef · signedAt · onchainApprovalRef"
+      },
+      { "key": "successMsg", "text": "발행이 실행됐어요" }
+    ],
+    "dataNeeds": [
+      "approved IssuancePlan(planId uses ip-* prefix, approvalId, approvalStatus=approved, issuerRef, issuerAuthorizationRef uses iauth-* prefix, licenseRef, instrumentClassificationMappingRef, circulationUnitIds, supplyAmount, burnSettlementPolicyRef)",
+      "IssuerAuthorization validation(issuerAuthorizationRef uses iauth-* prefix, issuerRef, authorizationType, instrumentClassification, licenseStatus=valid, validity{validFrom,validUntil}, auditBasis, status=active)",
+      "InstrumentClassificationMapping(mappingId, mappingVersion, approvalStatus=approved, licenseStatus=valid, legalBasisPolicyRef, legalBasisStatus=approved, productSupportMatrix.mint=true, launchBlocked=false)",
+      "productSupportMatrix boolean map exactly: topup, exchange, payQr, accountWithdrawal, p2pTransfer, mint, burn; blockedReason only when launchBlocked=true",
+      "ReserveBacking final check from off-chain reserve assets only",
+      "issuanceLimit headroom",
+      "issuerSession stepUp result(consoleSurface=issuer)",
+      "masterMinter signature(keyRef, signedAt, onchainApprovalRef)",
+      "mint result(mintTxID, txHash, ledgerStatus)"
+    ]
+  }
+}

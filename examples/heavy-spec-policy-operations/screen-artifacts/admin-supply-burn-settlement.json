@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/65",
+    "screenDigest": "ecda69957ed442bab28d7ab9ff23374cdeb04e1d4ea3fa409a5e3633f6b2239e"
+  },
+  "screen": {
+    "id": "admin-supply-burn-settlement",
+    "route": "/issuer/issuance/supply-burn",
+    "surface": "발행사 콘솔(웹)",
+    "title": "공급 소각 · 정산",
+    "purpose": "IssuancePlan.burnSettlementPolicy에 따라 생성된 공급측 소각 후보를 검토·결재·집행하는 화면. 정책 만료 자체는 lifecycle 전이만 수행하며, 이 화면은 상환·회수 유예기간 종료, InternalLedger 대사, 준비자산 증빙, 발행 인가, masterMinter 서명을 재확인한 뒤 닫힌 유통 단위별 발행 원장의 공급량을 맞추는 burn만 수행한다. 개별 시민·가맹점 상환은 정산 콘솔 권위 영역이며 유통 단위 간 이전·순결제는 만들지 않는다.",
+    "audience": "발행 관리자 · masterMinter · 발행사 감사",
+    "actors": ["act-issuance-manager", "act-master-minter", "act-issuer-auditor"],
+    "layout": "IssuerConsoleNavRail, 유통 단위별 소각 후보 요약, BurnSettlementPolicy read-only, ReconciliationPanel, InternalLedgerStatusPanel read-only, RedeemBurnConsole, ApprovalChainStepper, AdminAuthPanel step-up variant, SignerIdentityBinder masterMinter, LedgerTable preview",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReconciliationPanel",
+      "InternalLedgerStatusPanel",
+      "RedeemBurnConsole",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AdminAuthPanel",
+      "LedgerTable",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "소각 후보 또는 결재 완료 대기 중인 공급 소각 배치 표시"
+      },
+      {
+        "state": "loading",
+        "description": "발행 총량·상환 누계·회수 누계·InternalLedger 상태·유예기간 종료 여부 조회, 인가 확인, 상품 지원 상태 확인, step-up, masterMinter 서명, burn 처리 중"
+      },
+      {
+        "state": "empty",
+        "description": "이번 주기 소각 대상 후보 없음 또는 상환·회수 유예기간 미종료"
+      },
+      {
+        "state": "error",
+        "description": "결재 미완료, 소각 정산 정책 불일치, 상환·회수 기간 미종료, 발행 인가 무효, 상품 분류 burn 미지원, InternalLedger reconcileStatus mismatch, PoR 불일치, step-up 실패, masterMinter 서명 실패"
+      },
+      { "state": "success", "description": "배치 소각 완료 및 발행 원장 기록" }
+    ],
+    "copy": [
+      { "key": "title", "text": "공급 소각 · 정산" },
+      { "key": "authorityBadge", "text": "공급 소각 결과는 발행 원장에 기록돼요" },
+      {
+        "key": "policyBoundary",
+        "text": "정책 만료는 소각 실행이 아니에요. 발행계획의 소각 정산 정책과 유예기간 종료를 먼저 확인해요"
+      },
+      {
+        "key": "scopeNote",
+        "text": "개별 상환은 정산 콘솔에서 처리하고, 이 화면은 발행 총량을 맞추는 공급측 burn만 처리해요"
+      },
+      {
+        "key": "closedUnitNote",
+        "text": "유통 단위별로 독립 종결하며 유통 단위 간 이전이나 순결제를 만들지 않아요"
+      },
+      {
+        "key": "periodPending",
+        "text": "상환·회수 유예기간이 남아 있어 소각 후보를 실행할 수 없어요"
+      },
+      {
+        "key": "ledgerBoundary",
+        "text": "유통 단위 liability 검증은 InternalLedger의 read-only 상태를 참조해요. PooledAccount 재원 충분성 대사와 섞지 않아요"
+      },
+      {
+        "key": "onchainBoundary",
+        "text": "masterMinter 서명은 burn 권한이고, InternalLedger.onchainWalletRef는 유통 단위 공급량 mirror 참조일 뿐 서명 권한이 아니에요"
+      },
+      { "key": "colRedeemedTotal", "text": "상환·회수 누계" },
+      { "key": "colIssuedTotal", "text": "발행 총량" },
+      { "key": "colBurnGap", "text": "소각 대상 차이" },
+      { "key": "executeCta", "text": "배치 소각 실행" },
+      {
+        "key": "errorMismatch",
+        "text": "InternalLedger 또는 준비자산 대사 불일치로 소각을 차단했어요"
+      }
+    ],
+    "dataNeeds": [
+      "burnBatch(batchId, approvalId, approvalStatus, status, sourceIssuancePlanId uses ip-* prefix, sourcePolicyId, policyLifecycleStatusAtBatch, burnSettlementPolicyRef, circulationUnitId, redeemTotal, recoverTotal, validOutstandingLiability, issuedTotal, alreadyBurnedAmount, burnAmount, issuerAuthorizationRef uses iauth-* prefix, instrumentClassificationMappingRef, basisSnapshot)",
+      "IssuancePlan.burnSettlementPolicy(burnSettlementPolicyRef, trigger=policy-expired|manual-reconciliation|scheduled-after-redeem-window, redeemWindowDays, recoverWindowDays, burnBasis=issuedTotal-minus-validOutstandingLiability-minus-alreadyBurnedAmount, batchCreationMode=auto-candidate|manual-only, approvalPolicyRef, requiresMasterMinterSignature=true)",
+      "periodStatus(policyExpiredAt, redeemWindowEndsAt, recoverWindowEndsAt, isRedeemWindowClosed, isRecoverWindowClosed, candidateStatus=pending-period-close|ready-for-approval|approved|executed|rejected)",
+      "basisSnapshot(issuedTotal, validOutstandingLiability, alreadyBurnedAmount, redeemTotal, recoverTotal, liabilityProofRef, reserveProofRef, internalLedgerReconcileStatus, calculatedBurnAmount)",
+      "IssuerAuthorization validation(issuerAuthorizationRef uses iauth-* prefix, issuerRef, authorizationType, instrumentClassification, licenseStatus=valid, validity{validFrom,validUntil}, auditBasis, status=active)",
+      "InstrumentClassificationMapping(mappingId, mappingVersion, approvalStatus=approved, licenseStatus=valid, legalBasisStatus=approved, productSupportMatrix.burn=true, launchBlocked=false)",
+      "productSupportMatrix boolean map exactly: topup, exchange, payQr, accountWithdrawal, p2pTransfer, mint, burn; blockedReason only when launchBlocked=true",
+      "circulation.internalLedgers read-only(circulationUnitId, liabilitySum, batchCommitRef, liabilityProofRef, reserveProofRef, onchainWalletRef.address, onchainWalletRef.provisioningRecordRef, onchainWalletRef.provisioningStatus=pending|provisioning|provisioned|failed, reconcileStatus, lastVerifiedAt)",
+      "issuanceLedger issuedTotal and alreadyBurnedAmount",
+      "ReserveProof refs",
+      "Issuer ApprovalPolicy registry row(appliesTo=policy-approval, consoleSurface=issuer, grantedByRoot=act-issuer-principal, approvalPolicyRef=burnSettlementPolicy.approvalPolicyRef, approverCandidates, quorum, sodOptInAvailable, sourceActionAliases include supply-burn-approval only for issuer registry lookup)",
+      "issuerSession stepUp result(consoleSurface=issuer)",
+      "masterMinter signature(keyRef, signedAt, onchainApprovalRef)",
+      "burn result(burnTxID, txHash, ledgerStatus, sourceIssuancePlanId, sourcePolicyId, burnSettlementPolicyRef, basisSnapshot)"
+    ]
+  }
+}

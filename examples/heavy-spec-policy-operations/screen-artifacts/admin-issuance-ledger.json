@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/60",
+    "screenDigest": "594010eba121f85ade0bc5b35974aed29eddbead9fc3b5dd084f57781a04322e"
+  },
+  "screen": {
+    "id": "admin-issuance-ledger",
+    "route": "/issuer/issuance/ledger",
+    "surface": "발행사 콘솔(웹)",
+    "title": "발행 원장 열람",
+    "purpose": "mint와 공급 소각(burn) 결과를 read-only로 열람하는 발행 권위 원장 화면. 행별 실행자, 승인결재ID, circulationUnitIds, 발행 인가 참조, masterMinter 온체인 서명 참조를 표시한다. burn 행에는 sourceIssuancePlanId, sourcePolicyId, burnSettlementPolicyRef, basisSnapshot을 표시한다.",
+    "audience": "발행 관리자 · 발행 승인자 · masterMinter · 발행사 감사",
+    "actors": [
+      "act-issuance-manager",
+      "act-issue-approver",
+      "act-master-minter",
+      "act-issuer-auditor"
+    ],
+    "layout": "IssuerConsoleNavRail, 필터바, LedgerTable, AuditTrailRow 확장",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "LedgerTable",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "원장 행 목록 표시" },
+      { "state": "loading", "description": "원장 조회 중" },
+      { "state": "empty", "description": "조건에 맞는 원장 행 없음" },
+      { "state": "error", "description": "조회 실패 또는 issuerSession 만료" },
+      { "state": "success", "description": "필터·행 확장 결과 표시" }
+    ],
+    "copy": [
+      { "key": "title", "text": "발행 원장" },
+      {
+        "key": "authorityBadge",
+        "text": "권위 원장이에요. 소비자 잔액과 유통 지갑 집계는 projection이에요"
+      },
+      {
+        "key": "scopeNote",
+        "text": "발행(mint)과 공급 소각(burn)만 다뤄요. 개별 상환은 정산 콘솔 권위 영역이에요"
+      },
+      { "key": "filterActionType", "text": "행위 유형: 전체 · mint · burn" },
+      { "key": "colUnit", "text": "유통 단위" },
+      { "key": "colTx", "text": "mintTxID/burnTxID · txHash" },
+      { "key": "colExecutor", "text": "실행자" },
+      { "key": "colApprovalId", "text": "승인결재ID" },
+      { "key": "colBurnBasis", "text": "소각 산식 스냅샷" }
+    ],
+    "dataNeeds": [
+      "issuanceLedgerRows(actionType mint|burn, amount, circulationUnitIds, mintTxID|burnTxID, txHash, keyRef, signedAt, onchainApprovalRef, issuerAuthorizationRef uses iauth-* prefix, instrumentClassificationMappingRef, approvalId, executorIdentity, executorTitle, executedAt, sourceIssuancePlanId?, sourcePolicyId?, policyLifecycleStatusAtBatch?, burnSettlementPolicyRef?, basisSnapshot?)",
+      "basisSnapshot for burn(issuedTotal, validOutstandingLiability, alreadyBurnedAmount, redeemTotal, recoverTotal, liabilityProofRef, reserveProofRef, internalLedgerReconcileStatus, calculatedBurnAmount)",
+      "ledgerFilter(unit, actionType, period, executor)",
+      "issuerSession(consoleSurface=issuer, grantType, jurisdictionScope, grantedByRoot=act-issuer-principal)"
+    ]
+  }
+}

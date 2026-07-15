@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/68",
+    "screenDigest": "5e9f25d1ef95b4e693a7a4e52a650fa4a77149901be05a13bc5bde941152011e"
+  },
+  "screen": {
+    "id": "admin-circulation-policy-composer",
+    "route": "/admin/policy/circulation/new",
+    "surface": "관리 콘솔(웹)",
+    "title": "정책 작성 — 대상·사용조건·재원·유통 단위",
+    "purpose": "일반 정책 작성기다. 대상 조건과 사용 조건은 conditionSetStatus='published' && approvalStatus='approved'인 EligibilityConditionSet/UsageConditionSet ref만 연결하고, 업종·품목 코드는 선택된 조건 세트의 read-only preview로만 표시한다. circulationUnitMode는 reuse-existing|provision-new를 유지한다. reuse-existing은 selectedCirculationUnitId만 사용하고 registerCirculationUnit을 호출하지 않는다. provision-new만 circulationUnitDraft={name,jurisdiction,type}을 받으며 type 저장값은 province|city-county|institution이고 화면 라벨은 도|시군|기관이다. 정책 작성자는 chain, custodyType, providerRef, 지갑 address를 입력하지 않는다. 승인 후 targetCirculationUnitId는 provision-new이면 registerCirculationUnit 반환값, reuse-existing이면 selectedCirculationUnitId로 바인딩되며, 정책별 PooledAccount는 registerPooledAccount(targetCirculationUnitId, pooledAccountDraft)로 신규 생성한다. 기존 PooledAccount와 onchainWalletRef는 read-only 참고·중복검사용 preview다.",
+    "audience": "정책조건 등록자 · 정책총괄·책임관 · 감사(read-only)",
+    "actors": ["act-policy-operator", "act-policy-approver", "act-auditor"],
+    "layout": "상단 chrome + 단계형 폼(1. 발행 필요 여부 2. 대상 조건 세트 3. 사용 조건 세트 4. 회수 방법 5. 유통 단위·재원 6. 상환·전환 정책) + reuse-existing preview 또는 provision-new identity fields + 우측 결재선 구성/진행 + 하단 변경 이력",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "CirculationPolicyComposer",
+      "PolicyConditionBinder",
+      "InstrumentClassificationMappingPanel",
+      "ConvertibilityRulePanel",
+      "PooledAccountPanel",
+      "CustomerFundsSafeguardingPanel",
+      "CirculationUnitPicker",
+      "OnchainWalletProvisioningPanel",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "PermissionGate",
+      "AccessibleStatusRow",
+      "AuditTrailRow"
+    ],
+    "states": [
+      {
+        "state": "default",
+        "description": "작성 단계 폼과 현재 초안 상태를 표시한다. mode=edit과 policyId가 route state 또는 query adapter로 전달되면 기존 값을 프리필한다."
+      },
+      {
+        "state": "empty",
+        "description": "reuse-existing 선택 시 관할에 연결 가능한 기존 유통 단위가 없어 provision-new 분기를 안내한다."
+      },
+      {
+        "state": "loading",
+        "description": "저장/결재 상신 처리 중 또는 승인 후 시스템 지갑 발급 상태 동기화 중이다."
+      },
+      {
+        "state": "error",
+        "description": "결재 반려, 필수 항목 누락, 조건 세트 미게시·미승인, PooledAccount fundNature별 필수 입력 누락, 계좌 운용 권한 미확인, chain/custodyType/providerRef/address draft 전달, payoutMethod별 필수 입력 누락 등 검증 실패를 표시한다."
+      },
+      {
+        "state": "success",
+        "description": "최종 결재 승인 후 approvals.runOnFinalApprovedOnce가 구조화 actionRefs를 한 번 실행해 활성 정책을 반영한다. provision-new 분기에서는 registerCirculationUnit 내부 effect가 시스템 지갑 발급을 요청한다."
+      }
+    ],
+    "copy": [
+      { "key": "title", "text": "정책 작성 — 대상·사용조건·재원·유통 단위" },
+      { "key": "stepIssuance", "text": "1. 발행 필요 여부" },
+      { "key": "stepEligibility", "text": "2. 대상 조건 세트" },
+      { "key": "stepUsage", "text": "3. 사용 조건 세트" },
+      { "key": "stepRecovery", "text": "4. 회수 방법" },
+      { "key": "stepCirculation", "text": "5. 유통 단위·재원" },
+      { "key": "stepConvertibility", "text": "6. 상환·전환 정책" },
+      {
+        "key": "conditionSetOnlyNote",
+        "text": "이 화면은 게시 완료·승인 완료 조건 세트만 연결해요. 업종·품목 코드는 조건 세트 미리보기로만 확인하고 수정은 조건 빌더에서 해요."
+      },
+      {
+        "key": "classificationGateNote",
+        "text": "상품권 충전·환불·전환 가능 여부는 승인된 mapping projection과 고객충전금 계좌 운용 권한으로 확인해요. 발행 인가 검증은 발행계획에서 별도로 수행돼요."
+      },
+      { "key": "circulationIdentityLabel", "text": "신규 유통 단위 정보" },
+      {
+        "key": "circulationTypeNote",
+        "text": "유형은 화면에 도·시군·기관으로 보이고 저장값은 province·city-county·institution으로 기록돼요."
+      },
+      {
+        "key": "reusePreviewNote",
+        "text": "기존 유통 단위의 지갑과 집합계좌는 참고·중복검사용으로만 보여요. 이 정책의 집합계좌는 승인 후 새로 등록돼요."
+      },
+      {
+        "key": "walletAddressNoInputNote",
+        "text": "이 화면에서는 chain, custodyType, provider, 지갑 주소를 입력하지 않아요. 승인 후 시스템이 기본 제공자 설정으로 지갑을 발급해요."
+      },
+      {
+        "key": "pooledAuthorityNote",
+        "text": "정책자금 계좌는 이 정책과 유통 단위에서 운용 권한이 확인되어야 결재 상신할 수 있어요."
+      },
+      {
+        "key": "reserveAssetOffchainNote",
+        "text": "준비자산은 오프체인 예치·전통 수탁·평가금·증명 참조로만 등록해요."
+      },
+      {
+        "key": "internalLedgerBoundaryNote",
+        "text": "InternalLedger는 유통 단위 1:1 지급의무 원장이며 PooledAccount의 재원 계좌가 아니에요."
+      },
+      {
+        "key": "noCrossUnitNote",
+        "text": "유통 단위 간 이전·순결제는 없어요. 모든 회수·정산·상환은 지정된 유통 단위 안에서 종결돼요."
+      },
+      { "key": "submitCta", "text": "결재 상신" },
+      {
+        "key": "successMsg",
+        "text": "정책 결재가 상신됐어요. 최종 승인 뒤 승인자 신원·직책/역할·일시가 기록돼요."
+      }
+    ],
+    "dataNeeds": [
+      "route state 또는 query adapter(mode?='edit', policyId?)",
+      "needsNewIssuance(boolean, policy draft 필드)",
+      "EligibilityConditionSet picker(conditionSetStatus='published'·approvalStatus='approved'·setId prefix ecs-*·name·version·summary·approvalId·conditionsPreview read-only)",
+      "UsageConditionSet picker(conditionSetStatus='published'·approvalStatus='approved'·setId prefix ucs-*·name·version·summary·payoutMethod direct-grant|point-of-sale-discount|post-purchase-payback·approvalId·merchantCategoryCodeRefs/itemCategoryCodeRefs read-only preview)",
+      "PolicyDraft condition refs(eligibilityConditionSetRef, usageConditionSetRef 또는 typed conditionRefs[]; composer-local merchantCategoryCodeRefs/itemCategoryCodeRefs는 저장하지 않음)",
+      "InstrumentClassificationMapping read-only projection(mappingId·mappingVersion·classification·exchangeDirection refund-to-krw|blocked·redeemEligibility·requiredApprovalPolicyRef·approvalStatus approved|pending|rejected|expired·legalBasisPolicyRef·legalBasisStatus unconfirmed|approved|rejected·productSupportMatrix boolean map {topup,exchange,payQr,accountWithdrawal,p2pTransfer,mint,burn}; issuerAuthorizationRef는 정책 도메인 필수 gate가 아님)",
+      "CirculationUnit 연결/생성(circulationUnitMode reuse-existing|provision-new, reuse-existing selectedCirculationUnitId, provision-new circulationUnitDraft={name,jurisdiction,type province|city-county|institution}; chain/custodyType/providerRef/address 입력 없음)",
+      "ReuseExistingPreview(read-only: selectedCirculationUnitId·existingPooledAccountRefs·existingOnchainWalletRef·duplicateCheckResult; 재사용 선택 없음)",
+      "SystemWalletProvisioningDecision read-only provider schema {providerRef,providerType,allowedChains[],allowedCustodyTypes[],defaultChain,defaultCustodyType,isDefault,defaultPriority,approvalPolicyRef,providerAuthorizationRef,custodyMandateRef,keyControlPolicyRef,externalMandateRef,legalBasisStatus,status}; 지갑 발급 public 호출은 circulation.provisionOnchainWallet(circulationUnitId,{idempotencyKey,requestedBySystem:true})만 허용",
+      "OnchainWalletProvisioningRecord output(circulationUnitId·providerRef·providerType·chain·custodyType·approvalPolicyRef·providerAuthorizationRef·custodyMandateRef·keyControlPolicyRef·externalMandateRef·legalBasisStatus unconfirmed|approved|rejected·status pending|provisioning|provisioned|failed·failureReason?)",
+      "PooledAccountDraft(accountStructure, fundNature policyFund|reserveAsset|mixed, policyFundAccount?, reserveAssets[]); fundNature='policyFund' requires policyFundAccount.fiatAccountRef and authorityStatus='confirmed'; fundNature='reserveAsset' requires reserveAssets minItems=1 and each asset has assetType, amount, valuationAmount, valuationDate, valuationProviderLegalEntityRef, issuanceRef, legalStructureRef, yieldOwner, yieldOwnershipPolicyRef, disclosureRequired, proofRef when disclosureRequired=true; fundNature='mixed' requires both policyFund and reserveAsset conditions",
+      "Topup policy customerFundsAccount requirement is separate from PooledAccount.fundNature: policyType='topup' requires customerFundsAccount(accountPurpose='customerTopupPrincipal', fiatAccountRef, legalStructureRef, safeguardingRuleRef, controllerLegalEntityRef, authorityStatus='confirmed', legalEffectConfirmed=true, legalBasisStatus='approved', effectiveScope boolean object {topup,exchange,accountWithdrawal,autoTopup})",
+      "ConvertibilityRule(eligibleFundSourceTypes[]=policyFund|topupPrincipal·policyFundRefundOptInRefs[]·보유기간·일일한도·본인계좌제한·전환가능여부·circulationUnitScope=targetCirculationUnitId·작성자·승인자·버전; accountPurposePriority 항목은 같은 circulationUnitScope의 confirmed customerFundsAccount(accountPurpose='customerTopupPrincipal') 및 boolean effectiveScope operation gate로 resolve되어야 함)",
+      "ApprovalRequest payload(subjectType/ref·sourceScreenId·requester identity/title/jurisdiction·approvalPolicyRef·ApprovalPolicy.appliesTo='policy-approval'·approverAssignments·signerBindings·sodPolicyResult opt-in·onFinalApproved.actionRefs[{slice,action,args,idempotencyKey,onlyWhen}])",
+      "PolicyVersion 및 approvalStatus(draft|pending|approved|rejected)·lifecycleStatus(active|expired|superseded)·executionStatus executable|blocked·disabledReason?"
+    ]
+  }
+}

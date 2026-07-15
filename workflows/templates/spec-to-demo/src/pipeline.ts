@@ -7,12 +7,15 @@ import {
 } from "./compiler/index.js";
 import { createReactViteScaffold, type GeneratedWorkspace } from "./scaffold.js";
 import { createVerificationPlan, type SpecToDemoVerificationPlan } from "./verification.js";
+import { compileSpecDemoBundle } from "./bundle.js";
+import type { DemoBundleManifest } from "@awf/demo-bundle";
 
 export interface PreparedSpecToDemo {
   contracts: CompiledSpecContracts;
   acceptance: AcceptanceCompilation;
   scaffold: GeneratedWorkspace;
   verificationPlan: SpecToDemoVerificationPlan;
+  bundleManifest: DemoBundleManifest;
 }
 
 export function prepareSpecToDemo(
@@ -26,6 +29,7 @@ export function prepareSpecToDemo(
     contracts,
     acceptance,
     scaffold,
-    verificationPlan: createVerificationPlan(acceptance.hiddenPackage, contracts.scope)
+    verificationPlan: createVerificationPlan(acceptance.hiddenPackage, contracts.scope),
+    bundleManifest: compileSpecDemoBundle(document, contracts.scope)
   };
 }

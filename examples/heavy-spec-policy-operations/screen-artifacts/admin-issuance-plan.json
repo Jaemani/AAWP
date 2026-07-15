@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/58",
+    "screenDigest": "fccdb03de9d8b4225b84969c00f80a7fa7ac1a357a396014714208ede320fcdd"
+  },
+  "screen": {
+    "id": "admin-issuance-plan",
+    "route": "/issuer/issuance/plans/:planId",
+    "surface": "발행사 콘솔(웹)",
+    "title": "발행 계획 · 작성 · 결재",
+    "purpose": "승인된 Policy를 참조해 IssuancePlan을 작성하고 발행사 콘솔 전용 전자결재선을 구성하는 권위 화면. 정책은 needsNewIssuance 신호와 대상 유통 단위만 제공하며, 발행주체·발행 인가·라이선스·상품 분류·공급량·준비자산·burnSettlementPolicy·masterMinter 조건은 IssuancePlan 단위에서 독립 검증한다. 승인자 선택, 결재선, 승인/반려, 이력에는 승인자의 직책·역할·신원·관할·일시가 남는다.",
+    "audience": "발행 관리자 · 발행 승인자",
+    "actors": ["act-issuance-manager", "act-issue-approver"],
+    "layout": "IssuerConsoleNavRail, IssuancePlanForm, BurnSettlementPolicyEditor, ReserveBackingPanel read-only, ApprovalPolicyPicker issuer registry, ApprovalChainStepper, SignerIdentityBinder, AuditTrailRow",
+    "components": [
+      "IssuerConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "ReserveBackingPanel",
+      "IssuancePlanForm",
+      "BurnSettlementPolicyEditor",
+      "ApprovalPolicyPicker",
+      "ApprovalChainStepper",
+      "SignerIdentityBinder",
+      "AuditTrailRow",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "계획 작성 또는 결재 대기" },
+      {
+        "state": "loading",
+        "description": "정책 승인 상태·발행 인가·상품 지원 상태·준비자산·발행가능한도·소각 정산 정책 검증 또는 서명 처리 중"
+      },
+      { "state": "empty", "description": "신규 발행 계획 초안" },
+      {
+        "state": "error",
+        "description": "정책 미승인, 인가 무효, 상품 분류 미지원, 준비자산 부족, 소각 정산 정책 필수값 누락, 결재 반려"
+      },
+      { "state": "success", "description": "최종 결재 완료. 발행 실행 가능" }
+    ],
+    "copy": [
+      { "key": "title", "text": "발행 계획 작성" },
+      { "key": "fieldPolicyRef", "text": "참조 정책 — 승인된 발행 필요 정책만 선택 가능" },
+      { "key": "fieldIssuer", "text": "발행주체" },
+      { "key": "fieldLicenseRef", "text": "발행 인가 근거" },
+      { "key": "fieldUnit", "text": "닫힌 유통 단위" },
+      { "key": "fieldSupply", "text": "공급량" },
+      { "key": "burnPolicyTitle", "text": "소각 정산 정책" },
+      {
+        "key": "burnPolicyNote",
+        "text": "정책 만료가 곧바로 소각을 실행하지 않아요. 상환·회수 기간 종료 뒤 이 계획의 소각 정산 정책으로 후보를 만들어요"
+      },
+      {
+        "key": "authorizationGate",
+        "text": "유효한 발행 인가, 승인된 상품 분류 매핑, 준비자산, masterMinter 조건이 확인되어야 결재를 요청할 수 있어요"
+      },
+      {
+        "key": "productSupportGate",
+        "text": "상품 지원 매트릭스에서 mint=true이고 launchBlocked=false이며 법적 근거가 승인된 경우에만 발행 계획을 승인할 수 있어요"
+      },
+      {
+        "key": "approvalNote",
+        "text": "발행사 콘솔 결재정책과 승인자 기록은 관리 콘솔 정책 승인과 분리돼요"
+      },
+      {
+        "key": "projectionNote",
+        "text": "소비자 잔액 projection과 유통 단위 내부 원장은 이 화면에서 직접 고치지 않아요"
+      }
+    ],
+    "dataNeeds": [
+      "approved Policy list(policyRef, policyName, policyKind, needsNewIssuance=true, approvalStatus=approved, lifecycleStatus=active, targetCirculationUnitId|circulationUnitIds, targetPooledAccountRef?, grantSchedule?, payoutExecutionMode?, periodExpiryLifecycleRef?)",
+      "IssuerAuthorization registry(issuerAuthorizationRef uses iauth-* prefix, issuerRef, licenseRef, authorizationType, instrumentClassification, licenseStatus=valid|suspended|expired, validity{validFrom,validUntil}, auditBasis, status=active|suspended|expired|revoked)",
+      "InstrumentClassificationMapping(mappingId, mappingVersion, classification, launchBlocked, allowedTransferRestriction, exchangeDirection=refund-to-krw|blocked, redeemEligibility, legalBasisPolicyRef, legalBasisStatus=unconfirmed|approved|rejected, effectiveRegimeVersion, requiredApprovalPolicyRef, approvalStatus=approved|pending|rejected|expired, licenseStatus=valid|pending|suspended|expired, productSupportMatrix)",
+      "productSupportMatrix boolean map exactly: topup, exchange, payQr, accountWithdrawal, p2pTransfer, mint, burn; blockedReason only when launchBlocked=true",
+      "IssuancePlan draft(planId uses ip-* prefix, policyRef, issuerRef, issuerAuthorizationRef uses iauth-* prefix, licenseRef, instrumentClassificationMappingRef, circulationUnitIds, supplyAmount, purpose, period, evidenceRefs, recoveryPolicy, author, approvalStatus=draft|pending|approved|rejected, burnSettlementPolicy)",
+      "burnSettlementPolicy(burnSettlementPolicyRef, trigger=policy-expired|manual-reconciliation|scheduled-after-redeem-window, redeemWindowDays, recoverWindowDays, burnBasis=issuedTotal-minus-validOutstandingLiability-minus-alreadyBurnedAmount, batchCreationMode=auto-candidate|manual-only, approvalPolicyRef, requiresMasterMinterSignature=true)",
+      "burnBasis verification order: validate policyLifecycleStatus, redeemWindowDays and recoverWindowDays closed, redeemTotal, recoverTotal, liabilityProofRef, reserveProofRef, InternalLedger.reconcileStatus=matched, alreadyBurnedAmount, then candidate burnAmount",
+      "ReserveBacking read-only result from off-chain ReserveAsset rows only",
+      "Issuer ApprovalPolicy registry row(appliesTo=policy-approval, consoleSurface=issuer, grantedByRoot=act-issuer-principal, approvalPolicyRef, approverCandidates, quorum, sodOptInAvailable, sourceActionAliases include issuance-plan only for issuer registry lookup)",
+      "ApprovalRequest payload(subjectType=IssuancePlan, subjectRef=ip-*, sourceScreenId=admin-issuance-plan, sourceAction=issuance-plan, requester identity/title/jurisdiction, approvalPolicyRef, approverAssignments, signerBindings, sodPolicyResult opt-in, onFinalApproved.actionRefs[{slice:'issuance',action:'markIssuancePlanApproved',args:{planId,approvalId},idempotencyKey,onlyWhen:{approvalStatus:'approved',quorumSatisfied:true}}])",
+      "approvalSteps(signer identity, role, title, jurisdiction, keyRef, decision approved|rejected, decidedAt, reason)"
+    ]
+  }
+}

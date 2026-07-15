@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "aawp/demo-screen/v1",
+  "source": {
+    "artifactId": "refined-production-spec@sha256:b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "contentDigest": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+    "pointer": "/screens/83",
+    "screenDigest": "dc64eb3ff452b9d5de194665c2cb19e4a00adf6524e3c966649ac14169a57bfa"
+  },
+  "screen": {
+    "id": "admin-transaction-trace",
+    "route": "/admin/circulation/transactions",
+    "surface": "관리 콘솔(웹)",
+    "title": "거래 추적 · 검색",
+    "purpose": "지갑·가맹점·기간·유통 단위·상품권·판정상태로 거래를 read-only 검색한다. 권위 원장 기반 조회이지만 원장 소유는 결제·정산·발행 도메인에 있다.",
+    "audience": "감사, 처분 판정 담당자, 정산 운영자, 권한관리자",
+    "actors": ["act-auditor", "act-disposition-judge", "act-settlement-operator", "act-superadmin"],
+    "layout": "ConsoleNavRail + SessionActorBadge + AuthorityScopeBadge + SearchField + TransactionTraceTable + row detail sheet",
+    "components": [
+      "ConsoleNavRail",
+      "SessionActorBadge",
+      "AuthorityScopeBadge",
+      "PermissionGate",
+      "SearchField",
+      "TransactionTraceTable",
+      "AccessibleStatusRow"
+    ],
+    "states": [
+      { "state": "default", "description": "필터 적용 거래 목록을 표시한다." },
+      { "state": "loading", "description": "거래 원장 조회 중이다." },
+      { "state": "empty", "description": "조건에 맞는 거래가 없다." },
+      {
+        "state": "error",
+        "description": "권한 밖, 기간 과대, 원장 조회 실패 또는 표준 코드 카탈로그 참조 실패를 표시한다."
+      },
+      { "state": "success", "description": "검색·필터 결과가 반영된다." }
+    ],
+    "copy": [
+      { "key": "title", "text": "거래 추적 · 검색" },
+      {
+        "key": "standardCodeNote",
+        "text": "업종은 ISO 18245 4자리 코드, 품목은 UNSPSC 기반 코드로 판정합니다"
+      },
+      { "key": "detailSheetTitle", "text": "거래 상세(읽기 전용)" },
+      { "key": "pocketFilterLabel", "text": "상품권" }
+    ],
+    "dataNeeds": [
+      "Transaction(txId, occurredAt, walletId, merchantId, amount, circulationUnitIds, domainStatus:requested|verifying-no-txid|verifying-pending-txid|confirmed|declined|expired|timeout, txHash)",
+      "상품권 차감 breakdown(pocketId, policyRef, fundSourceType:policyFund|topupPrincipal, amount)",
+      "sub-settlement breakdown(circulationUnitId, amount, settlementRef)",
+      "MerchantCategoryCode(code 예:5812, sourceStandard:'ISO18245', displayPrefix:'ISO 18245', displayCode:'ISO 18245 5812', label)",
+      "ItemCategoryCode(code 예:90101501, standardCode:'90101501', sourceStandard:'UNSPSC', label)",
+      "PolicyCondition.payoutMethod 및 POS 할인/사후 환급 기록"
+    ]
+  }
+}

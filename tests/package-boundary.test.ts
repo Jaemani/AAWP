@@ -3,6 +3,7 @@ import { ModelGateway } from "@awf/agent-gateway";
 import { LocalObjectCas } from "@awf/artifact-store";
 import { validateWorkflow } from "@awf/compiler";
 import { createWorkflowEditorDocument } from "@awf/control-plane";
+import { compileDemoBundleManifest } from "@awf/demo-bundle";
 import { diffRevisionStates } from "@awf/impact-engine";
 import { digestWorkflow, WorkflowDefinitionSchema } from "@awf/ir";
 import { InMemoryArtifactLineage } from "@awf/lineage";
@@ -16,6 +17,7 @@ import { ToolGateway } from "@awf/tool-gateway";
 import { evaluateMonotonicCandidate } from "@awf/verifier-sdk";
 import { VerifierWorker } from "@awf/verifier-worker";
 import { compileSpecContracts } from "@awf/spec-to-demo";
+import { compileSpecFeedbackContract } from "@awf/spec-feedback-to-spec";
 
 describe("package boundaries", () => {
   it("exposes core APIs through package exports", () => {
@@ -34,6 +36,8 @@ describe("package boundaries", () => {
     expect(evaluateMonotonicCandidate).toBeTypeOf("function");
     expect(VerifierWorker).toBeTypeOf("function");
     expect(compileSpecContracts).toBeTypeOf("function");
+    expect(compileSpecFeedbackContract).toBeTypeOf("function");
+    expect(compileDemoBundleManifest).toBeTypeOf("function");
     expect(routeTask).toBeTypeOf("function");
     expect(createWorkflowEditorDocument).toBeTypeOf("function");
     expect(renderStudioHtml).toBeTypeOf("function");

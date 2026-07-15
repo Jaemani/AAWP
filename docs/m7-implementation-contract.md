@@ -17,6 +17,14 @@
 
 자연어를 group/screen 후보로 바꾸는 resolver는 template 앞단에 둘 수 있지만 platform core나 builder prompt가 최종 범위를 암묵적으로 결정하지 않는다. 최종 포함·제외 screen은 scope contract가 소유한다.
 
+## Demo bundle output
+
+- 선택 결과는 하나의 합성 page가 아니라 `aawp/demo-bundle/v1` manifest와 독립 screen artifact로 packaging한다.
+- Bundle은 사용자 요청 collection, surface는 web/mobile/tablet actor boundary, group은 topic/flow, screen은 route와 artifact path를 소유한다.
+- 플랫폼 compiler는 duplicate route/path, dangling reference, surface/group membership 불일치와 unbundled screen을 거부한다.
+- Preview shell은 screen content를 재구성하지 않고 manifest 기반 선택·전환과 form-factor frame만 제공한다.
+- Screen별 source layout, copy, state와 authority는 screen artifact 및 acceptance contract가 소유한다.
+
 ## Acceptance와 visibility
 
 - Acceptance obligation은 requirement ID, route, precondition, user/external-system action과 DOM/navigation/state/network/visual/a11y oracle을 가진다.
