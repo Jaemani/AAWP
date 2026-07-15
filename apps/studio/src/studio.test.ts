@@ -58,9 +58,11 @@ describe("Studio HTML", () => {
     expect(html).toContain("AAWP Studio");
     expect(html).toContain("Adaptive Artifact Workflow Platform");
     expect(html).not.toContain("Adaptive Workflow Studio");
-    expect(html).toContain("Run and inspect");
+    expect(html).toContain("Execute and inspect");
     expect(html).toContain('data-node-id="execute"');
-    expect(html).toContain("Run workflow");
+    expect(html).toContain("Run studio-fixture");
+    expect(html).toContain("Not executable");
+    expect(html).toContain('id="run-workflow" class="run-button" type="button" disabled');
     expect(html).toContain("Run input");
     expect(html).toContain(">Runs<");
     expect(html).toContain("Workflow</strong>");
@@ -72,10 +74,10 @@ describe("Studio HTML", () => {
     expect(html).not.toContain("Delete result");
     expect(html).toContain("demo-frame");
     expect(html).toContain("allow-popups allow-popups-to-escape-sandbox");
-    expect(html).toContain("Simulation trace");
+    expect(html).toContain("Execution timeline");
     expect(html).toContain("monotonic clock");
-    expect(html).toContain("Workflow time");
-    expect(html).toContain("Result build");
+    expect(html).toContain("End-to-end time");
+    expect(html).toContain("Snapshot");
     expect(html).toContain("Tokens");
     expect(html).toContain("Traceability");
     expect(html).toContain("/api/runs");

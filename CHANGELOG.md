@@ -9,16 +9,19 @@
 - 제품 표기를 `AAWP Studio`와 `Adaptive Artifact Workflow Platform`으로 통일했다.
 - workflow ID인 `spec-to-demo`를 제품 subtitle에서 제거했다.
 - 화면 위계를 workflow 실행 → run 기록 → 선택 결과로 정리했다.
-- 실행 중 button과 첫 node에 즉시 busy/running feedback을 표시한다.
+- WIR node와 output port를 실제 local process argv에 1:1로 연결하는 strict execution manifest를 추가했다.
+- 실행기가 없으면 Run을 비활성화하고 simulation record를 만들지 않으며, 실행 중에는 running snapshot과 node 상태를 5초마다 갱신한다.
 - `/?run=<runId>` dashboard deep link, run별 demo preview/open/delete를 추가했다.
 - demo snapshot 삭제 후에도 append-only run/event 기록은 보존한다.
 - 새 demo snapshot을 기본 offboard 상태로 만들고 `Onboard demo`, `Offboard demo`, `Delete demo` lifecycle을 추가했다.
 - Offboard는 URL 제공만 중단하며 Delete도 input file, source와 run/event를 변경하지 않는다.
 - 새 demo를 onboard하면 이전 active demo를 자동으로 offboard해 한 번에 하나의 run URL만 공개한다.
 - Simulation event에 run 시작 기준 monotonic `elapsedMs`와 node `durationMs`를 기록해 sequence와 시간이 역전되던 오류를 수정했다.
-- Studio의 `Event timeline`을 `Simulation trace`로 명확히 하고, timing 계약이 없던 과거 기록은 `legacy`로 표시한다.
-- Run별 workflow 전체 시간, input validation, deterministic simulation과 결과 snapshot materialization 시간을 측정한다.
-- Deterministic mode의 정확한 `0 tokens · 0 calls`와 향후 runtime usage event 합산 계약을 추가했다.
+- Studio의 primary timeline을 실제 `Execution timeline`으로 교체하고 과거 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다.
+- Run별 end-to-end wall clock, input validation, 실제 process 실행과 결과 snapshot materialization 시간을 분리해 측정한다.
+- Codex JSONL과 `AAWP_EVENT model_usage`에서 input/cached/output/reasoning token을 합산하고, LLM node의 usage 누락을 실패 처리한다.
+- 모든 node가 비모델로 명시된 실제 execution에서만 `0 tokens · 0 calls`를 measured로 허용한다.
+- Run별 input, stdout/stderr 로그, 실제 file/stdout artifact hash와 executor 경로를 `.awf/executions/<runId>`에 보존한다.
 - Run ID를 trace ID로 사용하고 workflow, input, trace digest를 한곳에서 역추적할 수 있게 했다.
 
 ### `spec-to-demo` 범위 선택

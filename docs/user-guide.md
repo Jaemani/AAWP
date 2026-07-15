@@ -25,6 +25,7 @@ node apps/cli/dist/index.js simulate examples/spec-to-demo.wir.yaml \
 ```bash
 node apps/studio/dist/server.js \
   --workflow examples/spec-to-demo.wir.yaml \
+  --executor path/to/execution-manifest.json \
   --input examples/heavy-spec-slice.input.json \
   --runs .awf/studio-runs.jsonl \
   --demo-source examples/heavy-spec-slice \
@@ -35,10 +36,10 @@ node apps/studio/dist/server.js \
 `http://127.0.0.1:4173/`을 연다.
 
 1. 필요하면 `Run input`에서 JSON 입력을 확인한다.
-2. `Run workflow`를 누른다.
+2. `Run <workflow-id>`를 누른다. 상단 `Executes at`과 `Commands`에서 실제 실행 위치와 argv를 확인할 수 있다.
 3. Workflow strip에서 node 상태를 확인한다.
 4. `Runs`에서 과거 run을 선택한다.
-5. Result preview, node, artifact, simulation trace와 output을 확인한다.
+5. Result preview, node, 실제 artifact, execution timeline, token과 output을 확인한다.
 
 선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`다.
 
@@ -48,11 +49,13 @@ node apps/studio/dist/server.js \
 
 새 snapshot은 기본 offboard 상태다. 어떤 lifecycle action도 Run input file, 원본 demo source, JSONL run/event와 lineage를 변경하지 않는다.
 
-현재 Studio server는 local-only이고 `DETERMINISTIC_SIMULATION`을 표시한다. Run 상세의 `Workflow time`은 입력 검증, 결정적 simulation과 결과 snapshot materialization을 포함한 monotonic 경과 시간이다. `Result build`는 application compiler 시간이 아니라 run별 정적 결과를 복사·digest하는 `snapshot_materialization` 시간이다. 이 단계가 없으면 `N/A`로 표시한다.
+Studio server는 local-only이다. `--executor`가 없으면 `Not executable`로 표시하고 Run을 비활성화하며, 몇 ms짜리 simulation 성공 record를 대신 만들지 않는다. 실행 manifest가 있으면 `Local process`로 표시하고 Run 상세의 `End-to-end time`은 입력 검증부터 실제 builder, verifier와 snapshot 완료까지의 monotonic 경과 시간이다. `Snapshot`은 application compiler 시간이 아니라 검증된 결과를 run별로 복사·digest하는 후처리 시간이며 없으면 `N/A`다.
 
-`Tokens`는 runtime event usage의 합계다. 현재 deterministic mode는 model invocation을 구조적으로 수행하지 않으므로 추정치가 아닌 측정값 `0 tokens · 0 calls`다. Production model adapter를 연결하면 provider usage event의 input/output token을 같은 field에 합산해야 한다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 simulation trace digest를 함께 표시한다.
+`Tokens`는 executor가 보존한 Codex JSONL `turn.completed.usage` 또는 표준 `AAWP_EVENT model_usage`의 합계다. `llm` WIR node는 usage evidence가 없으면 성공하지 않는다. `0 tokens · 0 calls`는 모든 node가 `tokenTracking: none`인 실제 비모델 workflow에서만 유효하다. `Not reported`는 0과 다르며 telemetry가 불완전하다는 뜻이다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 실제 execution event digest를 함께 표시한다.
 
-`Simulation trace`의 `elapsedMs`는 run 시작 기준 monotonic offset이며 node 완료에는 `durationMs`가 포함된다. 이는 결정적 WIR 실행 순서이지 실제 Temporal·model·tool activity log가 아니다. Timing 계약 추가 전의 기존 기록은 Studio에서 `legacy`로 표시한다. 실제 Temporal·model·tool 실행, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+`Execution timeline`의 `elapsedMs`는 run 시작 기준 monotonic offset이며 node 완료에는 실제 child-process `durationMs`, exit code와 stdout/stderr log path가 포함된다. POST는 running record를 먼저 반환하고 Studio는 5초마다 갱신한다. Timing 계약 추가 전의 기존 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다. 현재 executor는 local process이고 Temporal worker 복구, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+
+명시적인 model 없는 dry-run이 필요하면 Studio Run이 아니라 `awf simulate`를 사용한다. 두 경로는 기록과 UI에서 합치지 않는다. Execution manifest 형식과 오류 코드는 [Studio 운영 문서](operations/studio.md)를 참고한다.
 
 ## 3. `spec-to-demo` 입력 범위
 

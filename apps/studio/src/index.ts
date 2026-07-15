@@ -12,6 +12,7 @@ export {
   type StudioServerOptions
 } from "./server.js";
 export {
+  executeStudioProcessRun,
   executeStudioRun,
   InMemoryStudioRunStore,
   JsonlStudioRunStore,
@@ -22,3 +23,20 @@ export {
   type StudioRunStore,
   type StudioRunSummary
 } from "./run-store.js";
+export {
+  loadLocalExecutionManifest,
+  LocalProcessWorkflowExecutor,
+  parseLocalExecutionManifest,
+  StudioExecutionError,
+  StudioExecutionManifestError,
+  type ExecutedArtifact,
+  type ExecutedStep,
+  type LocalExecutionManifest,
+  type LocalExecutionOutput,
+  type LocalExecutionStep,
+  type ModelUsageSample,
+  type StudioExecutionDescriptor,
+  type StudioExecutionResult,
+  type StudioWorkflowExecutor,
+  type TokenTrackingPolicy
+} from "./executor.js";

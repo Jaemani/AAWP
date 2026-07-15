@@ -15,7 +15,7 @@ AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration cat
 
 ## 현재 구현
 
-WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio는 workflow 시간, 결과 snapshot build, token usage와 digest trace를 run별로 보존한다. 원본/feedback child spec을 8개 담당 업무별로 비교하는 검토 fixture도 있다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio의 실행 버튼은 별도 execution manifest로 WIR node마다 실제 local process가 등록된 경우에만 활성화된다. 이 경로는 입력 검증부터 process, verifier와 snapshot까지의 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 run별로 보존한다. 원본/feedback child spec을 8개 담당 업무별로 비교하는 검토 fixture도 있다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
 
 ## 시작하기
 
@@ -35,6 +35,7 @@ AAWP Studio 실행:
 ```bash
 node apps/studio/dist/server.js \
   --workflow examples/spec-to-demo.wir.yaml \
+  --executor path/to/execution-manifest.json \
   --input examples/heavy-spec-slice.input.json \
   --runs .awf/studio-runs.jsonl \
   --demo-source examples/heavy-spec-slice \
@@ -42,7 +43,7 @@ node apps/studio/dist/server.js \
   --port 4173
 ```
 
-`http://127.0.0.1:4173/`에서 workflow, run 기록과 결과를 확인한다. 현재 Studio의 run은 실제 model/tool 실행이 아닌 `DETERMINISTIC_SIMULATION`이다.
+`http://127.0.0.1:4173/`에서 workflow, 실행 위치·명령, live node 상태, run 기록과 결과를 확인한다. `--executor`가 없으면 Studio는 read-only이며 Run을 비활성화하고, simulation 성공 기록을 대신 만들지 않는다. 모델 node는 Codex JSONL 또는 `AAWP_EVENT` usage evidence가 없으면 실패한다. 모델 호출 없는 dry-run은 Studio Run이 아니라 위의 명시적 `awf simulate` 명령으로만 실행한다.
 
 담당자별 원본/feedback candidate 비교 demo는 `examples/heavy-spec-role-comparison`에 있다. Candidate 실행 입력은 부모 내용을 모두 포함한 child JSON 한 파일이며 proposal·verdict는 감사 sidecar다.
 

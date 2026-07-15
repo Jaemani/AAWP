@@ -10,8 +10,13 @@ import {
   type StoredRunEvent
 } from "@awf/runtime-core";
 import type { StudioDemoRecord } from "./demo-store.js";
+import type {
+  ExecutedStep,
+  StudioExecutionProgressEvent,
+  StudioWorkflowExecutor
+} from "./executor.js";
 
-export type StudioRunStatus = "completed" | "failed";
+export type StudioRunStatus = "running" | "completed" | "failed";
 export type StudioNodeStatus = "waiting" | "scheduled" | "running" | "completed" | "failed";
 
 export interface StudioArtifactRecord {
@@ -19,6 +24,8 @@ export interface StudioArtifactRecord {
   nodeId: string;
   port: string;
   contentHash: string;
+  source?: "file" | "stdout" | "simulation";
+  path?: string;
 }
 
 export interface StudioRunMetrics {
@@ -26,6 +33,7 @@ export interface StudioRunMetrics {
     workflowDurationMs: number;
     inputValidationMs?: number;
     deterministicSimulationMs?: number;
+    actualExecutionMs?: number;
     resultBuild: {
       kind: "snapshot_materialization";
       status: "measured" | "not_applicable";
@@ -33,11 +41,14 @@ export interface StudioRunMetrics {
     };
   };
   tokens: {
-    status: "measured";
-    source: "runtime_events";
+    status: "measured" | "not_reported";
+    source: "runtime_events" | "executor_protocol";
+    coverage?: "complete" | "partial" | "none";
     modelInvocations: number;
     inputTokens: number;
+    cachedInputTokens?: number;
     outputTokens: number;
+    reasoningOutputTokens?: number;
     totalTokens: number;
   };
   trace: {
@@ -56,7 +67,7 @@ export interface StudioRunRecord {
   workflowId: string;
   workflowVersion: string;
   workflowDigest: string;
-  executionMode: "DETERMINISTIC_SIMULATION";
+  executionMode: "DETERMINISTIC_SIMULATION" | "LOCAL_PROCESS";
   status: StudioRunStatus;
   createdAt: string;
   completedAt: string;
@@ -68,6 +79,13 @@ export interface StudioRunRecord {
   metrics?: StudioRunMetrics;
   demo?: StudioDemoRecord;
   outputs?: Record<string, unknown>;
+  executor?: {
+    kind: "local-process";
+    workingDirectory: string;
+    executionDirectory: string;
+    inputPath: string;
+    stepCount: number;
+  };
   error?: { name: string; message: string };
 }
 
@@ -130,8 +148,6 @@ export class InMemoryStudioRunStore implements StudioRunStore {
   private readonly records = new Map<string, StudioRunRecord>();
 
   async append(record: StudioRunRecord): Promise<void> {
-    if (this.records.has(record.runId))
-      throw new Error(`studio run already exists: ${record.runId}`);
     this.records.set(record.runId, snapshot(record));
   }
 
@@ -169,20 +185,19 @@ export class JsonlStudioRunStore implements StudioRunStore {
   }
 
   async append(record: StudioRunRecord): Promise<void> {
-    if ((await this.get(record.runId)) !== undefined) {
-      throw new Error(`studio run already exists: ${record.runId}`);
-    }
     await mkdir(dirname(this.path), { recursive: true });
     await appendFile(this.path, `${canonicalize(record)}\n`, { encoding: "utf8", mode: 0o600 });
   }
 
   async get(runId: string): Promise<StudioRunRecord | undefined> {
-    const record = (await this.records()).find((item) => item.runId === runId);
+    const record = (await this.records()).findLast((item) => item.runId === runId);
     return record === undefined ? undefined : snapshot(record);
   }
 
   async list(): Promise<StudioRunSummary[]> {
-    return sortSummaries(await this.records());
+    const latest = new Map<string, StudioRunRecord>();
+    for (const record of await this.records()) latest.set(record.runId, record);
+    return sortSummaries([...latest.values()]);
   }
 }
 
@@ -449,6 +464,413 @@ export async function executeStudioRun(input: {
           inputDigest
         }
       },
+      error: { name: (error as Error).name, message: (error as Error).message }
+    });
+    await input.store.append(record);
+    return record;
+  }
+}
+
+export async function executeStudioProcessRun(input: {
+  workflow: WorkflowDefinition;
+  inputs: unknown;
+  store: StudioRunStore;
+  executor: StudioWorkflowExecutor;
+  runId?: string;
+  now?: () => string;
+  monotonicNow?: () => number;
+  onStarted?: (record: StudioRunRecord) => void | Promise<void>;
+  createDemoSnapshot?: (runId: string) => Promise<StudioDemoRecord | undefined>;
+}): Promise<StudioRunRecord> {
+  const runId = input.runId ?? `run_${randomUUID()}`;
+  const now = input.now ?? (() => new Date().toISOString());
+  const monotonicNow = input.monotonicNow ?? (() => performance.now());
+  const monotonicStartedAt = monotonicNow();
+  const elapsed = (): number => roundMilliseconds(monotonicNow() - monotonicStartedAt);
+  const createdAt = now();
+  const occurredAt = (elapsedMs: number): string =>
+    new Date(new Date(createdAt).getTime() + elapsedMs).toISOString();
+  const inputDigest = digestWorkflow(input.inputs);
+  const workflowDigest = digestWorkflow(input.workflow);
+  const events: StoredRunEvent[] = [];
+  const artifacts: StudioArtifactRecord[] = [];
+  const nodeStates = Object.fromEntries(
+    input.workflow.nodes.map((node) => [node.id, "waiting" as StudioNodeStatus])
+  );
+  const add = (type: StoredRunEvent["type"], elapsedMs: number, payload: unknown): void => {
+    const sequence = events.length + 1;
+    events.push({
+      tenantId: "local-studio",
+      runId,
+      eventKey: `${runId}:${sequence}`,
+      sequence,
+      type,
+      occurredAt: occurredAt(elapsedMs),
+      elapsedMs,
+      payload
+    });
+  };
+  add("RunCreated", 0, {
+    executionMode: "LOCAL_PROCESS",
+    workflowDigest,
+    inputDigest,
+    executor: {
+      kind: input.executor.descriptor.kind,
+      workingDirectory: input.executor.descriptor.workingDirectory,
+      steps: input.executor.descriptor.steps.map((step) => ({
+        nodeId: step.nodeId,
+        command: step.command,
+        tokenTracking: step.tokenTracking
+      }))
+    }
+  });
+  let inputValidationMs: number | undefined;
+  let actualExecutionMs: number | undefined;
+  let resultBuildDurationMs = 0;
+  let demo: StudioDemoRecord | undefined;
+  let executionDirectory = "";
+  let executionInputPath = "";
+  const usageTotals = {
+    modelInvocations: 0,
+    inputTokens: 0,
+    cachedInputTokens: 0,
+    outputTokens: 0,
+    reasoningOutputTokens: 0
+  };
+  const usageNodeIds = new Set<string>();
+  const nodeById = new Map(input.workflow.nodes.map((node) => [node.id, node]));
+  const tokenCoverage = (): "complete" | "partial" | "none" => {
+    const trackedNodeIds = input.executor.descriptor.steps
+      .filter((step) => step.tokenTracking !== "none")
+      .map((step) => step.nodeId);
+    const trackedNodesReported = trackedNodeIds.filter((nodeId) => usageNodeIds.has(nodeId)).length;
+    return trackedNodeIds.length === 0 || trackedNodesReported === trackedNodeIds.length
+      ? "complete"
+      : trackedNodesReported === 0
+        ? "none"
+        : "partial";
+  };
+  const recordUsage = (
+    step: Pick<ExecutedStep, "nodeId" | "usage">,
+    completedElapsed: number
+  ): void => {
+    if (step.usage.length > 0) usageNodeIds.add(step.nodeId);
+    for (const sample of step.usage) {
+      usageTotals.modelInvocations += 1;
+      usageTotals.inputTokens += sample.inputTokens;
+      usageTotals.cachedInputTokens += sample.cachedInputTokens;
+      usageTotals.outputTokens += sample.outputTokens;
+      usageTotals.reasoningOutputTokens += sample.reasoningOutputTokens;
+      add("ModelInvoked", completedElapsed, {
+        nodeId: step.nodeId,
+        provider: sample.provider,
+        ...(sample.model === undefined ? {} : { model: sample.model }),
+        usage: {
+          inputTokens: sample.inputTokens,
+          cachedInputTokens: sample.cachedInputTokens,
+          outputTokens: sample.outputTokens,
+          reasoningOutputTokens: sample.reasoningOutputTokens
+        }
+      });
+    }
+  };
+  const materializeCompletedStep = (step: ExecutedStep, executorStartedElapsed: number): void => {
+    const completedElapsed = roundMilliseconds(
+      executorStartedElapsed + step.startedOffsetMs + step.durationMs
+    );
+    recordUsage(step, completedElapsed);
+    const outputDigests: Record<string, string> = {};
+    for (const artifact of step.artifacts) {
+      outputDigests[artifact.port] = artifact.contentHash;
+      const record: StudioArtifactRecord = {
+        artifactId: `artifact_${artifact.contentHash}`,
+        nodeId: artifact.nodeId,
+        port: artifact.port,
+        contentHash: artifact.contentHash,
+        source: artifact.source,
+        ...(artifact.path === undefined ? {} : { path: artifact.path })
+      };
+      artifacts.push(record);
+      add("ArtifactPublished", completedElapsed, record);
+    }
+    if (nodeById.get(step.nodeId)?.kind === "judge") {
+      add("VerifierCompleted", completedElapsed, {
+        nodeId: step.nodeId,
+        durationMs: step.durationMs,
+        exitCode: step.exitCode
+      });
+    }
+    nodeStates[step.nodeId] = "completed";
+    add("NodeCompleted", completedElapsed, {
+      nodeId: step.nodeId,
+      durationMs: step.durationMs,
+      exitCode: step.exitCode,
+      outputDigests,
+      stdoutPath: step.stdoutPath,
+      stderrPath: step.stderrPath,
+      stdoutBytes: Buffer.byteLength(step.stdout),
+      stderrBytes: Buffer.byteLength(step.stderr)
+    });
+  };
+  const persistRunning = async (): Promise<StudioRunRecord> => {
+    const coverage = tokenCoverage();
+    const runningRecord: StudioRunRecord = snapshot({
+      schemaVersion: "awf/studio-run/v1",
+      runId,
+      tenantId: "local-studio",
+      workflowId: input.workflow.id,
+      workflowVersion: input.workflow.version,
+      workflowDigest,
+      executionMode: "LOCAL_PROCESS",
+      status: "running",
+      createdAt,
+      completedAt: now(),
+      inputDigest,
+      events,
+      nodeStates,
+      artifacts,
+      metrics: {
+        timing: {
+          workflowDurationMs: elapsed(),
+          ...(inputValidationMs === undefined ? {} : { inputValidationMs }),
+          resultBuild: {
+            kind: "snapshot_materialization",
+            status: "not_applicable",
+            durationMs: 0
+          }
+        },
+        tokens: {
+          status: coverage === "complete" ? "measured" : "not_reported",
+          source: "executor_protocol",
+          coverage,
+          ...usageTotals,
+          totalTokens: usageTotals.inputTokens + usageTotals.outputTokens
+        },
+        trace: {
+          traceId: runId,
+          eventCount: events.length,
+          workflowDigest,
+          inputDigest
+        }
+      },
+      ...(executionDirectory.length === 0
+        ? {}
+        : {
+            executor: {
+              kind: "local-process",
+              workingDirectory: input.executor.descriptor.workingDirectory,
+              executionDirectory,
+              inputPath: executionInputPath,
+              stepCount: Object.values(nodeStates).filter((state) => state === "completed").length
+            }
+          })
+    });
+    await input.store.append(runningRecord);
+    return runningRecord;
+  };
+  try {
+    const validationStartedAt = monotonicNow();
+    const fixture = validateFixtureInput(input.workflow, input.inputs);
+    inputValidationMs = roundMilliseconds(monotonicNow() - validationStartedAt);
+    const executorStartedElapsed = elapsed();
+    const startedRecord = await persistRunning();
+    await input.onStarted?.(startedRecord);
+    const execution = await input.executor.execute({
+      workflow: input.workflow,
+      inputs: fixture,
+      runId,
+      onProgress: async (event: StudioExecutionProgressEvent) => {
+        if (event.type === "executionPrepared") {
+          executionDirectory = event.executionDirectory;
+          executionInputPath = event.inputPath;
+        }
+        if (event.type === "stepStarted") {
+          const startedElapsed = roundMilliseconds(executorStartedElapsed + event.startedOffsetMs);
+          nodeStates[event.nodeId] = "scheduled";
+          add("NodeScheduled", startedElapsed, {
+            nodeId: event.nodeId,
+            command: event.command,
+            workingDirectory: event.workingDirectory
+          });
+          nodeStates[event.nodeId] = "running";
+          add("NodeStarted", startedElapsed, {
+            nodeId: event.nodeId,
+            command: event.command,
+            workingDirectory: event.workingDirectory,
+            inputPath: executionInputPath
+          });
+          if (nodeById.get(event.nodeId)?.kind === "judge") {
+            add("VerifierStarted", startedElapsed, { nodeId: event.nodeId });
+          }
+        }
+        if (event.type === "stepCompleted") {
+          materializeCompletedStep(event.step, executorStartedElapsed);
+        }
+        if (event.type === "stepFailed") {
+          const failedElapsed = elapsed();
+          recordUsage({ nodeId: event.nodeId, usage: event.usage }, failedElapsed);
+          nodeStates[event.nodeId] = "failed";
+          add("NodeFailed", failedElapsed, {
+            nodeId: event.nodeId,
+            durationMs: event.durationMs,
+            exitCode: event.exitCode,
+            errorCode: event.errorCode,
+            message: event.message,
+            stdoutPath: event.stdoutPath,
+            stderrPath: event.stderrPath
+          });
+        }
+        await persistRunning();
+      }
+    });
+    actualExecutionMs = execution.durationMs;
+    executionDirectory = execution.executionDirectory;
+    executionInputPath = execution.inputPath;
+    for (const step of execution.steps) {
+      if (nodeStates[step.nodeId] !== "completed") {
+        materializeCompletedStep(step, executorStartedElapsed);
+      }
+    }
+    const resultBuildStartedAt = monotonicNow();
+    demo = await input.createDemoSnapshot?.(runId);
+    resultBuildDurationMs = roundMilliseconds(monotonicNow() - resultBuildStartedAt);
+    const completedElapsedMs = elapsed();
+    const traceDigest = digestWorkflow({
+      runId,
+      workflowDigest,
+      inputDigest,
+      events: events.map(({ type, elapsedMs, payload }) => ({ type, elapsedMs, payload })),
+      outputs: execution.outputs
+    });
+    add("RunCompleted", completedElapsedMs, {
+      durationMs: completedElapsedMs,
+      actualExecutionMs,
+      snapshotMaterializationMs: resultBuildDurationMs,
+      traceDigest,
+      outputDigest: digestWorkflow(execution.outputs)
+    });
+    const completedTokenCoverage = tokenCoverage();
+    const record: StudioRunRecord = snapshot({
+      schemaVersion: "awf/studio-run/v1",
+      runId,
+      tenantId: "local-studio",
+      workflowId: input.workflow.id,
+      workflowVersion: input.workflow.version,
+      workflowDigest,
+      executionMode: "LOCAL_PROCESS",
+      status: "completed",
+      createdAt,
+      completedAt: now(),
+      inputDigest,
+      traceDigest,
+      events,
+      nodeStates,
+      artifacts,
+      metrics: {
+        timing: {
+          workflowDurationMs: completedElapsedMs,
+          inputValidationMs,
+          actualExecutionMs,
+          resultBuild: {
+            kind: "snapshot_materialization",
+            status: input.createDemoSnapshot === undefined ? "not_applicable" : "measured",
+            durationMs: input.createDemoSnapshot === undefined ? 0 : resultBuildDurationMs
+          }
+        },
+        tokens: {
+          status: completedTokenCoverage === "complete" ? "measured" : "not_reported",
+          source: "executor_protocol",
+          coverage: completedTokenCoverage,
+          ...usageTotals,
+          totalTokens: usageTotals.inputTokens + usageTotals.outputTokens
+        },
+        trace: {
+          traceId: runId,
+          eventCount: events.length,
+          workflowDigest,
+          inputDigest,
+          traceDigest
+        }
+      },
+      executor: {
+        kind: "local-process",
+        workingDirectory: input.executor.descriptor.workingDirectory,
+        executionDirectory,
+        inputPath: executionInputPath,
+        stepCount: execution.steps.length
+      },
+      ...(demo === undefined ? {} : { demo }),
+      outputs: execution.outputs
+    });
+    await input.store.append(record);
+    return record;
+  } catch (error) {
+    const failedElapsed = elapsed();
+    const activeNode = Object.entries(nodeStates).find(([, state]) => state === "running")?.[0];
+    if (activeNode !== undefined) {
+      nodeStates[activeNode] = "failed";
+      add("NodeFailed", failedElapsed, {
+        nodeId: activeNode,
+        errorName: (error as Error).name,
+        message: (error as Error).message
+      });
+    }
+    add("RunFailed", failedElapsed, {
+      durationMs: failedElapsed,
+      errorName: (error as Error).name,
+      message: (error as Error).message
+    });
+    const record: StudioRunRecord = snapshot({
+      schemaVersion: "awf/studio-run/v1",
+      runId,
+      tenantId: "local-studio",
+      workflowId: input.workflow.id,
+      workflowVersion: input.workflow.version,
+      workflowDigest,
+      executionMode: "LOCAL_PROCESS",
+      status: "failed",
+      createdAt,
+      completedAt: now(),
+      inputDigest,
+      events,
+      nodeStates,
+      artifacts,
+      metrics: {
+        timing: {
+          workflowDurationMs: failedElapsed,
+          ...(inputValidationMs === undefined ? {} : { inputValidationMs }),
+          ...(actualExecutionMs === undefined ? {} : { actualExecutionMs }),
+          resultBuild: {
+            kind: "snapshot_materialization",
+            status: "not_applicable",
+            durationMs: 0
+          }
+        },
+        tokens: {
+          status: usageTotals.modelInvocations === 0 ? "not_reported" : "measured",
+          source: "executor_protocol",
+          coverage: usageTotals.modelInvocations === 0 ? "none" : "partial",
+          ...usageTotals,
+          totalTokens: usageTotals.inputTokens + usageTotals.outputTokens
+        },
+        trace: {
+          traceId: runId,
+          eventCount: events.length,
+          workflowDigest,
+          inputDigest
+        }
+      },
+      ...(executionDirectory.length === 0
+        ? {}
+        : {
+            executor: {
+              kind: "local-process",
+              workingDirectory: input.executor.descriptor.workingDirectory,
+              executionDirectory,
+              inputPath: executionInputPath,
+              stepCount: Object.values(nodeStates).filter((state) => state === "completed").length
+            }
+          }),
       error: { name: (error as Error).name, message: (error as Error).message }
     });
     await input.store.append(record);

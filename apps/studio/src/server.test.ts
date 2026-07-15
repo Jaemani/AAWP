@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { createWorkflowEditorDocument } from "@awf/control-plane";
 import type { WorkflowDefinition } from "@awf/ir";
 import { LocalStudioDemoStore } from "./demo-store.js";
+import { LocalProcessWorkflowExecutor, parseLocalExecutionManifest } from "./executor.js";
 import type { StudioRunRecord, StudioRunSummary } from "./run-store.js";
 import { createStudioServer } from "./server.js";
 
@@ -57,6 +58,44 @@ const workflow: WorkflowDefinition = {
   releasePolicy: { requiredVerifiers: [], maxBlockingFindings: 0 }
 };
 
+function createExecutor(workingDirectory: string): LocalProcessWorkflowExecutor {
+  return new LocalProcessWorkflowExecutor(
+    parseLocalExecutionManifest(
+      {
+        schemaVersion: "aawp/local-execution-manifest/v1",
+        workflowId: workflow.id,
+        workingDirectory,
+        steps: [
+          {
+            nodeId: "execute",
+            command: [
+              process.execPath,
+              "-e",
+              "setTimeout(()=>console.log(JSON.stringify({ok:true})),75)"
+            ],
+            timeoutSec: 10,
+            tokenTracking: "none",
+            outputs: [{ port: "output", source: "stdout" }]
+          }
+        ]
+      },
+      workflow
+    ),
+    { executionRoot: join(workingDirectory, "executions") }
+  );
+}
+
+async function waitForTerminalRun(base: string, runId: string): Promise<StudioRunRecord> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const record = (await fetch(`${base}/api/runs/${runId}`).then(async (response) =>
+      response.json()
+    )) as StudioRunRecord;
+    if (record.status !== "running") return record;
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10));
+  }
+  throw new Error(`run did not complete: ${runId}`);
+}
+
 let server: Server | undefined;
 let directory: string | undefined;
 
@@ -97,36 +136,24 @@ describe("Studio local server", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ inputs: { input: { message: "hello" } } })
     });
-    expect(runResponse.status).toBe(201);
-    const run = (await runResponse.json()) as StudioRunRecord;
-    expect(run).toMatchObject({
-      status: "completed",
-      executionMode: "DETERMINISTIC_SIMULATION",
-      nodeStates: { execute: "completed" }
+    expect(runResponse.status).toBe(409);
+    await expect(runResponse.json()).resolves.toMatchObject({
+      ok: false,
+      code: "WORKFLOW_NOT_EXECUTABLE"
     });
-    expect(run.events.map((item: { type: string }) => item.type)).toEqual([
-      "RunCreated",
-      "NodeScheduled",
-      "NodeStarted",
-      "ArtifactPublished",
-      "NodeCompleted",
-      "RunCompleted"
-    ]);
 
     const history = (await fetch(`${base}/api/runs`).then(async (response) => response.json())) as {
       runs: StudioRunSummary[];
     };
-    expect(history.runs).toMatchObject([{ runId: run.runId, status: "completed", eventCount: 6 }]);
-    const deepLinkedDashboard = await fetch(`${base}/?run=${encodeURIComponent(run.runId)}`).then(
-      async (response) => response.text()
+    expect(history.runs).toEqual([]);
+    const deepLinkedDashboard = await fetch(`${base}/?run=run_missing`).then(async (response) =>
+      response.text()
     );
     expect(deepLinkedDashboard).toContain("AAWP Studio");
     expect(deepLinkedDashboard).toContain("URLSearchParams");
     await expect(
-      fetch(`${base}/api/runs/${encodeURIComponent(run.runId)}`).then(async (response) =>
-        response.json()
-      )
-    ).resolves.toMatchObject({ runId: run.runId, artifacts: [{ nodeId: "execute" }] });
+      fetch(`${base}/api/execution`).then(async (response) => response.json())
+    ).resolves.toMatchObject({ executable: false, reason: "NO_EXECUTION_MANIFEST" });
   });
 
   it("onboards, offboards, and deletes a demo snapshot while preserving run history", async () => {
@@ -138,6 +165,7 @@ describe("Studio local server", () => {
     const document = createWorkflowEditorDocument(workflow);
     server = createStudioServer({
       document,
+      executor: createExecutor(directory),
       demoStore: new LocalStudioDemoStore({
         rootDirectory: join(directory, "results"),
         sourceDirectory
@@ -152,8 +180,30 @@ describe("Studio local server", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ inputs: { input: { message: "hello" } } })
     });
-    expect(runResponse.status).toBe(201);
-    const run = (await runResponse.json()) as StudioRunRecord;
+    expect(runResponse.status).toBe(202);
+    const startedRun = (await runResponse.json()) as StudioRunRecord;
+    expect(startedRun.status).toBe("running");
+    const duplicateRun = await fetch(`${base}/api/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ inputs: { input: { message: "duplicate" } } })
+    });
+    expect(duplicateRun.status).toBe(409);
+    await expect(duplicateRun.json()).resolves.toMatchObject({
+      code: "WORKFLOW_ALREADY_RUNNING"
+    });
+    const run = await waitForTerminalRun(base, startedRun.runId);
+    expect(run).toMatchObject({
+      status: "completed",
+      executionMode: "LOCAL_PROCESS",
+      nodeStates: { execute: "completed" },
+      metrics: {
+        timing: { actualExecutionMs: expect.any(Number) },
+        tokens: { status: "measured", coverage: "complete", totalTokens: 0 }
+      }
+    });
+    expect(run.artifacts[0]?.artifactId).toMatch(/^artifact_/);
+    expect(run.artifacts[0]?.artifactId).not.toMatch(/^sim_/);
     expect(run.demo).toMatchObject({ entryUrl: `/runs/${run.runId}/demo/` });
     expect(run.metrics).toMatchObject({
       timing: {

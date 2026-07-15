@@ -106,6 +106,14 @@
 - 교정: Workflow, validation, deterministic simulation과 snapshot materialization 시간을 구분하고 token usage와 digest trace contract를 run record에 추가했다. 현재 deterministic mode는 model call이 없으므로 정확히 0으로 표시한다.
 - 재발 방지: 실제 builder/model/tool adapter는 phase event와 provider usage evidence가 없으면 production metric으로 표시하지 않는다. Snapshot 복사 시간을 application compile 시간이라고 부르지 않는다.
 
+## Studio Run이 실제 workflow 대신 simulator와 기존 결과 복사만 수행했다
+
+- 관찰: `Run workflow`를 누르면 `simulateDeterministic()`이 모든 node를 수 ms 안에 완료 처리하고 `sim_*` artifact를 만들었다. 이어서 이미 만들어진 demo directory를 복사한 시간만 `Result build`로 표시했다. 실제 agent 작업은 Studio 밖에서 수행됐는데도 실행 버튼, 완료 event와 `0 tokens`가 한 화면에 있어 실제 workflow 실행처럼 받아들여졌다.
+- 원인: WIR graph projection과 executable implementation binding을 분리하지 않은 채 simulator를 Studio primary action에 연결했다. Provider usage를 받는 경계가 없다는 이유로 0을 기록했으며, 실행기가 없는 상태를 실패가 아니라 simulation 성공으로 대체했다.
+- 영향: 기존 `DETERMINISTIC_SIMULATION` run의 19 ms·5.52 ms 같은 값은 실제 demo 생성 시간이나 model 사용량의 증거가 아니다. 기존 record는 삭제하지 않고 `legacy`로만 열람한다.
+- 교정: Studio Run에 strict local execution manifest를 추가했다. 모든 WIR node·output port·실행 순서가 실제 argv에 1:1 binding되지 않으면 Run을 비활성화하고 `WORKFLOW_NOT_EXECUTABLE`을 반환한다. 실제 process는 run별 input과 stdout/stderr를 보존하며 running snapshot, node duration, exit code, content hash와 end-to-end wall clock을 기록한다. LLM node는 Codex JSONL 또는 `AAWP_EVENT model_usage`가 없으면 `MODEL_USAGE_MISSING`으로 실패한다.
+- 재발 방지: `awf simulate`와 Studio Run은 별도 command와 execution mode로 유지한다. 실행기가 없는 경우 fallback하지 않는다. `0 tokens`는 token tracking 대상 node가 하나도 없는 실제 non-model execution에서만 measured로 표시한다.
+
 ## 완전한 child spec이 여러 산출물 중 하나로 보여 전달 경계가 모호했다
 
 - 관찰: Candidate document는 이미 원본 전체를 포함했지만 proposal, summary, verdict와 같은 디렉터리에 있어 runtime도 여러 파일을 함께 읽어야 하는 것처럼 보였다.

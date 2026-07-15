@@ -1,20 +1,24 @@
 import { projectWorkflowGraph, type WorkflowEditorDocument } from "@awf/control-plane";
 import { canonicalize } from "@awf/ir";
+import type { StudioExecutionDescriptor } from "./executor.js";
 
 export interface StudioViewModel {
   document: WorkflowEditorDocument;
   graph: ReturnType<typeof projectWorkflowGraph>;
   initialInputJson: string;
+  execution?: StudioExecutionDescriptor;
 }
 
 export function createStudioView(input: {
   document: WorkflowEditorDocument;
   initialInputs?: unknown;
+  execution?: StudioExecutionDescriptor;
 }): StudioViewModel {
   return {
     document: input.document,
     graph: projectWorkflowGraph(input.document.workflow),
-    initialInputJson: canonicalize(input.initialInputs ?? {})
+    initialInputJson: canonicalize(input.initialInputs ?? {}),
+    ...(input.execution === undefined ? {} : { execution: input.execution })
   };
 }
 
@@ -28,6 +32,13 @@ function escapeHtml(value: unknown): string {
 }
 
 export function renderStudioHtml(view: StudioViewModel): string {
+  const executable = view.execution !== undefined;
+  const executionLocation = executable
+    ? `${view.execution!.workingDirectory} · ${view.execution!.steps.length} local process steps`
+    : "실행 manifest가 없습니다. 이 화면은 simulation으로 대체 실행하지 않습니다.";
+  const executionCommands = executable
+    ? view.execution!.steps.map((step) => `${step.nodeId}: ${step.command.join(" ")}`).join("\n")
+    : "";
   const graphNodes = view.graph.nodes
     .map(
       (node, index) => `
@@ -85,6 +96,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .product-context { margin-top:3px; color:var(--muted); font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
     .mode { display:inline-flex; min-height:28px; flex:none; align-items:center; gap:7px; padding:0 10px; border:1px solid #f0d8af; border-radius:999px; color:var(--warning); background:var(--warning-soft); font-size:10px; font-weight:700; letter-spacing:.02em; }
     .mode::before { width:6px; height:6px; border-radius:50%; background:#d88b2b; content:""; }
+    .mode.executable { border-color:#b7dfcf; color:var(--success); background:var(--success-soft); }
+    .mode.executable::before { background:var(--success); }
     .page-shell { width:min(1600px,100%); margin:0 auto; padding:28px 32px 40px; }
     .control-hero { display:flex; align-items:center; justify-content:space-between; gap:28px; padding:24px 26px; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:var(--shadow); }
     .eyebrow { display:block; margin-bottom:8px; color:var(--accent); font-size:10px; font-weight:760; letter-spacing:.11em; text-transform:uppercase; }
@@ -104,6 +117,14 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .run-message[data-tone="working"] { color:var(--accent); }
     .run-message[data-tone="success"] { color:var(--success); }
     .run-message[data-tone="error"] { color:var(--danger); }
+    .execution-contract { display:flex; min-height:46px; align-items:center; justify-content:space-between; gap:18px; margin:10px 4px 0; padding:9px 12px; border:1px solid var(--line); border-radius:9px; background:rgb(255 255 255 / 72%); }
+    .execution-contract[data-executable="false"] { border-color:#efc7c2; background:var(--danger-soft); }
+    .execution-contract span,.execution-contract code { display:block; }
+    .execution-contract span { margin-bottom:3px; color:var(--muted); font-size:8px; font-weight:720; letter-spacing:.07em; text-transform:uppercase; }
+    .execution-contract code { color:#344054; font:9px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; overflow-wrap:anywhere; }
+    .execution-contract details { flex:none; }
+    .execution-contract summary { color:var(--accent); font-size:9px; font-weight:700; cursor:pointer; }
+    .execution-contract pre { position:absolute; z-index:16; right:34px; width:min(760px,calc(100vw - 68px)); max-height:260px; margin-top:8px; box-shadow:0 18px 40px rgb(16 24 40 / 24%); }
     .workflow-panel { margin-top:18px; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 1px 2px rgb(16 24 40 / 3%); }
     .workflow-title { display:flex; min-height:52px; align-items:center; justify-content:space-between; gap:16px; padding:0 18px; border-bottom:1px solid var(--line-soft); }
     .workflow-title strong { font-size:12px; font-weight:700; }
@@ -130,6 +151,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .run-row:hover { background:#f2f4f7; }
     .run-row.active { border-color:#d9e2f8; background:#fff; box-shadow:0 1px 3px rgb(16 24 40 / 6%),inset 3px 0 var(--accent); }
     .status-dot { width:7px; height:7px; margin-top:5px; border-radius:50%; background:var(--success); box-shadow:0 0 0 3px var(--success-soft); }
+    .status-dot.running { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
     .status-dot.failed { background:var(--danger); box-shadow:0 0 0 3px var(--danger-soft); }
     .run-copy { min-width:0; }
     .run-row-head { display:flex; min-width:0; align-items:center; gap:7px; }
@@ -156,6 +178,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .delete-result:hover { background:var(--danger-soft); }
     .demo-lifecycle:disabled,.delete-result:disabled { cursor:wait; opacity:.55; }
     .status-label { padding:5px 8px; border-radius:999px; color:var(--success); background:var(--success-soft); font-size:8px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
+    .status-label.running { color:var(--accent); background:var(--accent-soft); }
     .status-label.failed { color:var(--danger); background:var(--danger-soft); }
     .summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); padding:14px 22px; gap:8px; border-bottom:1px solid var(--line); background:#fcfcfd; }
     .summary div { padding:10px 12px; border:1px solid var(--line-soft); border-radius:9px; background:#fff; }
@@ -247,18 +270,19 @@ export function renderStudioHtml(view: StudioViewModel): string {
   <header class="topbar">
     <div class="topbar-inner">
       <div class="identity"><div class="logo">AAWP</div><div><span class="product-name">AAWP Studio</span><span class="product-context">Adaptive Artifact Workflow Platform</span></div></div>
-      <span class="mode">Local simulation</span>
+      <span class="mode${executable ? " executable" : ""}">${executable ? "Local process" : "Not executable"}</span>
     </div>
   </header>
   <div class="page-shell">
     <section class="control-hero">
-      <div class="toolbar-copy"><span class="eyebrow">Workflow control</span><h1>Run and inspect</h1><p>${escapeHtml(view.graph.workflowId)} workflow를 실행하고 node 상태, artifact, event와 웹 결과를 한곳에서 확인합니다.</p></div>
+      <div class="toolbar-copy"><span class="eyebrow">Workflow execution</span><h1>Execute and inspect</h1><p>${escapeHtml(view.graph.workflowId)}의 등록된 실제 실행 단계를 시작하고 전체 wall-clock, node, artifact, model token과 결과를 추적합니다.</p></div>
       <div class="run-control">
         <details class="input"><summary>Run input</summary><textarea id="run-input" aria-label="Workflow run input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea></details>
-        <button id="run-workflow" class="run-button" type="button">Run workflow</button>
+        <button id="run-workflow" class="run-button" type="button"${executable ? "" : " disabled"}>Run ${escapeHtml(view.graph.workflowId)}</button>
       </div>
     </section>
-    <p id="run-message" class="run-message" data-tone="neutral" aria-live="polite">외부 tool과 model을 호출하지 않는 deterministic simulation입니다.</p>
+    <div class="execution-contract" data-executable="${String(executable)}"><div><span>Executes at</span><code>${escapeHtml(executionLocation)}</code></div><details${executable ? "" : " hidden"}><summary>Commands</summary><pre>${escapeHtml(executionCommands)}</pre></details></div>
+    <p id="run-message" class="run-message" data-tone="${executable ? "neutral" : "error"}" aria-live="polite">${executable ? "실제 local process를 실행합니다. Codex JSONL과 AAWP usage event의 token을 합산합니다." : "실제 실행기가 없어 Run을 비활성화했습니다. 무효한 simulation 기록은 생성하지 않습니다."}</p>
     <div class="workflow-panel">
       <div class="workflow-title"><strong>Workflow</strong><span>${escapeHtml(view.graph.mode)} · ${escapeHtml(view.graph.nodes.length)} steps · execution order</span></div>
       <div class="workflow-strip" aria-label="Workflow nodes">${graphNodes}</div>
@@ -269,13 +293,13 @@ export function renderStudioHtml(view: StudioViewModel): string {
         <div id="empty-detail" class="empty-detail"><div class="empty-state"><strong>No run selected</strong><span>Run workflow를 실행하면 node 상태와 결과 preview가 여기에 표시됩니다.</span></div></div>
         <div id="run-detail" hidden>
           <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><button id="toggle-demo" class="demo-lifecycle" type="button" hidden>Onboard demo</button><button id="delete-demo" class="delete-result" type="button" hidden>Delete demo</button></div></div>
-          <div class="summary"><div><span>Workflow time</span><strong id="selected-duration"></strong></div><div><span>Result build</span><strong id="selected-build-duration"></strong></div><div><span>Tokens</span><strong id="selected-tokens"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Mode</span><strong id="selected-mode"></strong></div></div>
+          <div class="summary"><div><span>End-to-end time</span><strong id="selected-duration"></strong></div><div><span>Snapshot</span><strong id="selected-build-duration"></strong></div><div><span>Tokens</span><strong id="selected-tokens"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Executor</span><strong id="selected-mode"></strong></div></div>
           <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe><div id="demo-empty" class="demo-empty" hidden></div></div></section>
           <div class="detail-grid">
-            <section class="trace-contract-section"><div class="section-heading"><h3>Traceability</h3><p>Run과 정확한 workflow, input, deterministic trace를 digest로 연결합니다.</p></div><div class="trace-contract"><div><span>Trace ID</span><code id="trace-id"></code></div><div><span>Workflow digest</span><code id="trace-workflow-digest"></code></div><div><span>Input digest</span><code id="trace-input-digest"></code></div><div><span>Trace digest</span><code id="trace-digest"></code></div></div></section>
+            <section class="trace-contract-section"><div class="section-heading"><h3>Traceability</h3><p>Run을 실제 executor, workflow, 고정 input과 execution event digest에 연결합니다.</p></div><div class="trace-contract"><div><span>Trace ID</span><code id="trace-id"></code></div><div><span>Workflow digest</span><code id="trace-workflow-digest"></code></div><div><span>Input digest</span><code id="trace-input-digest"></code></div><div><span>Trace digest</span><code id="trace-digest"></code></div></div></section>
             <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
             <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
-            <section><div class="section-heading"><h3>Simulation trace</h3><p>실제 wall-clock 로그가 아니라 결정적 WIR 실행 순서입니다. 경과 시간은 run 시작 기준 monotonic clock입니다.</p></div><ol id="event-timeline" class="timeline"></ol></section>
+            <section><div class="section-heading"><h3>Execution timeline</h3><p>실제 프로세스 실행을 run 시작 기준 monotonic clock으로 기록합니다. 과거 simulation run은 Mode에 별도로 표시됩니다.</p></div><ol id="event-timeline" class="timeline"></ol></section>
             <section><h3>Output</h3><pre id="run-output">{}</pre></section>
           </div>
         </div>
@@ -300,14 +324,17 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const demoAddress = document.getElementById("demo-address");
       const demoFrame = document.getElementById("demo-frame");
       const demoEmpty = document.getElementById("demo-empty");
+      const runButtonLabel = ${canonicalize(`Run ${view.graph.workflowId}`)};
       let selectedRunId = null;
       let demoOnboarded = false;
+      let selectedRunRunning = false;
 
       const clear = (target) => { while (target.firstChild) target.removeChild(target.firstChild); };
       const make = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
       const shortTime = (value) => new Date(value).toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
       const fullDateTime = (value) => new Date(value).toLocaleString("ko-KR", { dateStyle:"medium", timeStyle:"medium" });
       const formatMilliseconds = (value) => { const number = Number(value); if (!Number.isFinite(number)) return "—"; if (number === 0) return "0 ms"; if (number < 1) return number.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " ms"; return number.toFixed(number < 10 ? 2 : 1).replace(/\.0$/, "") + " ms"; };
+      const formatDuration = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; if (milliseconds < 60000) return (milliseconds / 1000).toFixed(milliseconds < 10000 ? 3 : 1).replace(/0+$/, "").replace(/\.$/, "") + " s"; const seconds = Math.floor(milliseconds / 1000); const minutes = Math.floor(seconds / 60); const hours = Math.floor(minutes / 60); const remainingMinutes = minutes % 60; const remainingSeconds = seconds % 60; return hours > 0 ? hours + "h " + remainingMinutes + "m " + remainingSeconds + "s" : minutes + "m " + remainingSeconds + "s"; };
       const elapsedLabel = (value) => value === undefined ? "legacy" : "+" + formatMilliseconds(value);
       const shortRunId = (value) => value.length > 22 ? value.slice(0, 12) + "…" + value.slice(-6) : value;
       const statusLabel = (value) => ({ waiting:"Waiting", scheduled:"Scheduled", running:"Running", completed:"Completed", failed:"Failed" })[value] || value;
@@ -341,17 +368,21 @@ export function renderStudioHtml(view: StudioViewModel): string {
         emptyDetail.hidden = true; detail.hidden = false;
         document.getElementById("selected-run-id").textContent = record.runId;
         document.getElementById("selected-run-time").textContent = fullDateTime(record.createdAt);
-        const status = document.getElementById("selected-status"); status.textContent = statusLabel(record.status); status.className = "status-label" + (record.status === "failed" ? " failed" : "");
-        document.getElementById("selected-mode").textContent = record.executionMode;
+        selectedRunRunning = record.status === "running";
+        runButton.disabled = ${String(!executable)} || selectedRunRunning;
+        const status = document.getElementById("selected-status"); status.textContent = statusLabel(record.status); status.className = "status-label" + (record.status === "failed" ? " failed" : record.status === "running" ? " running" : "");
+        document.getElementById("selected-mode").textContent = record.executionMode === "LOCAL_PROCESS" ? "Local process · " + (record.executor?.stepCount ?? "?") + " steps" : record.executionMode + " · legacy";
         document.getElementById("selected-events").textContent = String(record.events.length);
         document.getElementById("selected-artifacts").textContent = String(record.artifacts.length);
         const finalElapsed = record.events.length ? record.events[record.events.length - 1].elapsedMs : undefined;
         const workflowDuration = record.metrics?.timing?.workflowDurationMs ?? (finalElapsed === undefined ? Math.max(0, new Date(record.completedAt) - new Date(record.createdAt)) : finalElapsed);
         const resultBuild = record.metrics?.timing?.resultBuild;
         const tokenUsage = record.metrics?.tokens;
-        document.getElementById("selected-duration").textContent = formatMilliseconds(workflowDuration);
-        document.getElementById("selected-build-duration").textContent = resultBuild?.status === "measured" ? formatMilliseconds(resultBuild.durationMs) + " · snapshot" : "N/A";
-        document.getElementById("selected-tokens").textContent = tokenUsage ? tokenUsage.totalTokens.toLocaleString("ko-KR") + " · " + tokenUsage.modelInvocations + " calls" : "legacy";
+        document.getElementById("selected-duration").textContent = record.status === "running" ? formatDuration(Date.now() - new Date(record.createdAt).getTime()) + " · running" : formatDuration(workflowDuration);
+        document.getElementById("selected-build-duration").textContent = resultBuild?.status === "measured" ? formatMilliseconds(resultBuild.durationMs) + " · after execution" : "N/A";
+        const tokenElement = document.getElementById("selected-tokens");
+        tokenElement.textContent = !tokenUsage ? "legacy" : record.status === "running" && tokenUsage.status === "not_reported" ? "Tracking…" : tokenUsage.status === "not_reported" ? "Not reported" : tokenUsage.totalTokens.toLocaleString("ko-KR") + " · " + tokenUsage.modelInvocations + " calls";
+        tokenElement.title = !tokenUsage ? "기존 run에는 token telemetry가 없습니다." : "input " + (tokenUsage.inputTokens ?? 0).toLocaleString("ko-KR") + " · cached " + (tokenUsage.cachedInputTokens ?? 0).toLocaleString("ko-KR") + " · output " + (tokenUsage.outputTokens ?? 0).toLocaleString("ko-KR") + " · reasoning " + (tokenUsage.reasoningOutputTokens ?? 0).toLocaleString("ko-KR") + " · coverage " + (tokenUsage.coverage || "legacy");
         const trace = record.metrics?.trace;
         document.getElementById("trace-id").textContent = trace?.traceId || record.runId;
         document.getElementById("trace-workflow-digest").textContent = trace?.workflowDigest || record.workflowDigest || "legacy";
@@ -361,9 +392,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
         Object.entries(record.nodeStates).sort(([a],[b]) => a.localeCompare(b)).forEach(([nodeId,state]) => { const card = make("div", undefined, "node-record" + (state === "failed" ? " failed" : "")); card.appendChild(make("i")); card.appendChild(make("span", nodeId + " · " + state)); nodeRecords.appendChild(card); });
         clear(artifactRecords);
         if (!record.artifacts.length) artifactRecords.appendChild(make("div", "No artifacts", "history-empty"));
-        record.artifacts.forEach((artifact) => { const card = make("div", undefined, "artifact"); card.appendChild(make("strong", artifact.artifactId)); card.appendChild(make("small", artifact.nodeId + " / " + artifact.port)); card.appendChild(make("code", artifact.contentHash)); artifactRecords.appendChild(card); });
+        record.artifacts.forEach((artifact) => { const card = make("div", undefined, "artifact"); card.appendChild(make("strong", artifact.artifactId)); card.appendChild(make("small", artifact.nodeId + " / " + artifact.port + (artifact.source ? " · " + artifact.source : ""))); if (artifact.path) card.appendChild(make("code", artifact.path)); card.appendChild(make("code", artifact.contentHash)); artifactRecords.appendChild(card); });
         clear(timeline);
-        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const timing = make("time", elapsedLabel(event.elapsedMs), "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : event.occurredAt; const duration = payload.durationMs === undefined ? "" : " · " + formatMilliseconds(payload.durationMs); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : "") + duration)); timeline.appendChild(row); });
+        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const timing = make("time", elapsedLabel(event.elapsedMs), "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : event.occurredAt; const duration = payload.durationMs === undefined ? "" : " · " + formatDuration(payload.durationMs); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : "") + duration)); timeline.appendChild(row); });
         document.getElementById("run-output").textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
       };
 
@@ -381,7 +412,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         payload.runs.forEach((run) => {
           const row = make("button", undefined, "run-row");
           row.type = "button"; row.dataset.runId = run.runId; row.title = run.runId; row.setAttribute("aria-label", run.runId + " 실행 기록 열기");
-          const dot = make("span", undefined, "status-dot" + (run.status === "failed" ? " failed" : ""));
+          const dot = make("span", undefined, "status-dot" + (run.status === "failed" ? " failed" : run.status === "running" ? " running" : ""));
           const copy = make("span", undefined, "run-copy");
           const head = make("span", undefined, "run-row-head");
           head.appendChild(make("strong", shortRunId(run.runId)));
@@ -395,6 +426,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         markSelected();
         const targetRunId = preferredRunId || (selectLatest && payload.runs[0] ? payload.runs[0].runId : null);
         if (targetRunId && payload.runs.some((run) => run.runId === targetRunId)) await selectRun(targetRunId);
+        else if (selectedRunId && payload.runs.some((run) => run.runId === selectedRunId)) await selectRun(selectedRunId);
         else if (preferredRunId) {
           setMessage("요청한 run ID를 찾지 못해 최신 기록을 표시합니다.", "error");
           if (payload.runs[0]) await selectRun(payload.runs[0].runId);
@@ -405,9 +437,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
         const previousStates = Object.fromEntries(Array.from(document.querySelectorAll("[data-node-id]")).map((node) => [node.dataset.nodeId, node.dataset.runStatus || "waiting"]));
         const optimisticStates = Object.fromEntries(Object.keys(previousStates).map((nodeId, index) => [nodeId, index === 0 ? "running" : "waiting"]));
         runButton.disabled = true; runButton.textContent = "Running…"; runButton.setAttribute("aria-busy", "true"); updateGraph(optimisticStates); setMessage("Workflow를 실행하고 기록을 생성하는 중입니다…", "working");
-        try { const inputs = JSON.parse(runInput.value); const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({inputs}) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(); setMessage(shortRunId(record.runId) + " 실행과 결과 저장을 완료했습니다.", "success"); }
+        try { const inputs = JSON.parse(runInput.value); const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({inputs}) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(); setMessage(record.status === "running" ? shortRunId(record.runId) + " 실제 workflow를 시작했습니다. 실행 중 event를 5초마다 갱신합니다." : shortRunId(record.runId) + " 실행과 결과 저장을 완료했습니다.", record.status === "running" ? "working" : "success"); }
         catch (error) { updateGraph(previousStates); setMessage(error.message, "error"); }
-        finally { runButton.disabled = false; runButton.textContent = "Run workflow"; runButton.setAttribute("aria-busy", "false"); }
+        finally { runButton.disabled = ${String(!executable)} || selectedRunRunning; runButton.textContent = runButtonLabel; runButton.setAttribute("aria-busy", "false"); }
       });
 
       toggleDemo.addEventListener("click", async () => {

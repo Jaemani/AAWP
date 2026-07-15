@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -11,7 +12,7 @@ import {
 } from "@awf/control-plane";
 import { parse as parseYaml } from "yaml";
 import {
-  executeStudioRun,
+  executeStudioProcessRun,
   InMemoryStudioRunStore,
   JsonlStudioRunStore,
   type StudioRunRecord,
@@ -20,12 +21,18 @@ import {
 } from "./run-store.js";
 import { LocalStudioDemoStore, type StudioDemoStore } from "./demo-store.js";
 import { createStudioView, renderStudioHtml } from "./studio.js";
+import {
+  loadLocalExecutionManifest,
+  LocalProcessWorkflowExecutor,
+  type StudioWorkflowExecutor
+} from "./executor.js";
 
 export interface StudioServerOptions {
   document: WorkflowEditorDocument;
   runStore?: StudioRunStore;
   demoStore?: StudioDemoStore;
   initialInputs?: unknown;
+  executor?: StudioWorkflowExecutor;
 }
 
 async function projectDemoLifecycle(
@@ -79,10 +86,12 @@ export async function loadStudioInputs(path: string): Promise<unknown> {
 export function createStudioServer(options: StudioServerOptions): Server {
   const runStore = options.runStore ?? new InMemoryStudioRunStore();
   const demoStore = options.demoStore;
+  const activeRunIds = new Set<string>();
   const html = renderStudioHtml(
     createStudioView({
       document: options.document,
-      initialInputs: options.initialInputs ?? {}
+      initialInputs: options.initialInputs ?? {},
+      ...(options.executor === undefined ? {} : { execution: options.executor.descriptor })
     })
   );
   return createServer(async (request, response) => {
@@ -128,6 +137,20 @@ export function createStudioServer(options: StudioServerOptions): Server {
         digest: options.document.digest,
         canonicalJson: options.document.canonicalJson
       });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/execution") {
+      sendJson(
+        response,
+        200,
+        options.executor === undefined
+          ? {
+              executable: false,
+              reason: "NO_EXECUTION_MANIFEST",
+              message: "This workflow has no registered executor. Studio will not simulate it."
+            }
+          : { executable: true, descriptor: options.executor.descriptor }
+      );
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/runs") {
@@ -198,20 +221,55 @@ export function createStudioServer(options: StudioServerOptions): Server {
     }
     if (request.method === "POST" && url.pathname === "/api/runs") {
       try {
+        if (options.executor === undefined) {
+          sendJson(response, 409, {
+            ok: false,
+            code: "WORKFLOW_NOT_EXECUTABLE",
+            message:
+              "이 workflow에는 실제 실행기가 등록되지 않았습니다. Studio는 simulation run을 생성하지 않습니다."
+          });
+          return;
+        }
+        if (activeRunIds.size > 0) {
+          sendJson(response, 409, {
+            ok: false,
+            code: "WORKFLOW_ALREADY_RUNNING",
+            message: `이미 실행 중인 workflow가 있습니다: ${[...activeRunIds][0]}`
+          });
+          return;
+        }
         const body = JSON.parse(await readBody(request)) as unknown;
         const inputs =
           typeof body === "object" && body !== null && "inputs" in body
             ? (body as { inputs: unknown }).inputs
             : body;
-        const record = await executeStudioRun({
+        const runId = `run_${randomUUID()}`;
+        let notifyStarted!: (record: StudioRunRecord) => void;
+        const started = new Promise<StudioRunRecord>((resolveStarted) => {
+          notifyStarted = resolveStarted;
+        });
+        activeRunIds.add(runId);
+        const completion = executeStudioProcessRun({
           workflow: options.document.workflow,
           inputs,
           store: runStore,
+          executor: options.executor,
+          runId,
+          onStarted: notifyStarted,
           ...(demoStore === undefined
             ? {}
             : { createDemoSnapshot: (runId) => demoStore.createSnapshot(runId) })
         });
-        sendJson(response, 201, await projectDemoLifecycle(record, demoStore));
+        void completion.then(
+          () => activeRunIds.delete(runId),
+          () => activeRunIds.delete(runId)
+        );
+        const record = await Promise.race([started, completion]);
+        sendJson(
+          response,
+          record.status === "running" ? 202 : record.status === "completed" ? 201 : 400,
+          await projectDemoLifecycle(record, demoStore)
+        );
       } catch (error) {
         sendJson(response, 400, { ok: false, message: (error as Error).message });
       }
@@ -247,7 +305,7 @@ async function main(): Promise<void> {
   const workflowPath = argument("--workflow");
   if (workflowPath === undefined) {
     throw new Error(
-      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--input fixture.json] [--runs .awf/studio-runs.jsonl] [--demo-source directory] [--demo-root .awf/demos] [--port 4173]"
+      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--executor execution.json] [--input fixture.json] [--runs .awf/studio-runs.jsonl] [--demo-source directory] [--demo-root .awf/demos] [--execution-root .awf/executions] [--port 4173]"
     );
   }
   const portValue = argument("--port") ?? "4173";
@@ -257,6 +315,14 @@ async function main(): Promise<void> {
   const document = await loadWorkflowDocument(workflowPath);
   const inputPath = argument("--input");
   const initialInputs = inputPath === undefined ? {} : await loadStudioInputs(inputPath);
+  const executorPath = argument("--executor");
+  const executor =
+    executorPath === undefined
+      ? undefined
+      : new LocalProcessWorkflowExecutor(
+          await loadLocalExecutionManifest(executorPath, document.workflow),
+          { executionRoot: resolve(argument("--execution-root") ?? ".awf/executions") }
+        );
   const runStore = new JsonlStudioRunStore(resolve(argument("--runs") ?? ".awf/studio-runs.jsonl"));
   const demoSource = argument("--demo-source");
   const demoStore = new LocalStudioDemoStore({
@@ -264,7 +330,13 @@ async function main(): Promise<void> {
     ...(demoSource === undefined ? {} : { sourceDirectory: resolve(demoSource) })
   });
   const host = "127.0.0.1";
-  createStudioServer({ document, runStore, demoStore, initialInputs }).listen(port, host, () => {
+  createStudioServer({
+    document,
+    runStore,
+    demoStore,
+    initialInputs,
+    ...(executor === undefined ? {} : { executor })
+  }).listen(port, host, () => {
     process.stdout.write(`AAWP Studio loaded at http://${host}:${port}\n`);
   });
 }
