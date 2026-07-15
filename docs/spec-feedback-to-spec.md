@@ -67,6 +67,7 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 - `gyeonggi-integrated-wallet-production-spec/v1` heavy spec profile
 - 102개 baseline screen, 140개 component, 24개 actor와 route/reference integrity 검증
 - 기존 screen/actor/component 삭제와 admin/issuer authority root 결합 방지
+- 담당자별 화면그룹 typed proposal, 110-screen immutable child candidate와 profile verdict
 
 미완료:
 
@@ -74,14 +75,17 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 - Studio diff, finding과 approval inbox UI
 - Approved artifact의 external repository write adapter
 - Heavy spec의 행정·법적 domain enum 전체와 자연어 논리 일관성 verifier
-- 담당자별 화면그룹 피드백의 patch proposal, child candidate와 승인
+- 담당자별 화면그룹 child candidate의 사용자 승인과 promotion
 
-Baseline 형식과 참조 무결성은 검증할 수 있지만, 자연어 피드백을 올바른 patch로 바꾸는 production model activity는 아직 없다. 따라서 현재 단계는 검증된 source와 feedback intent까지이며 자동 논리 교정 완료를 의미하지 않는다.
+Baseline 형식, 참조 무결성, typed patch 재적용과 현재 candidate의 구조 계약은 검증할 수 있지만, 자연어 피드백을 올바른 patch로 바꾸는 production model activity는 아직 없다. 따라서 현재 candidate는 검토 가능한 결과이지 자동 논리 교정 완료나 승인된 spec을 의미하지 않는다.
+
+담당자별 화면그룹 피드백에는 현재 에이전트가 구조화한 typed proposal과 child candidate가 추가됐다. 75개 operation으로 기존 10개 화면을 수정하고 새 업무 화면 8개를 추가했으며, 기존 명부 화면 stable ID 하나를 필수 업로드·검증 화면으로 재사용한다. Candidate는 110 screens, 154 components, 26 actors이고 profile verdict는 finding 없이 통과했다. 이는 production model first-pass 품질을 증명하지 않으며 사용자 승인도 아직 없다.
 
 현재 pinned heavy spec은 다음 명령으로 검사한다.
 
 ```bash
 npm run validate:heavy-spec -- refined-production-spec.json
+npm run generate:heavy-spec-revision
 ```
 
 원본 byte SHA-256은 `b4b50cd9…df33`, canonical digest는 `7031b9f0…ad55`다. Byte hash는 전달 파일 동일성을, canonical digest는 revision contract를 고정한다. 담당자별 피드백 intent와 provenance는 `examples/heavy-spec-feedback-revision`에 있다.

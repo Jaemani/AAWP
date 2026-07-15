@@ -211,7 +211,9 @@ Spec field 표준은 profile validator가 소유한다. 현재 `gyeonggi-integra
 npm run validate:heavy-spec -- refined-production-spec.json
 ```
 
-담당자별 화면그룹 피드백은 `examples/heavy-spec-feedback-revision/feedback-intent.json`의 13개 stable ID로 컴파일됐다. 원본, `designTokens`와 `extendedDesign`은 변경하지 않는다. Production model activity, patch candidate, Studio diff/approval UI는 아직 연결되지 않았으므로 intent 검증을 spec 교정 완료로 보아서는 안 된다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
+담당자별 화면그룹 피드백은 `examples/heavy-spec-feedback-revision/feedback-intent.json`의 13개 stable ID로 컴파일됐다. `npm run generate:heavy-spec-revision`은 typed proposal, 110-screen child spec, summary와 verdict를 `generated/`에 재현한다. 원본, `designTokens`, `extendedDesign`과 관련 없는 소비자·가맹점 화면은 변경하지 않는다.
+
+Child candidate는 profile verifier를 통과했지만 승인되지 않았다. `generated/revision-summary.json`의 status가 `candidate`인지 확인하고 diff를 검토한 뒤에만 별도 approval로 promotion해야 한다. Production model activity와 Studio diff/approval UI는 아직 연결되지 않았으므로 현재 결과를 자동 교정 workflow의 완성으로 보아서는 안 된다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
 
 ## 5. Spec version과 revision
 

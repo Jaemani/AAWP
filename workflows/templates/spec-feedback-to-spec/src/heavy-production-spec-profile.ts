@@ -103,6 +103,29 @@ function validateScreens(document: JsonRecord): SpecRevisionFinding[] {
   const screenIds = screens.map((screen) => screen.id).filter(nonEmptyString);
   const screenIdSet = new Set(screenIds);
 
+  for (const duplicate of findDuplicates(
+    records(document.actors)
+      .map((actor) => actor.id)
+      .filter(nonEmptyString)
+  )) {
+    findings.push(
+      finding("HEAVY_SPEC_DUPLICATE_ACTOR_ID", `duplicate actor id ${duplicate}`, "/actors")
+    );
+  }
+  for (const duplicate of findDuplicates(
+    records(document.components)
+      .map((component) => component.name)
+      .filter(nonEmptyString)
+  )) {
+    findings.push(
+      finding(
+        "HEAVY_SPEC_DUPLICATE_COMPONENT_NAME",
+        `duplicate component name ${duplicate}`,
+        "/components"
+      )
+    );
+  }
+
   for (const duplicate of findDuplicates(screenIds)) {
     findings.push(
       finding("HEAVY_SPEC_DUPLICATE_SCREEN_ID", `duplicate screen id ${duplicate}`, "/screens")

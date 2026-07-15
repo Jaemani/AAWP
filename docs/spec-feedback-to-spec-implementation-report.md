@@ -17,20 +17,22 @@
 - `spec-feedback-to-spec` CONTRACT WIR
 - `gyeonggi-integrated-wallet-production-spec/v1` profile과 baseline preservation 검사
 - 담당자별 화면그룹 피드백 13개 stable ID intent artifact
+- 75개 typed operation, 110-screen immutable child candidate와 finding 0 verdict
+- 역할별 8개 work area, 첫 PoC 15화면 storyboard와 승인·지급·서명·실행 분리 state
 
 ## 검증 결과
 
-- Demo bundle + spec feedback + spec-to-demo integration focused test: 3개 file, 14개 test 통과
-- 전체 Vitest: 45개 file, 230개 test 통과
+- Heavy spec profile + feedback intent + generated candidate focused test: 3개 file, 9개 test 통과
+- 전체 Vitest: 48개 file, 241개 test 통과
 - `spec-to-demo`와 `spec-feedback-to-spec` WIR static check 통과
 - Build, typecheck, lint, format과 whitespace 검사 통과
 
 ## 증명하지 않은 범위
 
-- 자연어 feedback을 올바른 patch로 바꾸는 실제 model first-pass 품질
 - Heavy spec의 행정·법적 domain enum 전체와 자연어 논리 일관성 검사
-- 담당자별 화면그룹 피드백을 반영한 patch proposal과 child candidate
+- Production model이 생성한 patch proposal의 first-pass 품질
+- 담당자별 화면그룹 candidate의 사용자 승인과 promotion
 - Studio diff, finding, approval inbox와 artifact promotion UI
 - Git repository나 외부 document system에 승인 artifact를 쓰는 side-effect adapter
 
-따라서 현재 구현은 안전한 revision substrate, heavy spec 구조 profile과 검증된 feedback intent까지다. Heavy spec을 자동으로 논리 교정할 수 있는 production workflow 완료를 의미하지 않는다.
+따라서 현재 구현은 안전한 revision substrate, heavy spec 구조 profile, 검증된 feedback intent와 미승인 child candidate까지다. Heavy spec을 자동으로 논리 교정할 수 있는 production workflow 완료를 의미하지 않는다.

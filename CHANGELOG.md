@@ -56,6 +56,9 @@
 - 원본 spec은 직접 수정하지 않으며 WIR check와 focused test를 추가했다.
 - 102-screen 경기 통합월렛 spec용 profile validator를 추가해 root·stable ID·route·component/actor/nav/interaction 참조, 기존 entity 보존과 admin/issuer authority root 분리를 검사한다.
 - 담당자별 화면그룹 피드백을 13개 stable feedback ID, allowed JSON Pointer root와 삭제 금지를 가진 intent artifact로 컴파일했다.
+- 75개 typed patch operation으로 102-screen 원본을 보존한 110-screen role-workspace child candidate를 만들고 structural/profile verifier를 통과했다.
+- 기존 `admin-roster-builder`를 명부 업로드·검증으로 재사용하고 나머지 필수 업무 화면 8개, 역할별 navigation, 분리된 policy/roster/payout/issuance state와 첫 PoC 15화면 storyboard를 추가했다.
+- Candidate는 승인하지 않았으며 원본, 디자인 계약과 관련 없는 소비자·가맹점 화면을 변경하지 않는다.
 
 ### 문서
 
