@@ -1287,7 +1287,8 @@ function renderRail() {
 }
 
 function renderScreen() {
-  document.title = artifact.screen.title;
+  const productTitle = copy("title", artifact.screen.title);
+  document.title = productTitle;
   root.replaceChildren();
   const shell = el("div", "console-shell");
   shell.append(renderRail());
@@ -1313,16 +1314,8 @@ function renderScreen() {
   const page = el("main", "console-page");
   const head = el("div", "page-head");
   const title = el("div");
-  title.append(
-    el("code", "route", artifact.screen.route),
-    el("h1", "", artifact.screen.title),
-    el("p", "page-purpose", artifact.screen.purpose)
-  );
+  title.append(el("h1", "", productTitle));
   head.append(title);
-  if (artifact.specFeedback.length)
-    head.append(
-      actionButton(`Spec feedback ${artifact.specFeedback.length}`, "missing", "feedback")
-    );
   page.append(head);
   const actionStatus = el("div", "status-banner success", "");
   actionStatus.id = "action-status";

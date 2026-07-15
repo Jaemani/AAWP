@@ -231,28 +231,13 @@ textarea:focus-visible {
   margin-bottom: 22px;
 }
 
-.route {
-  color: var(--primary);
-  font-family: var(--font-mono);
-  font-size: var(--type-mono-size);
-  font-weight: 600;
-}
-
 h1 {
-  margin: 7px 0 8px;
+  margin: 0;
   font-family: var(--type-title-family);
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
   line-height: var(--type-title-line-height);
   letter-spacing: var(--type-title-letter-spacing);
-}
-
-.page-purpose {
-  max-width: 840px;
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--type-body-size);
-  line-height: var(--type-body-line-height);
 }
 
 .screen-stack {

@@ -13,6 +13,8 @@ Bundle selector는 결과 화면을 고르는 플랫폼 navigation이다. 각 if
 
 Platform navigation은 제품 rail 옆의 두 번째 panel이 아니라 preview 상단의 bundle/surface/screen switcher로 렌더링한다. `독립 화면 열기`는 run snapshot 안의 절대 screen URL을 사용하고 standalone screen의 CTA는 target standalone screen으로 직접 연결된다.
 
+독립 제품 화면은 `screen.copy.title`을 제목으로 사용하며 route, purpose, dataNeeds, component 이름과 feedback count 같은 authoring metadata를 노출하지 않는다. 해당 정보는 screen artifact와 Studio inspector에만 남는다.
+
 각 screen artifact의 route, surface, title, purpose, layout, components, states, copy와 dataNeeds는 source screen object와 일치한다. 공통 `source-contracts.json`이 pinned design token과 선택 화면이 사용하는 component purpose·props·variants·states를 중복 없이 보존한다. 화면에 보이는 운영 수치와 record는 상호작용 확인용 예시 데이터이며 권위값이 아니다. 외부 network는 호출하지 않는다.
 
 `presentation-contract.yaml`은 사용자 제공 Stitch token과 style guidance를 보존한다. Generator가 `design-tokens.css`를 만들며 screen artifact에는 presentation digest와 `aawp-console-surface@0.2.0`이 기록된다. Hanken Grotesk와 JetBrains Mono가 실행 환경에 없으면 외부 font network 요청 없이 system fallback을 사용한다. 상태 배지 아이콘은 [Lucide](https://lucide.dev/)의 ISC 라이선스 자산을 snapshot에 포함해 외부 요청 없이 표시한다.

@@ -72,6 +72,13 @@
 - 교정: Trusted local snapshot iframe에 self-origin popup과 sandbox 탈출 권한을 명시하고, 현재 run을 기준으로 절대 screen URL을 만든다.
 - 재발 방지: Demo lifecycle test에 independent screen address와 preview sandbox capability를 함께 검사한다.
 
+## 제품 화면에 spec authoring metadata를 노출했다
+
+- 관찰: 독립 demo 상단에 route, 내부 screen title, 긴 purpose와 feedback count를 표시해 제품 화면보다 spec inspector처럼 보였다.
+- 원인: Artifact 추적 정보를 제품 surface에도 유용한 설명으로 잘못 취급했다.
+- 교정: 제품 화면은 `screen.copy.title`과 실제 업무 UI만 렌더링하고 route, purpose, dataNeeds, component 이름과 feedback 진단은 Studio의 artifact inspector가 소유한다.
+- 재발 방지: Surface adapter 검증에서 `artifact.screen.route`와 `artifact.screen.purpose`의 제품 DOM 투영을 금지한다.
+
 ## Local simulation이 production workflow처럼 오해될 수 있었다
 
 - 관찰: run과 event가 기록되므로 실제 model/tool workflow가 수행된 것으로 받아들일 여지가 있었다.

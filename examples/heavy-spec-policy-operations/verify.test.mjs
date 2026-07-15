@@ -162,6 +162,9 @@ test("bundle keeps selected screens independent and preserves their source defin
   assert.match(screenRuntime, /admin-supply-burn-settlement/);
   for (const screen of bundle.screens) assert.match(screenRuntime, new RegExp(screen.id));
   assert.match(screenRuntime, /unresolved-navigation/);
+  assert.doesNotMatch(screenRuntime, /artifact\.screen\.(?:route|purpose)/);
+  assert.doesNotMatch(screenStyles, /\.page-purpose|\.route\s*\{/);
+  assert.match(screenRuntime, /copy\("title", artifact\.screen\.title\)/);
   assert.match(script, /aawp:demo-navigate/);
   assert.match(script, /event\.origin !== location\.origin/);
   assert.match(script, /new URL\(entry, location\.href\)/);

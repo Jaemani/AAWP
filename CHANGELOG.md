@@ -41,6 +41,7 @@
 - Studio preview sandbox에 self-origin popup 권한을 제한적으로 추가하고 독립 화면 URL을 절대 주소로 만들어 `독립 화면 열기`가 nested preview에서도 동작하게 했다.
 - 독립 화면에서 source CTA를 누르면 bundle viewer로 돌아가지 않고 target screen의 독립 주소로 직접 전환한다.
 - 상태 배지는 semantic foreground/background token과 로컬에 포함한 Lucide 아이콘을 함께 사용한다.
+- 제품 화면에서 route, purpose와 spec feedback count 같은 authoring metadata를 제거하고 `screen.copy.title`을 사용자용 제목으로 사용한다.
 
 ### `spec-feedback-to-spec`
 

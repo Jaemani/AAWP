@@ -161,6 +161,8 @@ Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selec
 
 Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에 있다. 제품 rail과 나란히 두 번째 좌측 panel을 만들지 않는다. `독립 화면 열기`는 현재 run snapshot의 절대 screen URL을 새 탭에서 열며, 독립 화면 안의 source CTA도 target 독립 화면으로 이어진다.
 
+제품 화면의 제목은 `screen.copy`에서 `key=title`인 사용자용 문구를 우선한다. Route, purpose, dataNeeds, component 이름과 spec feedback count는 제품 DOM에 표시하지 않고 Studio의 artifact·event inspection 영역에서만 확인한다.
+
 필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
 
 `presentation-contract.yaml`은 source와 별도로 pinned된다. `generate-bundle.mjs`가 `design-tokens.css`를 만들며 screen artifact는 presentation digest와 surface adapter version을 기록한다. 현재 adapter는 selected source의 45개 component contract를 모두 명시적으로 지원하지 않으면 실행을 거부한다.
