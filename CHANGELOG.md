@@ -12,6 +12,8 @@
 - 실행 중 button과 첫 node에 즉시 busy/running feedback을 표시한다.
 - `/?run=<runId>` dashboard deep link, run별 demo preview/open/delete를 추가했다.
 - demo snapshot 삭제 후에도 append-only run/event 기록은 보존한다.
+- 새 demo snapshot을 기본 offboard 상태로 만들고 `Onboard demo`, `Offboard demo`, `Delete demo` lifecycle을 추가했다.
+- Offboard는 URL 제공만 중단하며 Delete도 input file, source와 run/event를 변경하지 않는다.
 
 ### `spec-to-demo` 범위 선택
 
@@ -20,6 +22,8 @@
 - 사용자 요청 원문, 선택한 group과 최종 screen/requirement 집합을 scope contract에 기록한다.
 - 자연어 요청이 명시적 ID로 해소되지 않았거나 group이 잘못된 경우 compile을 fail-closed한다.
 - Selection 누락을 전체 화면 요청으로 해석하지 않고 명시적 all selection을 요구한다.
+- 102-screen production spec에서 “정책, 유통, 발행, 준비” 요청을 정책 6개, 유통 7개, 발행·준비자산 9개의 명시적 22-screen selection manifest로 고정한 demo fixture를 추가했다.
+- 이 fixture는 source spec의 흐름·논리 교정을 하지 않는다. 해당 책임은 별도 `spec-feedback-to-spec` workflow 경계로 남겼다.
 
 ### 문서
 

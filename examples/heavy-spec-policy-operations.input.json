@@ -1,0 +1,19 @@
+{
+  "brief": {
+    "title": "경기 통합월렛 정책·유통·발행·준비자산 22-screen demo",
+    "requestText": "정책, 유통, 발행, 준비 관련 페이지 만들어줘",
+    "requirements": [
+      "정책 관련 관리 콘솔 6개 화면",
+      "유통 관련 관리 콘솔 7개 화면",
+      "발행·준비자산 관련 발행사 콘솔 9개 화면",
+      "화면 간 논리적 일관성 교정은 수행하지 않고 source spec을 그대로 표현"
+    ],
+    "scopeSelection": {
+      "groupIds": ["policy", "circulation", "issuance-reserve"],
+      "screenCount": 22,
+      "manifest": "examples/heavy-spec-policy-operations/selection-manifest.json"
+    },
+    "source": "/Users/jaeman/Gyeonggi-PoC/resources/handoff_shared_0709/20260709T043425-itnxih/artifacts/refined-production-spec.json",
+    "sourceSha256": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33"
+  }
+}

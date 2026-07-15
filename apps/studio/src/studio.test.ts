@@ -65,8 +65,11 @@ describe("Studio HTML", () => {
     expect(html).toContain(">Runs<");
     expect(html).toContain("Workflow</strong>");
     expect(html).toContain("Result preview");
-    expect(html).toContain("Open demo");
-    expect(html).toContain("Delete result");
+    expect(html).toContain("Onboard demo");
+    expect(html).toContain("Offboard demo");
+    expect(html).toContain("Delete demo");
+    expect(html).not.toContain("Open demo");
+    expect(html).not.toContain("Delete result");
     expect(html).toContain("demo-frame");
     expect(html).toContain("Event timeline");
     expect(html).toContain("/api/runs");
@@ -74,7 +77,7 @@ describe("Studio HTML", () => {
     expect(html).toContain("window.history.replaceState");
     expect(html).toContain('setAttribute("aria-busy"');
     expect(html).toContain('setAttribute("aria-current"');
-    expect(html.match(/<button/g)).toHaveLength(2);
+    expect(html.match(/<button/g)).toHaveLength(3);
     expect(html).not.toContain("Canonical WIR editor");
     expect(html).not.toContain("Semantic diff");
   });

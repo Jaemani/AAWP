@@ -54,6 +54,24 @@
 - `npm ci`, build, typecheck, lint, format check, schema generation과 whitespace 검사 통과
 - 기존 `spec-to-demo` WIR check 성공, simulate 2회 출력 byte-identical
 
+## Heavy spec selection evidence
+
+`refined-production-spec.json` 102개 화면 중 사용자 요청 “정책, 유통, 발행, 준비 관련 페이지 만들어줘”를 다음 22개 화면으로 해소했다.
+
+| Group         | 화면 수 | 선택 기준                                           |
+| ------------- | ------: | --------------------------------------------------- |
+| 정책          |       6 | 정책 목록·작성·충전·바우처·조건·효과                |
+| 유통          |       7 | 현황·대사·대상자·정산·관할 종료·환전·거래 추적      |
+| 발행·준비자산 |       9 | 발행 계획·실행·원장·한도·준비금·증명·대사·소각 정산 |
+
+- Source SHA-256: `b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33`
+- Selection: `examples/heavy-spec-policy-operations/selection-manifest.json`
+- Input: `examples/heavy-spec-policy-operations.input.json`
+- Demo: `examples/heavy-spec-policy-operations/`
+- Fixture 검증: source hash와 102-screen 원본, exact 22 IDs, 6/7/9 group count, source ID 존재, JavaScript syntax, 외부 network 부재
+
+이 demo는 선택 경계와 화면 projection을 확인하기 위한 source-pinned static evidence다. Spec 내부의 흐름·논리적 일관성은 수정하지 않았고, 이 결과를 model-backed production workflow의 first-pass 품질이나 direct baseline 대비 우위 증거로 사용하지 않는다.
+
 ## 남은 operational proof
 
 현재 완료는 template compiler와 실행 계약이다. Hidden source는 Playwright에서 실행 가능하지만 OCI image build, 실제 browser run, screenshot baseline 승인, axe 결과 publish를 아직 수행하지 않았다. Coherent builder test도 fake provider를 사용하므로 실제 모델 first-pass 품질 측정이 아니다.

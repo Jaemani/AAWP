@@ -135,7 +135,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .run-row-head { display:flex; min-width:0; align-items:center; gap:7px; }
     .run-row strong { min-width:0; flex:1; overflow:hidden; color:#344054; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; text-overflow:ellipsis; white-space:nowrap; }
     .run-row small { display:block; margin-top:5px; overflow:hidden; color:var(--muted); font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
-    .run-demo-badge { flex:none; padding:3px 6px; border-radius:999px; color:var(--accent); background:var(--accent-soft); font-size:7px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
+    .run-demo-badge { flex:none; padding:3px 6px; border-radius:999px; color:#667085; background:#eef1f4; font-size:7px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
+    .run-demo-badge.onboarded { color:var(--success); background:var(--success-soft); }
     .detail { min-width:0; background:#fff; }
     .empty-detail { display:grid; min-height:520px; place-items:center; padding:40px; text-align:center; }
     .empty-state strong,.empty-state span { display:block; }
@@ -148,12 +149,12 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .detail-head h2 { margin:0; overflow:hidden; color:#273244; font:12px ui-monospace,SFMono-Regular,Menlo,monospace; text-overflow:ellipsis; white-space:nowrap; }
     .detail-head p { margin:6px 0 0; color:var(--muted); font-size:10px; }
     .detail-actions { display:flex; flex:none; align-items:center; gap:8px; }
-    .demo-link,.delete-result { display:inline-flex; min-height:34px; align-items:center; justify-content:center; padding:0 11px; border-radius:8px; font-size:10px; font-weight:680; text-decoration:none; }
-    .demo-link { border:1px solid #b8c6eb; color:var(--accent); background:#fff; }
-    .demo-link:hover { background:var(--accent-soft); }
+    .demo-lifecycle,.delete-result { display:inline-flex; min-height:34px; align-items:center; justify-content:center; padding:0 11px; border-radius:8px; font-size:10px; font-weight:680; }
+    .demo-lifecycle { border:1px solid #b8c6eb; color:var(--accent); background:#fff; cursor:pointer; }
+    .demo-lifecycle:hover { background:var(--accent-soft); }
     .delete-result { border:1px solid transparent; color:var(--danger); background:transparent; cursor:pointer; }
     .delete-result:hover { background:var(--danger-soft); }
-    .delete-result:disabled { cursor:wait; opacity:.55; }
+    .demo-lifecycle:disabled,.delete-result:disabled { cursor:wait; opacity:.55; }
     .status-label { padding:5px 8px; border-radius:999px; color:var(--success); background:var(--success-soft); font-size:8px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
     .status-label.failed { color:var(--danger); background:var(--danger-soft); }
     .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); padding:14px 22px; gap:8px; border-bottom:1px solid var(--line); background:#fcfcfd; }
@@ -255,9 +256,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
       <div class="detail">
         <div id="empty-detail" class="empty-detail"><div class="empty-state"><strong>No run selected</strong><span>Run workflow를 실행하면 node 상태와 결과 preview가 여기에 표시됩니다.</span></div></div>
         <div id="run-detail" hidden>
-          <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><a id="demo-link" class="demo-link" target="_blank" rel="noopener" hidden>Open demo</a><button id="delete-demo" class="delete-result" type="button" hidden>Delete result</button></div></div>
+          <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><button id="toggle-demo" class="demo-lifecycle" type="button" hidden>Onboard demo</button><button id="delete-demo" class="delete-result" type="button" hidden>Delete demo</button></div></div>
           <div class="summary"><div><span>Mode</span><strong id="selected-mode"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Duration</span><strong id="selected-duration"></strong></div></div>
-          <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin"></iframe><div id="demo-empty" class="demo-empty" hidden>결과 파일이 삭제되었습니다. 실행 기록은 보존되며 같은 workflow를 다시 실행해 재생성할 수 있습니다.</div></div></section>
+          <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin"></iframe><div id="demo-empty" class="demo-empty" hidden></div></div></section>
           <div class="detail-grid">
             <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
             <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
@@ -281,12 +282,13 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const artifactRecords = document.getElementById("artifact-records");
       const timeline = document.getElementById("event-timeline");
       const demoResult = document.getElementById("demo-result");
-      const demoLink = document.getElementById("demo-link");
+      const toggleDemo = document.getElementById("toggle-demo");
       const deleteDemo = document.getElementById("delete-demo");
       const demoAddress = document.getElementById("demo-address");
       const demoFrame = document.getElementById("demo-frame");
       const demoEmpty = document.getElementById("demo-empty");
       let selectedRunId = null;
+      let demoOnboarded = false;
 
       const clear = (target) => { while (target.firstChild) target.removeChild(target.firstChild); };
       const make = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
@@ -308,12 +310,15 @@ export function renderStudioHtml(view: StudioViewModel): string {
         if (label) label.textContent = statusLabel(state);
       });
       const renderDemo = (record) => {
-        if (!record.demo) { demoResult.hidden = true; demoLink.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; return; }
-        const available = record.demo.available !== false;
-        demoResult.hidden = false; demoLink.hidden = !available; deleteDemo.hidden = !available; demoEmpty.hidden = available; demoFrame.hidden = !available;
-        demoAddress.textContent = record.demo.entryUrl + " · " + record.demo.contentDigest.slice(0, 12);
-        demoLink.href = record.demo.entryUrl;
-        demoFrame.src = available ? record.demo.entryUrl : "about:blank";
+        if (!record.demo) { demoResult.hidden = true; toggleDemo.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; demoOnboarded = false; return; }
+        const snapshotAvailable = record.demo.snapshotAvailable === true;
+        demoOnboarded = snapshotAvailable && record.demo.onboarded === true;
+        demoResult.hidden = false; toggleDemo.hidden = !snapshotAvailable; deleteDemo.hidden = !snapshotAvailable;
+        toggleDemo.textContent = demoOnboarded ? "Offboard demo" : "Onboard demo";
+        demoEmpty.hidden = demoOnboarded; demoFrame.hidden = !demoOnboarded;
+        demoEmpty.textContent = snapshotAvailable ? "Demo가 offboard 상태입니다. Snapshot과 실행 기록은 보존되며 Onboard demo를 눌러 다시 활성화할 수 있습니다." : "Demo snapshot이 삭제되었습니다. Input, source와 실행 기록은 보존됩니다.";
+        demoAddress.textContent = record.demo.entryUrl + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (demoOnboarded ? "Onboarded" : snapshotAvailable ? "Offboarded" : "Deleted");
+        demoFrame.src = demoOnboarded ? record.demo.entryUrl : "about:blank";
       };
 
       const renderRun = (record) => {
@@ -354,7 +359,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
           const copy = make("span", undefined, "run-copy");
           const head = make("span", undefined, "run-row-head");
           head.appendChild(make("strong", shortRunId(run.runId)));
-          if (run.demo?.available) head.appendChild(make("span", "Demo", "run-demo-badge"));
+          if (run.demo?.snapshotAvailable) head.appendChild(make("span", run.demo.onboarded ? "Onboarded" : "Stored", "run-demo-badge" + (run.demo.onboarded ? " onboarded" : "")));
           copy.appendChild(head);
           copy.appendChild(make("small", statusLabel(run.status) + " · " + shortTime(run.createdAt)));
           row.appendChild(dot); row.appendChild(copy);
@@ -379,10 +384,19 @@ export function renderStudioHtml(view: StudioViewModel): string {
         finally { runButton.disabled = false; runButton.textContent = "Run workflow"; runButton.setAttribute("aria-busy", "false"); }
       });
 
+      toggleDemo.addEventListener("click", async () => {
+        if (!selectedRunId) return;
+        const action = demoOnboarded ? "offboard" : "onboard";
+        toggleDemo.disabled = true;
+        try { const response = await fetch("/api/runs/" + encodeURIComponent(selectedRunId) + "/demo/" + action, { method:"POST" }); const result = await response.json(); if (!response.ok) throw new Error(result.message || "Demo 상태를 변경하지 못했습니다."); await selectRun(selectedRunId); await loadHistory(); setMessage(shortRunId(selectedRunId) + (action === "onboard" ? " demo를 onboard했습니다." : " demo를 offboard했습니다. Snapshot은 보존됩니다."), "success"); }
+        catch (error) { setMessage(error.message, "error"); }
+        finally { toggleDemo.disabled = false; }
+      });
+
       deleteDemo.addEventListener("click", async () => {
-        if (!selectedRunId || !confirm("이 run의 데모 결과 파일을 삭제할까요? 실행 기록은 남습니다.")) return;
+        if (!selectedRunId || !confirm("이 run의 demo snapshot을 삭제할까요? Input, source와 실행 기록은 남습니다.")) return;
         deleteDemo.disabled = true;
-        try { const response = await fetch("/api/runs/" + encodeURIComponent(selectedRunId) + "/demo", { method:"DELETE" }); const result = await response.json(); if (!response.ok) throw new Error(result.message || "결과를 삭제하지 못했습니다."); await selectRun(selectedRunId); await loadHistory(); setMessage(shortRunId(selectedRunId) + " 결과를 삭제했습니다. 실행 기록은 보존됩니다.", "success"); }
+        try { const response = await fetch("/api/runs/" + encodeURIComponent(selectedRunId) + "/demo", { method:"DELETE" }); const result = await response.json(); if (!response.ok) throw new Error(result.message || "Demo를 삭제하지 못했습니다."); await selectRun(selectedRunId); await loadHistory(); setMessage(shortRunId(selectedRunId) + " demo snapshot을 삭제했습니다. Input, source와 실행 기록은 보존됩니다.", "success"); }
         catch (error) { setMessage(error.message, "error"); }
         finally { deleteDemo.disabled = false; }
       });

@@ -252,7 +252,7 @@ export async function executeStudioRun(input: {
   store: StudioRunStore;
   runId?: string;
   now?: () => string;
-  publishDemo?: (runId: string) => Promise<StudioDemoRecord | undefined>;
+  createDemoSnapshot?: (runId: string) => Promise<StudioDemoRecord | undefined>;
 }): Promise<StudioRunRecord> {
   const runId = input.runId ?? `run_${randomUUID()}`;
   const now = input.now ?? (() => new Date().toISOString());
@@ -261,7 +261,7 @@ export async function executeStudioRun(input: {
   try {
     const fixture = validateFixtureInput(input.workflow, input.inputs);
     const trace = simulateDeterministic(input.workflow, fixture);
-    const demo = await input.publishDemo?.(runId);
+    const demo = await input.createDemoSnapshot?.(runId);
     const record = materializeTrace({
       workflow: input.workflow,
       trace,

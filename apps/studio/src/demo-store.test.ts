@@ -12,7 +12,7 @@ afterEach(async () => {
 });
 
 describe("local Studio demo store", () => {
-  it("publishes an immutable run snapshot, serves assets, and deletes only the snapshot", async () => {
+  it("creates an offboarded snapshot, controls serving, and deletes only the snapshot", async () => {
     directory = await mkdtemp(join(tmpdir(), "awf-demo-"));
     const sourceDirectory = join(directory, "source");
     await mkdir(join(sourceDirectory, "assets"), { recursive: true });
@@ -23,13 +23,18 @@ describe("local Studio demo store", () => {
       sourceDirectory
     });
 
-    const record = await store.publish("run_demo-1");
+    const record = await store.createSnapshot("run_demo-1");
     expect(record).toMatchObject({
       label: "source",
       entryUrl: "/runs/run_demo-1/demo/"
     });
     expect(record?.contentDigest).toMatch(/^[a-f0-9]{64}$/);
     await expect(store.exists("run_demo-1")).resolves.toBe(true);
+    await expect(store.isOnboarded("run_demo-1")).resolves.toBe(false);
+    await expect(store.read("run_demo-1", "")).resolves.toBeUndefined();
+    await expect(store.onboard("run_demo-1")).resolves.toBe(true);
+    await expect(store.onboard("run_demo-1")).resolves.toBe(false);
+    await expect(store.isOnboarded("run_demo-1")).resolves.toBe(true);
     await expect(store.read("run_demo-1", "")).resolves.toMatchObject({
       mediaType: "text/html; charset=utf-8",
       content: Buffer.from("<h1>demo</h1>")
@@ -38,9 +43,16 @@ describe("local Studio demo store", () => {
       mediaType: "text/css; charset=utf-8"
     });
     await expect(store.read("run_demo-1", "../outside.txt")).resolves.toBeUndefined();
+    await expect(store.read("run_demo-1", ".aawp-onboarded")).resolves.toBeUndefined();
+
+    await expect(store.offboard("run_demo-1")).resolves.toBe(true);
+    await expect(store.offboard("run_demo-1")).resolves.toBe(false);
+    await expect(store.exists("run_demo-1")).resolves.toBe(true);
+    await expect(store.read("run_demo-1", "")).resolves.toBeUndefined();
 
     await expect(store.delete("run_demo-1")).resolves.toBe(true);
     await expect(store.exists("run_demo-1")).resolves.toBe(false);
     await expect(store.delete("run_demo-1")).resolves.toBe(false);
+    await expect(store.onboard("run_demo-1")).resolves.toBe(false);
   });
 });

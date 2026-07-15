@@ -30,7 +30,8 @@
 - read-only source API와 2 MiB 제한 compiler check API
 - deterministic dry-run 실행 API와 node/event/artifact 기록 화면
 - 서버 재시작 후에도 유지되는 local append-only JSONL run history
-- run ID 기반 웹 데모 snapshot, dashboard 미리보기와 결과 파일 삭제
+- run ID 기반 웹 demo snapshot과 default-offboard lifecycle
+- `Onboard demo`, `Offboard demo`, snapshot-only `Delete demo`와 dashboard preview
 - CSP, no-store, nosniff와 frame deny 응답 header
 
 Studio 후보는 source 파일, production runtime 또는 database를 직접 변경하지 않는다. browser-side 정규화는 편집 편의를 위한 것이며 publish 판단은 서버 측 compiler 결과만 사용한다. Local run은 실제 Temporal·tool·model 실행이 아니라 `DETERMINISTIC_SIMULATION`으로 표시한다.

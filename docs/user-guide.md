@@ -40,7 +40,13 @@ node apps/studio/dist/server.js \
 4. `Runs`에서 과거 run을 선택한다.
 5. Result preview, node, artifact, event와 output을 확인한다.
 
-선택한 run의 dashboard 주소는 `/?run=<runId>`, 독립 demo 주소는 `/runs/<runId>/demo/`다. `Delete result`는 `.awf/demos/<runId>` snapshot만 삭제한다. JSONL run/event 기록과 source는 삭제하지 않는다.
+선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`다.
+
+- `Onboard demo`: 저장된 snapshot을 URL과 preview에서 활성화한다.
+- `Offboard demo`: URL 제공을 중단하지만 snapshot을 보존한다.
+- `Delete demo`: `.awf/demos/<runId>` snapshot만 삭제한다.
+
+새 snapshot은 기본 offboard 상태다. 어떤 lifecycle action도 Run input file, 원본 demo source, JSONL run/event와 lineage를 변경하지 않는다.
 
 현재 Studio server는 local-only이고 `DETERMINISTIC_SIMULATION`을 표시한다. 실제 Temporal·model·tool 실행, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
 
@@ -132,6 +138,23 @@ Selection을 생략해도 전체 화면을 자동 선택하지 않는다. 전체
 
 요청 원문만 있고 명시적 ID가 없으면 `UNRESOLVED_SCOPE_REQUEST`로 거부한다. AI가 prompt 안에서만 임의 범위를 정한 상태로 builder를 실행하지 않는다.
 
+### 22-screen 정책·유통·발행·준비자산 예제
+
+저장소에는 102-screen source에서 22개 화면만 명시적으로 선택한 fixture가 있다. Source spec의 흐름·논리적 일관성은 수정하지 않는다.
+
+```bash
+npm test --prefix examples/heavy-spec-policy-operations
+node apps/studio/dist/server.js \
+  --workflow examples/spec-to-demo.wir.yaml \
+  --input examples/heavy-spec-policy-operations.input.json \
+  --runs .awf/studio-runs.jsonl \
+  --demo-source examples/heavy-spec-policy-operations \
+  --demo-root .awf/demos \
+  --port 4173
+```
+
+Exact screen ID와 source digest는 `examples/heavy-spec-policy-operations/selection-manifest.json`이 고정한다. 새 run은 offboard 상태이므로 dashboard에서 `Onboard demo`를 눌러야 preview와 run ID URL이 열린다.
+
 ## 4. Spec version과 revision
 
 - `documentId`: 같은 논리 spec 계보에서 유지한다.
@@ -158,7 +181,7 @@ Selection을 생략해도 전체 화면을 자동 선택하지 않는다. 전체
 - Revision: parent run에서 분기해 영향 범위만 다시 실행한다.
 - Reproduce: 동일 fingerprint 결과를 재사용하거나 기능적 동등성을 다시 검증한다.
 
-Demo snapshot은 파생 결과이므로 삭제할 수 있다. Source artifact, run/event와 lineage는 별도 retention policy 없이는 삭제하지 않는다.
+Demo snapshot은 파생 결과이므로 offboard하거나 삭제할 수 있다. `Offboard`는 되돌릴 수 있고 파일을 보존한다. `Delete demo`는 snapshot만 제거한다. Input file, source artifact, run/event와 lineage는 별도 retention policy 없이는 삭제하지 않는다.
 
 ## 7. 문제 해결
 

@@ -20,8 +20,15 @@
 
 - 관찰: 생성된 demo가 있어도 dashboard에서 바로 열거나 run ID로 공유하고 삭제하기 어려웠다.
 - 원인: 실행 기록 projection을 먼저 구현하면서 파생 결과의 운영 lifecycle을 후순위로 뒀다.
-- 교정: `/?run=<runId>`, `/runs/<runId>/demo/`, preview, open과 snapshot delete를 추가했다.
+- 교정: `/?run=<runId>`, `/runs/<runId>/demo/`, preview와 snapshot lifecycle을 추가했다. 새 snapshot은 기본 offboard 상태이며 `Onboard demo`만 URL 제공을 시작하고, `Offboard demo`는 파일을 보존한 채 제공을 중단하며, `Delete demo`는 snapshot만 삭제한다.
 - 재발 방지: 새 artifact type은 생성뿐 아니라 조회, 주소 지정, retention과 재생성 경로를 함께 설계한다.
+
+## Demo가 생성 즉시 모두 노출될 수 있었다
+
+- 관찰: run마다 demo URL을 자동 활성화하면 보관 중인 파생 결과까지 동시에 제공되어 운영자가 공개 상태를 통제하기 어렵다.
+- 원인: snapshot 생성과 serving activation을 하나의 publish 동작으로 취급했다.
+- 교정: immutable snapshot 생성과 URL serving 상태를 분리하고 `.aawp-onboarded` marker로 명시적으로 전환한다.
+- 재발 방지: 파생 artifact의 존재, 제공 상태와 삭제 상태를 서로 다른 lifecycle state로 모델링한다.
 
 ## 제품 이름과 workflow 이름을 혼합했다
 

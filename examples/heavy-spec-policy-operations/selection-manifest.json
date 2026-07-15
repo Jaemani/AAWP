@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "aawp/demo-selection/v1",
+  "requestText": "정책, 유통, 발행, 준비 관련 페이지 만들어줘",
+  "source": "/Users/jaeman/Gyeonggi-PoC/resources/handoff_shared_0709/20260709T043425-itnxih/artifacts/refined-production-spec.json",
+  "sourceSha256": "b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33",
+  "logicalConsistencyReview": "excluded; owned by spec-feedback-to-spec",
+  "groups": [
+    {
+      "id": "policy",
+      "label": "정책",
+      "screenIds": [
+        "admin-policy-list",
+        "admin-circulation-policy-composer",
+        "admin-circulation-topup-policy",
+        "admin-voucher-policy-setup",
+        "admin-condition-builder",
+        "admin-policy-effect-dashboard"
+      ]
+    },
+    {
+      "id": "circulation",
+      "label": "유통",
+      "screenIds": [
+        "admin-circulation-dashboard",
+        "admin-circulation-reconciliation",
+        "admin-roster-builder",
+        "admin-settlement-batch",
+        "admin-jurisdiction-exit",
+        "admin-redeem-console",
+        "admin-transaction-trace"
+      ]
+    },
+    {
+      "id": "issuance-reserve",
+      "label": "발행 · 준비자산",
+      "screenIds": [
+        "admin-issuance-plans",
+        "admin-issuance-plan",
+        "admin-issuance-execute",
+        "admin-issuance-ledger",
+        "admin-issuance-limit",
+        "admin-issuance-reserves",
+        "admin-issuance-por",
+        "admin-backing-reconciliation",
+        "admin-supply-burn-settlement"
+      ]
+    }
+  ]
+}

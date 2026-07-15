@@ -14,6 +14,8 @@ import {
   executeStudioRun,
   InMemoryStudioRunStore,
   JsonlStudioRunStore,
+  type StudioRunRecord,
+  type StudioRunSummary,
   type StudioRunStore
 } from "./run-store.js";
 import { LocalStudioDemoStore, type StudioDemoStore } from "./demo-store.js";
@@ -24,6 +26,16 @@ export interface StudioServerOptions {
   runStore?: StudioRunStore;
   demoStore?: StudioDemoStore;
   initialInputs?: unknown;
+}
+
+async function projectDemoLifecycle(
+  record: StudioRunRecord | StudioRunSummary,
+  demoStore: StudioDemoStore | undefined
+): Promise<unknown> {
+  if (record.demo === undefined) return record;
+  const snapshotAvailable = (await demoStore?.exists(record.runId)) ?? false;
+  const onboarded = snapshotAvailable && ((await demoStore?.isOnboarded(record.runId)) ?? false);
+  return { ...record, demo: { ...record.demo, snapshotAvailable, onboarded } };
 }
 
 function sendJson(response: ServerResponse, status: number, payload: unknown): void {
@@ -122,17 +134,7 @@ export function createStudioServer(options: StudioServerOptions): Server {
       const summaries = await runStore.list();
       sendJson(response, 200, {
         runs: await Promise.all(
-          summaries.map(async (summary) => ({
-            ...summary,
-            ...(summary.demo === undefined
-              ? {}
-              : {
-                  demo: {
-                    ...summary.demo,
-                    available: (await demoStore?.exists(summary.runId)) ?? false
-                  }
-                })
-          }))
+          summaries.map(async (summary) => projectDemoLifecycle(summary, demoStore))
         )
       });
       return;
@@ -141,20 +143,42 @@ export function createStudioServer(options: StudioServerOptions): Server {
       const runId = decodeURIComponent(url.pathname.slice("/api/runs/".length));
       const storedRecord = await runStore.get(runId);
       const record =
-        storedRecord?.demo === undefined
-          ? storedRecord
-          : {
-              ...storedRecord,
-              demo: {
-                ...storedRecord.demo,
-                available: (await demoStore?.exists(runId)) ?? false
-              }
-            };
+        storedRecord === undefined
+          ? undefined
+          : await projectDemoLifecycle(storedRecord, demoStore);
       sendJson(
         response,
         record === undefined ? 404 : 200,
         record === undefined ? { error: "run_not_found" } : record
       );
+      return;
+    }
+    const lifecycleRoute = url.pathname.match(/^\/api\/runs\/([^/]+)\/demo\/(onboard|offboard)$/);
+    if (request.method === "POST" && lifecycleRoute !== null) {
+      const runId = decodeURIComponent(lifecycleRoute[1] ?? "");
+      const action = lifecycleRoute[2];
+      const record = await runStore.get(runId);
+      if (record === undefined) {
+        sendJson(response, 404, { error: "run_not_found" });
+        return;
+      }
+      if (
+        record.demo === undefined ||
+        demoStore === undefined ||
+        !(await demoStore.exists(runId))
+      ) {
+        sendJson(response, 404, { error: "demo_not_found" });
+        return;
+      }
+      const changed =
+        action === "onboard" ? await demoStore.onboard(runId) : await demoStore.offboard(runId);
+      sendJson(response, 200, {
+        ok: true,
+        runId,
+        changed,
+        snapshotAvailable: true,
+        onboarded: await demoStore.isOnboarded(runId)
+      });
       return;
     }
     if (
@@ -183,9 +207,11 @@ export function createStudioServer(options: StudioServerOptions): Server {
           workflow: options.document.workflow,
           inputs,
           store: runStore,
-          ...(demoStore === undefined ? {} : { publishDemo: (runId) => demoStore.publish(runId) })
+          ...(demoStore === undefined
+            ? {}
+            : { createDemoSnapshot: (runId) => demoStore.createSnapshot(runId) })
         });
-        sendJson(response, 201, record);
+        sendJson(response, 201, await projectDemoLifecycle(record, demoStore));
       } catch (error) {
         sendJson(response, 400, { ok: false, message: (error as Error).message });
       }

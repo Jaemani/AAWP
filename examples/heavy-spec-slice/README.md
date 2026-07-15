@@ -27,7 +27,7 @@ node apps/studio/dist/server.js \
   --port 4173
 ```
 
-`Run workflow`를 누르면 결과가 `.awf/demos/<run-id>/`에 복사되고 `/runs/<run-id>/demo/`에서 열린다. `Delete result`는 이 복사본만 삭제하며 JSONL run/event 기록과 원본 demo source는 보존한다.
+`Run workflow`를 누르면 결과가 `.awf/demos/<run-id>/`에 offboarded snapshot으로 복사된다. `Onboard demo`를 누른 run만 `/runs/<run-id>/demo/`와 dashboard preview에서 열린다. `Offboard demo`는 파일을 보존한 채 제공을 중단하고 `Delete demo`는 이 snapshot만 삭제한다. 어떤 동작도 input file, JSONL run/event 기록과 원본 demo source를 변경하지 않는다.
 
 ## 검증 범위
 

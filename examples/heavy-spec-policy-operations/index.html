@@ -1,0 +1,58 @@
+<!doctype html>
+<html
+  lang="ko"
+  data-source-sha256="b4b50cd9c1d2321c8936126c00c3ff242bb88ba5445c26abfffc03187993df33"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="경기 통합월렛 production spec의 정책·유통·발행·준비자산 22-screen 운영 콘솔 demo"
+    />
+    <title>경기 통합월렛 · 정책·유통·발행 운영</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">GG</span>
+        <div><strong>경기 통합월렛</strong><small>정책·유통·발행 운영</small></div>
+      </div>
+      <div class="topbar-meta">
+        <span class="sync-state">As of 2026.07.15 10:30</span
+        ><span class="actor">광역 운영 관리자</span>
+      </div>
+    </header>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <label class="nav-search"
+          ><span>화면 찾기</span
+          ><input
+            id="screen-search"
+            type="search"
+            placeholder="정책, 발행, 대사…"
+            autocomplete="off"
+        /></label>
+        <nav id="screen-navigation" aria-label="Demo 화면"></nav>
+        <div class="source-note">
+          <strong>22 / 102 screens</strong><span>선택된 scope만 구현</span>
+        </div>
+      </aside>
+      <main class="content">
+        <header class="screen-header">
+          <div>
+            <p id="screen-breadcrumb" class="breadcrumb"></p>
+            <h1 id="screen-title"></h1>
+            <p id="screen-summary" class="screen-summary"></p>
+          </div>
+          <div id="screen-header-action"></div>
+        </header>
+        <section id="screen-status" class="authority-note" aria-live="polite"></section>
+        <div id="screen-content"></div>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

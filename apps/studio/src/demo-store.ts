@@ -9,7 +9,8 @@ import {
   realpath,
   rename,
   rm,
-  stat
+  stat,
+  writeFile
 } from "node:fs/promises";
 import { basename, join, relative, resolve, sep } from "node:path";
 
@@ -25,11 +26,16 @@ export interface StudioDemoAsset {
 }
 
 export interface StudioDemoStore {
-  publish(runId: string): Promise<StudioDemoRecord | undefined>;
+  createSnapshot(runId: string): Promise<StudioDemoRecord | undefined>;
   exists(runId: string): Promise<boolean>;
+  isOnboarded(runId: string): Promise<boolean>;
+  onboard(runId: string): Promise<boolean>;
+  offboard(runId: string): Promise<boolean>;
   delete(runId: string): Promise<boolean>;
   read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined>;
 }
+
+const ONBOARD_MARKER = ".aawp-onboarded";
 
 function assertRunId(runId: string): void {
   if (!/^run_[A-Za-z0-9-]+$/.test(runId)) throw new Error(`invalid demo run id: ${runId}`);
@@ -109,7 +115,7 @@ export class LocalStudioDemoStore implements StudioDemoStore {
     return join(this.rootDirectory, runId);
   }
 
-  async publish(runId: string): Promise<StudioDemoRecord | undefined> {
+  async createSnapshot(runId: string): Promise<StudioDemoRecord | undefined> {
     if (this.sourceDirectory === undefined) return undefined;
     const entryPath = join(this.sourceDirectory, "index.html");
     const entry = await stat(entryPath).catch((error: NodeJS.ErrnoException) => {
@@ -119,7 +125,7 @@ export class LocalStudioDemoStore implements StudioDemoStore {
     if (!entry.isFile()) throw new Error(`demo source index is not a file: ${entryPath}`);
 
     await mkdir(this.rootDirectory, { recursive: true });
-    const temporaryDirectory = await mkdtemp(join(this.rootDirectory, `.publish-${runId}-`));
+    const temporaryDirectory = await mkdtemp(join(this.rootDirectory, `.snapshot-${runId}-`));
     const targetDirectory = this.runDirectory(runId);
     try {
       await cp(this.sourceDirectory, temporaryDirectory, { recursive: true, errorOnExist: true });
@@ -140,6 +146,25 @@ export class LocalStudioDemoStore implements StudioDemoStore {
     return pathExists(join(this.runDirectory(runId), "index.html"));
   }
 
+  async isOnboarded(runId: string): Promise<boolean> {
+    return pathExists(join(this.runDirectory(runId), ONBOARD_MARKER));
+  }
+
+  async onboard(runId: string): Promise<boolean> {
+    if (!(await this.exists(runId))) return false;
+    const markerPath = join(this.runDirectory(runId), ONBOARD_MARKER);
+    if (await pathExists(markerPath)) return false;
+    await writeFile(markerPath, "onboarded\n", { encoding: "utf8", mode: 0o600 });
+    return true;
+  }
+
+  async offboard(runId: string): Promise<boolean> {
+    const markerPath = join(this.runDirectory(runId), ONBOARD_MARKER);
+    if (!(await pathExists(markerPath))) return false;
+    await rm(markerPath, { force: true });
+    return true;
+  }
+
   async delete(runId: string): Promise<boolean> {
     const directory = this.runDirectory(runId);
     if (!(await pathExists(directory))) return false;
@@ -148,8 +173,10 @@ export class LocalStudioDemoStore implements StudioDemoStore {
   }
 
   async read(runId: string, assetPath: string): Promise<StudioDemoAsset | undefined> {
+    if (!(await this.isOnboarded(runId))) return undefined;
     const runDirectory = this.runDirectory(runId);
     const requestedPath = assetPath.length === 0 ? "index.html" : decodeURIComponent(assetPath);
+    if (requestedPath === ONBOARD_MARKER) return undefined;
     const absolutePath = resolve(runDirectory, requestedPath);
     if (absolutePath !== runDirectory && !absolutePath.startsWith(`${runDirectory}${sep}`))
       return undefined;

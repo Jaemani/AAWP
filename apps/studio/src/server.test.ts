@@ -129,7 +129,7 @@ describe("Studio local server", () => {
     ).resolves.toMatchObject({ runId: run.runId, artifacts: [{ nodeId: "execute" }] });
   });
 
-  it("serves and deletes a web demo by run ID while preserving the run history", async () => {
+  it("onboards, offboards, and deletes a demo snapshot while preserving run history", async () => {
     directory = await mkdtemp(join(tmpdir(), "awf-studio-demo-"));
     const sourceDirectory = join(directory, "source");
     await mkdir(sourceDirectory, { recursive: true });
@@ -156,10 +156,22 @@ describe("Studio local server", () => {
     const run = (await runResponse.json()) as StudioRunRecord;
     expect(run.demo).toMatchObject({ entryUrl: `/runs/${run.runId}/demo/` });
 
-    const detail = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
+    let detail = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
       response.json()
-    )) as StudioRunRecord & { demo: { available: boolean } };
-    expect(detail.demo.available).toBe(true);
+    )) as StudioRunRecord & {
+      demo: { snapshotAvailable: boolean; onboarded: boolean };
+    };
+    expect(detail.demo).toMatchObject({ snapshotAvailable: true, onboarded: false });
+    expect((await fetch(`${base}${detail.demo.entryUrl}`)).status).toBe(404);
+
+    const onboarded = await fetch(`${base}/api/runs/${run.runId}/demo/onboard`, {
+      method: "POST"
+    });
+    await expect(onboarded.json()).resolves.toMatchObject({
+      ok: true,
+      changed: true,
+      onboarded: true
+    });
     await expect(
       fetch(`${base}${detail.demo.entryUrl}`).then(async (response) => response.text())
     ).resolves.toBe("<h1>run demo</h1>");
@@ -168,13 +180,29 @@ describe("Studio local server", () => {
       fetch(`${base}/runs/${run.runId}/demo/styles.css`).then(async (response) => response.text())
     ).resolves.toBe("body{color:#191f28}");
 
+    const offboarded = await fetch(`${base}/api/runs/${run.runId}/demo/offboard`, {
+      method: "POST"
+    });
+    await expect(offboarded.json()).resolves.toMatchObject({
+      ok: true,
+      changed: true,
+      onboarded: false
+    });
+    expect((await fetch(`${base}${detail.demo.entryUrl}`)).status).toBe(404);
+    detail = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
+      response.json()
+    )) as typeof detail;
+    expect(detail.demo).toMatchObject({ snapshotAvailable: true, onboarded: false });
+
     const deleted = await fetch(`${base}/api/runs/${run.runId}/demo`, { method: "DELETE" });
     await expect(deleted.json()).resolves.toEqual({ ok: true, runId: run.runId, deleted: true });
     expect((await fetch(`${base}${detail.demo.entryUrl}`)).status).toBe(404);
     const afterDelete = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
       response.json()
-    )) as StudioRunRecord & { demo: { available: boolean } };
-    expect(afterDelete.demo.available).toBe(false);
+    )) as StudioRunRecord & {
+      demo: { snapshotAvailable: boolean; onboarded: boolean };
+    };
+    expect(afterDelete.demo).toMatchObject({ snapshotAvailable: false, onboarded: false });
     const history = (await fetch(`${base}/api/runs`).then(async (response) => response.json())) as {
       runs: StudioRunSummary[];
     };
