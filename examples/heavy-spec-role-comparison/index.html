@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="기존 production spec과 담당자별 feedback candidate 화면 비교"
+    />
+    <title>경기 통합월렛 · 담당자별 화면 비교</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span>G</span>
+        <div><strong>경기 통합월렛</strong><small>Role workspace review</small></div>
+      </div>
+      <div class="source-state"><i></i><span id="source-state">Spec 확인 중</span></div>
+    </header>
+    <main class="page">
+      <section class="review-head">
+        <div>
+          <span class="eyebrow">SPEC VERSION REVIEW</span>
+          <h1>담당자별 화면 비교</h1>
+          <p>같은 역할과 화면 수를 기준으로 원본 spec과 피드백 candidate를 전환합니다.</p>
+        </div>
+        <div
+          id="version-switch"
+          class="version-switch"
+          role="group"
+          aria-label="Spec version"
+        ></div>
+      </section>
+      <section class="screen-controls" aria-label="화면 선택">
+        <label
+          ><span>담당 업무</span
+          ><select id="role-select"></select
+        ></label>
+        <div class="role-summary">
+          <strong id="role-title"></strong><small id="role-description"></small>
+        </div>
+        <label
+          ><span>화면</span
+          ><select id="screen-select"></select
+        ></label>
+        <a id="open-screen" target="_blank" rel="noopener noreferrer">독립 화면 열기</a>
+      </section>
+      <section class="viewer">
+        <div id="gap" class="gap" hidden>
+          <span>SPEC GAP</span><strong>전용 화면 없음</strong>
+          <p id="gap-message"></p>
+        </div>
+        <iframe
+          id="screen-frame"
+          title="담당자별 spec demo 화면"
+          sandbox="allow-scripts allow-same-origin"
+        ></iframe>
+      </section>
+    </main>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <p id="error" class="error" hidden></p>
+    <script src="./app.js"></script>
+  </body>
+</html>

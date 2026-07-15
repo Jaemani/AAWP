@@ -20,5 +20,6 @@ ADR은 중요한 구조 선택의 맥락, 고려한 대안, 결정과 결과를 
 - [ADR-013](ADR-013-explicit-demo-scope-selection.md): 자연어 demo 요청을 explicit scope contract로 고정
 - [ADR-014](ADR-014-demo-bundle-is-a-platform-artifact.md): 여러 demo 화면을 platform-owned bundle artifact로 보존
 - [ADR-015](ADR-015-spec-feedback-produces-immutable-revisions.md): feedback을 immutable spec revision candidate로 적용
+- [ADR-016](ADR-016-self-describing-spec-revision.md): spec revision 전달 단위를 self-describing 단일 child document로 고정
 
 상태가 바뀌면 기존 ADR을 삭제하지 않고 `superseded`로 표시한 뒤 새 ADR을 추가한다.

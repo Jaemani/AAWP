@@ -157,7 +157,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .demo-lifecycle:disabled,.delete-result:disabled { cursor:wait; opacity:.55; }
     .status-label { padding:5px 8px; border-radius:999px; color:var(--success); background:var(--success-soft); font-size:8px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
     .status-label.failed { color:var(--danger); background:var(--danger-soft); }
-    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); padding:14px 22px; gap:8px; border-bottom:1px solid var(--line); background:#fcfcfd; }
+    .summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); padding:14px 22px; gap:8px; border-bottom:1px solid var(--line); background:#fcfcfd; }
     .summary div { padding:10px 12px; border:1px solid var(--line-soft); border-radius:9px; background:#fff; }
     .summary span,.summary strong { display:block; }
     .summary span { color:var(--muted); font-size:8px; font-weight:680; letter-spacing:.06em; text-transform:uppercase; }
@@ -172,11 +172,17 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .demo-empty { display:grid; min-height:140px; place-items:center; padding:24px; border:1px dashed #cbd3dd; border-radius:10px; color:var(--muted); background:var(--panel-soft); text-align:center; font-size:11px; }
     .detail-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.78fr); }
     .detail-grid section { min-width:0; padding:20px 22px; border-bottom:1px solid var(--line); }
-    .detail-grid section:nth-child(odd) { border-right:1px solid var(--line); }
+    .detail-grid section:nth-child(2),.detail-grid section:nth-child(4) { border-right:1px solid var(--line); }
+    .detail-grid .trace-contract-section { grid-column:1 / -1; border-right:0; background:#fcfcfd; }
     .detail-grid h3 { margin:0 0 13px; color:#667085; font-size:9px; font-weight:760; letter-spacing:.08em; text-transform:uppercase; }
     .section-heading { margin-bottom:13px; }
     .section-heading h3 { margin-bottom:4px; }
     .section-heading p { margin:0; color:var(--subtle); font-size:8px; line-height:1.5; }
+    .trace-contract { display:grid; grid-template-columns:1.05fr repeat(3,minmax(0,1fr)); gap:8px; }
+    .trace-contract div { min-width:0; padding:10px 11px; border:1px solid var(--line-soft); border-radius:8px; background:#fff; }
+    .trace-contract span,.trace-contract code { display:block; }
+    .trace-contract span { margin-bottom:5px; color:var(--muted); font-size:8px; font-weight:680; letter-spacing:.05em; text-transform:uppercase; }
+    .trace-contract code { overflow:hidden; color:#475467; font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
     .nodes { display:flex; flex-wrap:wrap; gap:7px; }
     .node-record { display:flex; align-items:center; gap:7px; padding:7px 9px; border:1px solid var(--line-soft); border-radius:7px; color:#475467; background:#fafbfc; font-size:9px; }
     .node-record i { width:6px; height:6px; border-radius:50%; background:var(--success); }
@@ -194,6 +200,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
     pre { max-height:300px; margin:0; overflow:auto; padding:13px; border-radius:8px; color:#dce5f1; background:#172033; font:9px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
     @media (max-width:1050px) {
       .workspace { grid-template-columns:260px minmax(0,1fr); }
+      .summary { grid-template-columns:repeat(3,1fr); }
+      .trace-contract { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .demo-frame { height:560px; }
     }
     @media (max-width:820px) {
@@ -205,7 +213,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
       .history { display:flex; max-height:190px; gap:4px; overflow:auto; }
       .run-row { min-width:230px; margin:0; }
       .detail-grid { grid-template-columns:1fr; }
-      .detail-grid section:nth-child(odd) { border-right:0; }
+      .detail-grid section:nth-child(2),.detail-grid section:nth-child(4) { border-right:0; }
+      .trace-contract-section { grid-column:auto; }
       .demo-frame { height:520px; }
     }
     @media (max-width:560px) {
@@ -260,9 +269,10 @@ export function renderStudioHtml(view: StudioViewModel): string {
         <div id="empty-detail" class="empty-detail"><div class="empty-state"><strong>No run selected</strong><span>Run workflow를 실행하면 node 상태와 결과 preview가 여기에 표시됩니다.</span></div></div>
         <div id="run-detail" hidden>
           <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><button id="toggle-demo" class="demo-lifecycle" type="button" hidden>Onboard demo</button><button id="delete-demo" class="delete-result" type="button" hidden>Delete demo</button></div></div>
-          <div class="summary"><div><span>Mode</span><strong id="selected-mode"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Duration</span><strong id="selected-duration"></strong></div></div>
+          <div class="summary"><div><span>Workflow time</span><strong id="selected-duration"></strong></div><div><span>Result build</span><strong id="selected-build-duration"></strong></div><div><span>Tokens</span><strong id="selected-tokens"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Mode</span><strong id="selected-mode"></strong></div></div>
           <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe><div id="demo-empty" class="demo-empty" hidden></div></div></section>
           <div class="detail-grid">
+            <section class="trace-contract-section"><div class="section-heading"><h3>Traceability</h3><p>Run과 정확한 workflow, input, deterministic trace를 digest로 연결합니다.</p></div><div class="trace-contract"><div><span>Trace ID</span><code id="trace-id"></code></div><div><span>Workflow digest</span><code id="trace-workflow-digest"></code></div><div><span>Input digest</span><code id="trace-input-digest"></code></div><div><span>Trace digest</span><code id="trace-digest"></code></div></div></section>
             <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
             <section><h3>Artifacts</h3><div id="artifact-records" class="artifacts"></div></section>
             <section><div class="section-heading"><h3>Simulation trace</h3><p>실제 wall-clock 로그가 아니라 결정적 WIR 실행 순서입니다. 경과 시간은 run 시작 기준 monotonic clock입니다.</p></div><ol id="event-timeline" class="timeline"></ol></section>
@@ -336,7 +346,17 @@ export function renderStudioHtml(view: StudioViewModel): string {
         document.getElementById("selected-events").textContent = String(record.events.length);
         document.getElementById("selected-artifacts").textContent = String(record.artifacts.length);
         const finalElapsed = record.events.length ? record.events[record.events.length - 1].elapsedMs : undefined;
-        document.getElementById("selected-duration").textContent = formatMilliseconds(finalElapsed === undefined ? Math.max(0, new Date(record.completedAt) - new Date(record.createdAt)) : finalElapsed);
+        const workflowDuration = record.metrics?.timing?.workflowDurationMs ?? (finalElapsed === undefined ? Math.max(0, new Date(record.completedAt) - new Date(record.createdAt)) : finalElapsed);
+        const resultBuild = record.metrics?.timing?.resultBuild;
+        const tokenUsage = record.metrics?.tokens;
+        document.getElementById("selected-duration").textContent = formatMilliseconds(workflowDuration);
+        document.getElementById("selected-build-duration").textContent = resultBuild?.status === "measured" ? formatMilliseconds(resultBuild.durationMs) + " · snapshot" : "N/A";
+        document.getElementById("selected-tokens").textContent = tokenUsage ? tokenUsage.totalTokens.toLocaleString("ko-KR") + " · " + tokenUsage.modelInvocations + " calls" : "legacy";
+        const trace = record.metrics?.trace;
+        document.getElementById("trace-id").textContent = trace?.traceId || record.runId;
+        document.getElementById("trace-workflow-digest").textContent = trace?.workflowDigest || record.workflowDigest || "legacy";
+        document.getElementById("trace-input-digest").textContent = trace?.inputDigest || record.inputDigest || "legacy";
+        document.getElementById("trace-digest").textContent = trace?.traceDigest || record.traceDigest || "legacy";
         clear(nodeRecords);
         Object.entries(record.nodeStates).sort(([a],[b]) => a.localeCompare(b)).forEach(([nodeId,state]) => { const card = make("div", undefined, "node-record" + (state === "failed" ? " failed" : "")); card.appendChild(make("i")); card.appendChild(make("span", nodeId + " · " + state)); nodeRecords.appendChild(card); });
         clear(artifactRecords);

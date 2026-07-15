@@ -99,6 +99,27 @@
 - 원인: 버튼 의미만 구현하고 `active demo ≤ 1` 불변식을 저장 계층에 두지 않았다.
 - 교정: 새 run을 onboard할 때 동일 store의 기존 marker를 직렬화된 임계구역에서 제거하고, 두 snapshot을 순서대로 onboard하는 회귀 테스트를 추가했다.
 
+## Run 기록이 시간·비용·계보를 충분히 설명하지 못했다
+
+- 관찰: Event sequence와 최종 duration은 있었지만 결과를 만드는 단계가 얼마나 걸렸는지, model token을 사용했는지, 어떤 workflow/input/trace와 연결되는지 한눈에 확인하기 어려웠다.
+- 원인: 실행 순서 투영을 먼저 구현하고 운영 계측을 최종 event 하나에 축약했다.
+- 교정: Workflow, validation, deterministic simulation과 snapshot materialization 시간을 구분하고 token usage와 digest trace contract를 run record에 추가했다. 현재 deterministic mode는 model call이 없으므로 정확히 0으로 표시한다.
+- 재발 방지: 실제 builder/model/tool adapter는 phase event와 provider usage evidence가 없으면 production metric으로 표시하지 않는다. Snapshot 복사 시간을 application compile 시간이라고 부르지 않는다.
+
+## 완전한 child spec이 여러 산출물 중 하나로 보여 전달 경계가 모호했다
+
+- 관찰: Candidate document는 이미 원본 전체를 포함했지만 proposal, summary, verdict와 같은 디렉터리에 있어 runtime도 여러 파일을 함께 읽어야 하는 것처럼 보였다.
+- 원인: Revision envelope의 계보 정보는 sidecar에 충분하다고 보고 child document 자체의 self-description을 생략했다.
+- 교정: `meta.revision`에 parent/contract digest, feedback ID, candidate status와 `executionInput=this_document`를 내장했다. Sidecar는 감사·재현에만 사용한다.
+- 재발 방지: 사용자가 전달하는 domain artifact는 단독으로 버전과 계보를 식별할 수 있어야 한다. 자기 content digest처럼 순환하는 값만 외부 envelope에 둔다.
+
+## 원본에 없는 역할 화면을 비교 편의를 위해 만들 위험이 있었다
+
+- 관찰: 담당자별 원본/후보 비교에서 원본 spec에는 지급 담당 전용 화면이 없었다.
+- 원인: 역할별 화면 수를 맞추려 하면 source 밖의 화면을 임의로 합성할 수 있다.
+- 교정: 원본 지급 역할은 `SPEC GAP`으로 표시하고 candidate에서만 두 전용 화면을 제공한다.
+- 재발 방지: 비교 fixture는 양쪽 개수를 억지로 맞추지 않고 source absence도 검토 evidence로 보존한다.
+
 ## 검증 공백
 
 - 현재 자동화: build, typecheck, lint, format, unit/integration test와 HTTP deep-link 검증.

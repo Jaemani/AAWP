@@ -17,6 +17,9 @@
 - 새 demo를 onboard하면 이전 active demo를 자동으로 offboard해 한 번에 하나의 run URL만 공개한다.
 - Simulation event에 run 시작 기준 monotonic `elapsedMs`와 node `durationMs`를 기록해 sequence와 시간이 역전되던 오류를 수정했다.
 - Studio의 `Event timeline`을 `Simulation trace`로 명확히 하고, timing 계약이 없던 과거 기록은 `legacy`로 표시한다.
+- Run별 workflow 전체 시간, input validation, deterministic simulation과 결과 snapshot materialization 시간을 측정한다.
+- Deterministic mode의 정확한 `0 tokens · 0 calls`와 향후 runtime usage event 합산 계약을 추가했다.
+- Run ID를 trace ID로 사용하고 workflow, input, trace digest를 한곳에서 역추적할 수 있게 했다.
 
 ### `spec-to-demo` 범위 선택
 
@@ -56,9 +59,11 @@
 - 원본 spec은 직접 수정하지 않으며 WIR check와 focused test를 추가했다.
 - 102-screen 경기 통합월렛 spec용 profile validator를 추가해 root·stable ID·route·component/actor/nav/interaction 참조, 기존 entity 보존과 admin/issuer authority root 분리를 검사한다.
 - 담당자별 화면그룹 피드백을 13개 stable feedback ID, allowed JSON Pointer root와 삭제 금지를 가진 intent artifact로 컴파일했다.
-- 75개 typed patch operation으로 102-screen 원본을 보존한 110-screen role-workspace child candidate를 만들고 structural/profile verifier를 통과했다.
+- 76개 typed patch operation으로 102-screen 원본을 보존한 110-screen role-workspace child candidate를 만들고 structural/profile verifier를 통과했다.
 - 기존 `admin-roster-builder`를 명부 업로드·검증으로 재사용하고 나머지 필수 업무 화면 8개, 역할별 navigation, 분리된 policy/roster/payout/issuance state와 첫 PoC 15화면 storyboard를 추가했다.
 - Candidate는 승인하지 않았으며 원본, 디자인 계약과 관련 없는 소비자·가맹점 화면을 변경하지 않는다.
+- 완전한 child spec 내부 `meta.revision`에 parent/contract digest, 13개 feedback ID와 candidate 상태를 넣고 실행 입력을 이 단일 문서로 고정했다.
+- 원본/feedback candidate를 8개 담당 업무별 1–2화면으로 전환하는 비교 demo를 추가했다. 원본에 없는 지급 전용 화면은 임의 생성하지 않고 gap으로 표시한다.
 
 ### 문서
 

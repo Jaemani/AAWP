@@ -17,7 +17,8 @@
 - `spec-feedback-to-spec` CONTRACT WIR
 - `gyeonggi-integrated-wallet-production-spec/v1` profile과 baseline preservation 검사
 - 담당자별 화면그룹 피드백 13개 stable ID intent artifact
-- 75개 typed operation, 110-screen immutable child candidate와 finding 0 verdict
+- 76개 typed operation, 110-screen immutable child candidate와 finding 0 verdict
+- 단일 child spec 내부의 self-describing `meta.revision` provenance와 `executionInput=this_document`
 - 역할별 8개 work area, 첫 PoC 15화면 storyboard와 승인·지급·서명·실행 분리 state
 
 ## 검증 결과

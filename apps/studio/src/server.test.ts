@@ -155,6 +155,13 @@ describe("Studio local server", () => {
     expect(runResponse.status).toBe(201);
     const run = (await runResponse.json()) as StudioRunRecord;
     expect(run.demo).toMatchObject({ entryUrl: `/runs/${run.runId}/demo/` });
+    expect(run.metrics).toMatchObject({
+      timing: {
+        resultBuild: { kind: "snapshot_materialization", status: "measured" }
+      },
+      tokens: { modelInvocations: 0, totalTokens: 0 },
+      trace: { traceId: run.runId, eventCount: run.events.length }
+    });
 
     let detail = (await fetch(`${base}/api/runs/${run.runId}`).then(async (response) =>
       response.json()

@@ -1,0 +1,31 @@
+{
+  "brief": {
+    "title": "경기 통합월렛 담당자별 원본·피드백 candidate 비교 demo",
+    "requestText": "기존 스펙과 피드백 적용 스펙을 담당자별 한두 페이지씩 비교해줘",
+    "requirements": [
+      "spec version, 담당 업무, 화면 순서로 전환",
+      "각 담당 업무별 1개 또는 2개의 테스트 화면",
+      "제품 내부에는 하나의 navigation rail만 표시",
+      "원본에 없는 지급 담당 전용 화면은 임의 생성하지 않고 gap으로 표시",
+      "candidate runtime 입력은 완전한 단일 child spec 파일"
+    ],
+    "scopeSelection": {
+      "roleGroups": [
+        "policy",
+        "roster",
+        "approval",
+        "payout",
+        "issuance",
+        "settlement",
+        "audit",
+        "access"
+      ],
+      "maxScreensPerRole": 2,
+      "manifest": "examples/heavy-spec-role-comparison/comparison-manifest.json"
+    },
+    "source": "examples/heavy-spec-feedback-revision/generated/refined-production-spec.role-workspaces.candidate.json",
+    "sourceDigest": "766e965d6b893678adaba7899f88330681b57600a2810a8935d0ceca0fb17806",
+    "comparisonSource": "refined-production-spec.json",
+    "comparisonSourceDigest": "7031b9f0b51bddb06d7b9f8dc1377de583a5cea7aa452e908792553be4ffad55"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "aawp/spec-revision-verdict/v1",
-  "candidateId": "specrev_f634727798e1e28a60a3d21d3a9e9ec14ff05a1daa6c4491861f2b41d894ef05",
+  "candidateId": "specrev_c811de6f5b29e8d0b2871c787b8ea259329ea42069a42031ade8750644f0f1af",
   "status": "passed",
   "findings": [],
-  "digest": "872a93c713e2fb45bc599398d156a7130a3f4a97c9329c4d7b5b337902a7e233"
+  "digest": "c221cfd3f66cf5681ea33825aa75b1f2f6c4ce6f270dbfdfea5a3b10f9549fcf"
 }

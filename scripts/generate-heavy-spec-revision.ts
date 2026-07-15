@@ -1574,6 +1574,26 @@ addOperation({
   feedbackIds: ["scenario-assumption-001", "voucher-hub-001"],
   reason: "작업용 가정과 확정하지 말아야 할 정책 사실을 candidate metadata에 명시한다."
 });
+addOperation({
+  operation: "add",
+  path: "/meta/revision",
+  value: {
+    schemaVersion: "aawp/embedded-spec-revision/v1",
+    versionId: "role-workspaces-candidate-2026-07-15",
+    status: "candidate",
+    generatedBy: "spec-feedback-to-spec",
+    parentArtifactId: contract.sourceArtifactId,
+    parentDigest: contract.sourceDigest,
+    contractDigest: contract.digest,
+    feedbackIds: contract.feedbackIds,
+    executionInput: "this_document",
+    auditSidecarsRequiredAtRuntime: false,
+    note: "이 파일은 원본 전체와 승인 전 피드백 변경을 함께 포함한 완전한 단일 child spec이다."
+  },
+  feedbackIds: contract.feedbackIds,
+  reason:
+    "단일 child spec만 전달해도 부모, 피드백, candidate 상태와 실행 입력 경계를 식별할 수 있게 한다."
+});
 
 const proposal = {
   schemaVersion: "aawp/spec-patch-proposal/v1" as const,

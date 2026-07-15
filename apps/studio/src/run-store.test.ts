@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { executeStudioRun, JsonlStudioRunStore } from "./run-store.js";
+import { executeStudioRun, InMemoryStudioRunStore, JsonlStudioRunStore } from "./run-store.js";
 import { loadStudioInputs, loadWorkflowDocument } from "./server.js";
 
 let directory: string | undefined;
@@ -33,7 +33,7 @@ describe("Studio JSONL run history", () => {
       status: "completed",
       nodeStates: { "build-demo": "completed", "verify-release": "completed" }
     });
-    expect(run.events.map((event) => event.elapsedMs)).toEqual([0, 2, 2, 3, 3, 4, 4, 5, 5, 7]);
+    expect(run.events.map((event) => event.elapsedMs)).toEqual([0, 5, 5, 6, 6, 7, 7, 8, 8, 13]);
     expect(run.events.map((event) => event.occurredAt)).toEqual(
       [...run.events]
         .sort((left, right) => (left.elapsedMs ?? 0) - (right.elapsedMs ?? 0))
@@ -41,6 +41,33 @@ describe("Studio JSONL run history", () => {
     );
     expect(run.events.find((event) => event.type === "NodeCompleted")?.payload).toMatchObject({
       durationMs: 1
+    });
+    expect(run.metrics).toEqual({
+      timing: {
+        workflowDurationMs: 13,
+        inputValidationMs: 1,
+        deterministicSimulationMs: 7,
+        resultBuild: {
+          kind: "snapshot_materialization",
+          status: "not_applicable",
+          durationMs: 0
+        }
+      },
+      tokens: {
+        status: "measured",
+        source: "runtime_events",
+        modelInvocations: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0
+      },
+      trace: {
+        traceId: "run-persisted",
+        eventCount: 10,
+        workflowDigest: run.workflowDigest,
+        inputDigest: run.inputDigest,
+        traceDigest: run.traceDigest
+      }
     });
 
     const reopenedStore = new JsonlStudioRunStore(path);
@@ -58,5 +85,33 @@ describe("Studio JSONL run history", () => {
       schemaVersion: "awf/studio-run/v1",
       runId: "run-persisted"
     });
+  });
+
+  it("keeps timing, zero-token evidence, and trace identity for failed runs", async () => {
+    const document = await loadWorkflowDocument("examples/spec-to-demo.wir.yaml");
+    let monotonicTime = 10;
+    const run = await executeStudioRun({
+      workflow: document.workflow,
+      inputs: {},
+      store: new InMemoryStudioRunStore(),
+      runId: "run-failed-metrics",
+      now: () => "2026-07-15T00:00:00.000Z",
+      monotonicNow: () => monotonicTime++
+    });
+
+    expect(run).toMatchObject({
+      status: "failed",
+      metrics: {
+        timing: { workflowDurationMs: expect.any(Number) },
+        tokens: { modelInvocations: 0, totalTokens: 0 },
+        trace: {
+          traceId: "run-failed-metrics",
+          eventCount: 2,
+          workflowDigest: run.workflowDigest,
+          inputDigest: run.inputDigest
+        }
+      }
+    });
+    expect(run.metrics?.trace.traceDigest).toBeUndefined();
   });
 });

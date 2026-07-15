@@ -25,6 +25,7 @@
     "validate:heavy-spec": "tsx scripts/validate-heavy-spec.ts",
     "generate:schema": "tsx scripts/generate-schema.ts",
     "generate:heavy-spec-revision": "tsx scripts/generate-heavy-spec-revision.ts",
+    "generate:heavy-spec-role-comparison": "tsx scripts/generate-heavy-spec-role-comparison.ts",
     "bench:direct": "tsx benchmarks/direct-v0/harness/run-direct.ts",
     "bench:direct:reverify": "tsx benchmarks/direct-v0/harness/reverify.ts"
   },

@@ -10468,6 +10468,33 @@
         "명부 승인 뒤 지급은 자동 시작되지 않는다",
         "신규 발행이 필요한 경우에만 발행사 콘솔로 인계한다"
       ]
+    },
+    "revision": {
+      "auditSidecarsRequiredAtRuntime": false,
+      "contractDigest": "a0b45624b937eb941df1ab6083bde47d96decd767fa9b0521de28c0ea3d866a6",
+      "executionInput": "this_document",
+      "feedbackIds": [
+        "role-workspace-001",
+        "role-workspace-002",
+        "voucher-hub-001",
+        "policy-work-001",
+        "roster-work-001",
+        "payout-work-001",
+        "issuance-work-001",
+        "approval-separation-001",
+        "authority-boundary-001",
+        "human-copy-001",
+        "scenario-assumption-001",
+        "poc-flow-001",
+        "accessibility-001"
+      ],
+      "generatedBy": "spec-feedback-to-spec",
+      "note": "이 파일은 원본 전체와 승인 전 피드백 변경을 함께 포함한 완전한 단일 child spec이다.",
+      "parentArtifactId": "refined-production-spec@b4b50cd9c1d2321c",
+      "parentDigest": "7031b9f0b51bddb06d7b9f8dc1377de583a5cea7aa452e908792553be4ffad55",
+      "schemaVersion": "aawp/embedded-spec-revision/v1",
+      "status": "candidate",
+      "versionId": "role-workspaces-candidate-2026-07-15"
     }
   },
   "mockData": [

@@ -67,7 +67,8 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 - `gyeonggi-integrated-wallet-production-spec/v1` heavy spec profile
 - 102개 baseline screen, 140개 component, 24개 actor와 route/reference integrity 검증
 - 기존 screen/actor/component 삭제와 admin/issuer authority root 결합 방지
-- 담당자별 화면그룹 typed proposal, 110-screen immutable child candidate와 profile verdict
+- 담당자별 화면그룹 76-operation typed proposal, 110-screen immutable child candidate와 profile verdict
+- Child spec 내부 `meta.revision`에 parent/contract digest, feedback ID, candidate 상태와 단일 실행 입력 경계 내장
 
 미완료:
 
@@ -79,7 +80,9 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 
 Baseline 형식, 참조 무결성, typed patch 재적용과 현재 candidate의 구조 계약은 검증할 수 있지만, 자연어 피드백을 올바른 patch로 바꾸는 production model activity는 아직 없다. 따라서 현재 candidate는 검토 가능한 결과이지 자동 논리 교정 완료나 승인된 spec을 의미하지 않는다.
 
-담당자별 화면그룹 피드백에는 현재 에이전트가 구조화한 typed proposal과 child candidate가 추가됐다. 75개 operation으로 기존 10개 화면을 수정하고 새 업무 화면 8개를 추가했으며, 기존 명부 화면 stable ID 하나를 필수 업로드·검증 화면으로 재사용한다. Candidate는 110 screens, 154 components, 26 actors이고 profile verdict는 finding 없이 통과했다. 이는 production model first-pass 품질을 증명하지 않으며 사용자 승인도 아직 없다.
+담당자별 화면그룹 피드백에는 현재 에이전트가 구조화한 typed proposal과 child candidate가 추가됐다. 76개 operation으로 기존 10개 화면을 수정하고 새 업무 화면 8개를 추가했으며, 마지막 operation은 완전한 child 문서 안에 revision provenance를 내장한다. 기존 명부 화면 stable ID 하나는 필수 업로드·검증 화면으로 재사용한다. Candidate는 110 screens, 154 components, 26 actors이고 profile verdict는 finding 없이 통과했다. 이는 production model first-pass 품질을 증명하지 않으며 사용자 승인도 아직 없다.
+
+전달·실행 단위는 `refined-production-spec.role-workspaces.candidate.json` 한 파일이다. 원본 전체와 변경 결과가 같은 문서에 있고 `meta.revision.executionInput="this_document"`다. Proposal, summary와 verdict는 patch 재현과 독립 검증을 위한 감사 sidecar이며 runtime이 child를 읽기 위해 필요하지 않다.
 
 현재 pinned heavy spec은 다음 명령으로 검사한다.
 

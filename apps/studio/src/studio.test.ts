@@ -74,6 +74,10 @@ describe("Studio HTML", () => {
     expect(html).toContain("allow-popups allow-popups-to-escape-sandbox");
     expect(html).toContain("Simulation trace");
     expect(html).toContain("monotonic clock");
+    expect(html).toContain("Workflow time");
+    expect(html).toContain("Result build");
+    expect(html).toContain("Tokens");
+    expect(html).toContain("Traceability");
     expect(html).toContain("/api/runs");
     expect(html).toContain("URLSearchParams");
     expect(html).toContain("window.history.replaceState");

@@ -48,7 +48,11 @@ node apps/studio/dist/server.js \
 
 새 snapshot은 기본 offboard 상태다. 어떤 lifecycle action도 Run input file, 원본 demo source, JSONL run/event와 lineage를 변경하지 않는다.
 
-현재 Studio server는 local-only이고 `DETERMINISTIC_SIMULATION`을 표시한다. `Simulation trace`의 `elapsedMs`는 run 시작 기준 monotonic offset이며 node 완료에는 `durationMs`가 포함된다. 이는 결정적 WIR 실행 순서이지 실제 Temporal·model·tool activity log가 아니다. Timing 계약 추가 전의 기존 기록은 Studio에서 `legacy`로 표시한다. 실제 Temporal·model·tool 실행, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+현재 Studio server는 local-only이고 `DETERMINISTIC_SIMULATION`을 표시한다. Run 상세의 `Workflow time`은 입력 검증, 결정적 simulation과 결과 snapshot materialization을 포함한 monotonic 경과 시간이다. `Result build`는 application compiler 시간이 아니라 run별 정적 결과를 복사·digest하는 `snapshot_materialization` 시간이다. 이 단계가 없으면 `N/A`로 표시한다.
+
+`Tokens`는 runtime event usage의 합계다. 현재 deterministic mode는 model invocation을 구조적으로 수행하지 않으므로 추정치가 아닌 측정값 `0 tokens · 0 calls`다. Production model adapter를 연결하면 provider usage event의 input/output token을 같은 field에 합산해야 한다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 simulation trace digest를 함께 표시한다.
+
+`Simulation trace`의 `elapsedMs`는 run 시작 기준 monotonic offset이며 node 완료에는 `durationMs`가 포함된다. 이는 결정적 WIR 실행 순서이지 실제 Temporal·model·tool activity log가 아니다. Timing 계약 추가 전의 기존 기록은 Studio에서 `legacy`로 표시한다. 실제 Temporal·model·tool 실행, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
 
 ## 3. `spec-to-demo` 입력 범위
 
@@ -171,6 +175,27 @@ Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에
 
 정확성의 현재 경계도 구분한다. Source screen object, component reference, design token, navigation target과 interaction description은 byte/digest 또는 deep-equality test로 고정된다. 반면 각 component의 모든 prop이 화면 field로 노출되는지와 Figma 수준 pixel geometry는 아직 전수 acceptance가 없다. 따라서 현재 demo는 source-faithful structural prototype이지 22개 화면의 field-by-field 완전 구현이라고 주장하지 않는다. 예시 record도 source authority data가 아니다.
 
+### 원본/담당자별 candidate 비교 예제
+
+원본 spec과 feedback 적용 결과를 같은 검토 UI에서 담당 업무별 1–2화면씩 전환할 수 있다.
+
+```bash
+npm run generate:heavy-spec-revision
+npm run generate:heavy-spec-role-comparison
+npm test --prefix examples/heavy-spec-role-comparison
+node apps/studio/dist/server.js \
+  --workflow examples/spec-to-demo.wir.yaml \
+  --input examples/heavy-spec-role-comparison.input.json \
+  --runs .awf/studio-runs.jsonl \
+  --demo-source examples/heavy-spec-role-comparison \
+  --demo-root .awf/demos \
+  --port 4173
+```
+
+비교 순서는 `spec version → 담당 업무 → 화면`이다. 제품의 좌측 navigation rail은 하나만 유지하며 비교 UI를 두 번째 rail로 만들지 않는다. 8개 담당 업무에 candidate 15개, 원본 12개 고유 화면 projection을 사용한다. 원본에 지급 담당 전용 화면이 없으므로 임의 제품 화면을 만들지 않고 `SPEC GAP`을 표시한다.
+
+Candidate runtime 입력은 `generated/refined-production-spec.role-workspaces.candidate.json` 한 파일이다. 이 파일은 원본 전체 110-screen document와 `meta.revision`의 parent digest, 13개 feedback ID, contract digest, candidate 상태를 함께 포함한다. `patch-proposal.json`, `revision-summary.json`, `revision-verdict.json`은 재현·감사용 sidecar이며 demo 실행 입력이 아니다.
+
 ## 4. `spec-feedback-to-spec`
 
 Workflow IR 검사:
@@ -211,7 +236,7 @@ Spec field 표준은 profile validator가 소유한다. 현재 `gyeonggi-integra
 npm run validate:heavy-spec -- refined-production-spec.json
 ```
 
-담당자별 화면그룹 피드백은 `examples/heavy-spec-feedback-revision/feedback-intent.json`의 13개 stable ID로 컴파일됐다. `npm run generate:heavy-spec-revision`은 typed proposal, 110-screen child spec, summary와 verdict를 `generated/`에 재현한다. 원본, `designTokens`, `extendedDesign`과 관련 없는 소비자·가맹점 화면은 변경하지 않는다.
+담당자별 화면그룹 피드백은 `examples/heavy-spec-feedback-revision/feedback-intent.json`의 13개 stable ID로 컴파일됐다. `npm run generate:heavy-spec-revision`은 76개 typed operation, 110-screen 단일 child spec, summary와 verdict를 `generated/`에 재현한다. 원본, `designTokens`, `extendedDesign`과 관련 없는 소비자·가맹점 화면은 변경하지 않는다. Child의 `meta.revision.executionInput`은 `this_document`이며 sidecar가 없어도 부모와 feedback 계보를 식별할 수 있다.
 
 Child candidate는 profile verifier를 통과했지만 승인되지 않았다. `generated/revision-summary.json`의 status가 `candidate`인지 확인하고 diff를 검토한 뒤에만 별도 approval로 promotion해야 한다. Production model activity와 Studio diff/approval UI는 아직 연결되지 않았으므로 현재 결과를 자동 교정 workflow의 완성으로 보아서는 안 된다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
 

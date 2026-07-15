@@ -154,7 +154,19 @@ describe("heavy spec role-workspace revision candidate", () => {
     expect(new Set(paths).size).toBe(paths.length);
     expect(summary.status).toBe("candidate");
     expect(candidate.meta).toMatchObject({
-      workAreaRevision: { status: "candidate" }
+      workAreaRevision: { status: "candidate" },
+      revision: {
+        schemaVersion: "aawp/embedded-spec-revision/v1",
+        status: "candidate",
+        generatedBy: "spec-feedback-to-spec",
+        parentDigest: digestWorkflow(source),
+        contractDigest: summary.contractDigest,
+        executionInput: "this_document",
+        auditSidecarsRequiredAtRuntime: false
+      }
+    });
+    expect((candidate.meta as JsonRecord).revision).toMatchObject({
+      feedbackIds: expect.arrayContaining(["role-workspace-001", "poc-flow-001"])
     });
     expect(candidate).not.toHaveProperty("approval");
     expect(candidate).not.toHaveProperty("artifactId");

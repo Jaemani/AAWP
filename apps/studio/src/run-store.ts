@@ -21,6 +21,34 @@ export interface StudioArtifactRecord {
   contentHash: string;
 }
 
+export interface StudioRunMetrics {
+  timing: {
+    workflowDurationMs: number;
+    inputValidationMs?: number;
+    deterministicSimulationMs?: number;
+    resultBuild: {
+      kind: "snapshot_materialization";
+      status: "measured" | "not_applicable";
+      durationMs: number;
+    };
+  };
+  tokens: {
+    status: "measured";
+    source: "runtime_events";
+    modelInvocations: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+  trace: {
+    traceId: string;
+    eventCount: number;
+    workflowDigest: string;
+    inputDigest: string;
+    traceDigest?: string;
+  };
+}
+
 export interface StudioRunRecord {
   schemaVersion: "awf/studio-run/v1";
   runId: string;
@@ -37,6 +65,7 @@ export interface StudioRunRecord {
   events: StoredRunEvent[];
   nodeStates: Record<string, StudioNodeStatus>;
   artifacts: StudioArtifactRecord[];
+  metrics?: StudioRunMetrics;
   demo?: StudioDemoRecord;
   outputs?: Record<string, unknown>;
   error?: { name: string; message: string };
@@ -166,6 +195,7 @@ function materializeTrace(input: {
   completedElapsedMs: number;
   inputDigest: string;
   traceEventTimings: Array<{ occurredAt: string; elapsedMs: number }>;
+  metrics: StudioRunMetrics;
   demo?: StudioDemoRecord;
 }): StudioRunRecord {
   const events: StoredRunEvent[] = [];
@@ -264,6 +294,10 @@ function materializeTrace(input: {
     events,
     nodeStates,
     artifacts,
+    metrics: {
+      ...input.metrics,
+      trace: { ...input.metrics.trace, eventCount: events.length }
+    },
     ...(input.demo === undefined ? {} : { demo: input.demo }),
     outputs: input.trace.outputs
   });
@@ -288,16 +322,23 @@ export async function executeStudioRun(input: {
   const createdAt = now();
   const inputDigest = digestWorkflow(input.inputs);
   try {
+    const validationStartedAt = monotonicNow();
     const fixture = validateFixtureInput(input.workflow, input.inputs);
+    const inputValidationMs = roundMilliseconds(monotonicNow() - validationStartedAt);
     const traceEventTimings: Array<{ occurredAt: string; elapsedMs: number }> = [];
+    const simulationStartedAt = monotonicNow();
     const trace = simulateDeterministic(input.workflow, fixture, {
       onEvent: () => {
         const elapsedMs = elapsed();
         traceEventTimings.push({ occurredAt: occurredAt(elapsedMs), elapsedMs });
       }
     });
+    const deterministicSimulationMs = roundMilliseconds(monotonicNow() - simulationStartedAt);
+    const resultBuildStartedAt = monotonicNow();
     const demo = await input.createDemoSnapshot?.(runId);
+    const resultBuildDurationMs = roundMilliseconds(monotonicNow() - resultBuildStartedAt);
     const completedElapsedMs = elapsed();
+    const workflowDigest = digestWorkflow(input.workflow);
     const record = materializeTrace({
       workflow: input.workflow,
       trace,
@@ -307,6 +348,33 @@ export async function executeStudioRun(input: {
       completedElapsedMs,
       inputDigest,
       traceEventTimings,
+      metrics: {
+        timing: {
+          workflowDurationMs: completedElapsedMs,
+          inputValidationMs,
+          deterministicSimulationMs,
+          resultBuild: {
+            kind: "snapshot_materialization",
+            status: input.createDemoSnapshot === undefined ? "not_applicable" : "measured",
+            durationMs: input.createDemoSnapshot === undefined ? 0 : resultBuildDurationMs
+          }
+        },
+        tokens: {
+          status: "measured",
+          source: "runtime_events",
+          modelInvocations: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0
+        },
+        trace: {
+          traceId: runId,
+          eventCount: 0,
+          workflowDigest,
+          inputDigest,
+          traceDigest: trace.digest
+        }
+      },
       ...(demo === undefined ? {} : { demo })
     });
     await input.store.append(record);
@@ -357,6 +425,30 @@ export async function executeStudioRun(input: {
         input.workflow.nodes.map((node) => [node.id, "waiting" as StudioNodeStatus])
       ),
       artifacts: [],
+      metrics: {
+        timing: {
+          workflowDurationMs: completedElapsedMs,
+          resultBuild: {
+            kind: "snapshot_materialization",
+            status: "not_applicable",
+            durationMs: 0
+          }
+        },
+        tokens: {
+          status: "measured",
+          source: "runtime_events",
+          modelInvocations: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0
+        },
+        trace: {
+          traceId: runId,
+          eventCount: events.length,
+          workflowDigest: digestWorkflow(input.workflow),
+          inputDigest
+        }
+      },
       error: { name: (error as Error).name, message: (error as Error).message }
     });
     await input.store.append(record);

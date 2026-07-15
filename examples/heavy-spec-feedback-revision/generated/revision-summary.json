@@ -1,12 +1,12 @@
 {
   "schemaVersion": "aawp/spec-revision-summary/v1",
-  "candidateId": "specrev_f634727798e1e28a60a3d21d3a9e9ec14ff05a1daa6c4491861f2b41d894ef05",
+  "candidateId": "specrev_c811de6f5b29e8d0b2871c787b8ea259329ea42069a42031ade8750644f0f1af",
   "status": "candidate",
   "parentArtifactId": "refined-production-spec@b4b50cd9c1d2321c",
   "parentDigest": "7031b9f0b51bddb06d7b9f8dc1377de583a5cea7aa452e908792553be4ffad55",
-  "contentDigest": "aec000bb484f65bd9ed0871f92c8b706c683564aa3df8ba3882e090230014fae",
+  "contentDigest": "766e965d6b893678adaba7899f88330681b57600a2810a8935d0ceca0fb17806",
   "contractDigest": "a0b45624b937eb941df1ab6083bde47d96decd767fa9b0521de28c0ea3d866a6",
-  "operationCount": 75,
+  "operationCount": 76,
   "changedPointers": [
     "/screens/93",
     "/screens/70",
@@ -82,7 +82,8 @@
     "/mockData/38",
     "/mockData/39",
     "/demoStoryboard/0",
-    "/meta/workAreaRevision"
+    "/meta/workAreaRevision",
+    "/meta/revision"
   ],
   "counts": {
     "screensBefore": 102,
