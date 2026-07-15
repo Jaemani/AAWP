@@ -24,7 +24,8 @@
 ## 검증 결과
 
 - Heavy spec profile + feedback intent + generated candidate focused test: 3개 file, 9개 test 통과
-- 전체 Vitest: 48개 file, 241개 test 통과
+- 전체 Vitest: 48개 file, 242개 test 통과
+- 담당자별 원본/candidate 비교 fixture: 4개 contract test와 2개 browser JavaScript syntax check 통과
 - `spec-to-demo`와 `spec-feedback-to-spec` WIR static check 통과
 - Build, typecheck, lint, format과 whitespace 검사 통과
 
