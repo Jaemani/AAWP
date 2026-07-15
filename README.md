@@ -49,6 +49,7 @@ node apps/studio/dist/server.js \
 
 ## 문서
 
+- [Demo 디자인 표준](DESIGN.md): source fidelity, web/mobile shell, component·interaction·접근성과 검증 기준
 - [사용자 가이드](docs/user-guide.md): 설치, Studio, 실행, 결과 관리, 화면·플로우 선택과 version 사용법
 - [핵심 개념과 구조](docs/core-concepts.md): 다른 workflow 방식과의 차이, 구조와 선택 이유
 - [`spec-feedback-to-spec` 가이드](docs/spec-feedback-to-spec.md): feedback contract, patch, 검증과 승인 경계
