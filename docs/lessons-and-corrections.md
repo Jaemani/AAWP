@@ -177,6 +177,13 @@
 - 교정: Clip된 접근성 요소는 geometry·overflow 검사에서 제외했다. 요청 route별 product navigation link는 viewport와 모든 overflow ancestor의 수평 경계 안에 완전히 노출되는지 별도로 검사한다. `DESIGN.md` 1.10.0은 2–4개 mobile route의 동시 노출과 5개 이상일 때 명시적인 menu/overflow control을 요구한다.
 - 재발 방지: 접근성용 canonical link와 사용자용 product navigation을 같은 selector나 같은 acceptance로 대체하지 않는다. Screenshot 육안 확인과 executable route visibility를 함께 수행한다.
 
+### CTA 색 제한이 mobile product header의 brand 신호까지 제거함
+
+- 관찰: Consumer mobile demo는 CTA와 상태 색은 지켰지만 상단 product header가 흰 surface와 중립 text만 사용해 브랜드 전환점이 보이지 않았다.
+- 원인: `primary-container`의 비장식·단일 CTA 제한은 명확했지만 mobile header에 허용되는 별도 brand accent의 위치와 크기를 정의하지 않았다. Builder는 안전한 쪽으로 해석해 모든 비상호작용 primary 사용을 제거했다.
+- 교정: `DESIGN.md` 1.10.1에 CTA와 분리된 `brand-accent` token을 추가하고 Consumer/Merchant mobile header의 짧은 eyebrow 또는 작은 marker 한 곳에만 사용하도록 했다. Neutral header surface와 `on-surface` screen title은 유지한다.
+- 재발 방지: Action semantic과 brand semantic이 같은 hex를 사용하더라도 token 이름과 허용 위치를 분리한다. 전체 header나 title을 brand color로 채우는 화면별 예외는 만들지 않는다.
+
 ### Interaction state를 source 문자열 존재로만 통과시킴
 
 - 관찰: Release verdict의 `interactionStates: true`는 `confirm`, `running`, `success`에 해당하는 문자열과 event listener가 source에 존재한다는 정적 검사 뒤에 기록됐다. 버튼이 실제로 다음 상태를 만들고 사용자가 완료까지 도달하는지는 확인하지 않았다.

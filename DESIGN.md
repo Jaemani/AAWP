@@ -1,6 +1,6 @@
 ---
 name: Gyeonggi Integrated Wallet
-version: 1.10.0
+version: 1.10.1
 status: active
 scope: AAWP workflow가 생성하는 web/mobile product demo artifact
 colors:
@@ -18,6 +18,7 @@ colors:
   outline-variant: "#c2c6d6"
   surface-strong: "#e5e8eb"
   primary: "#0050b5"
+  brand-accent: "#0050b5"
   on-primary: "#ffffff"
   primary-container: "#2368d9"
   on-primary-container: "#edefff"
@@ -75,6 +76,7 @@ AAWP demo는 spec을 설명하는 문서 viewer가 아니라 사용자가 실제
 ## Colors
 
 - `primary-container #2368D9`는 화면에서 가장 중요한 정상 진행 CTA 한 개에 우선 사용한다. 배경 tint, 정보 banner, divider, 장식 또는 여러 동급 CTA에 반복하지 않는다.
+- `brand-accent #0050B5`는 Consumer/Merchant mobile product header의 짧은 brand eyebrow 또는 작은 brand marker 한 곳에 사용한다. 이는 CTA의 primary 사용 횟수에 포함하지 않는다.
 - `authority-fg #0A2540`은 Admin/Issuer rail과 authority context에만 사용한다. 일반 card 배경이나 consumer surface에 확장하지 않는다.
 - 일반 surface는 흰색과 neutral tonal layer를 사용한다. Panel을 구분하려고 임의의 pastel 배경을 만들지 않는다.
 - Status는 반드시 matching foreground/background pair와 text를 함께 쓴다. `verified`, `pending`, `danger`, `decision`, `approved`, `convertible` 의미를 서로 바꾸지 않는다.
@@ -121,6 +123,7 @@ AAWP demo는 spec을 설명하는 문서 viewer가 아니라 사용자가 실제
 - `<600px`: rail을 상단 horizontal product navigation으로 전환한다. Web rail을 축소해 옆에 남기지 않는다.
 - Mobile에서 선택 범위가 2–4개 route라면 모든 항목을 같은 navigation 영역 안에 동시에 보이게 한다. 5개 이상이면 명시적인 menu/overflow control을 제공한다. 표시 없는 horizontal scroll 뒤에 route를 숨기지 않으며 현재 route와 이동 가능한 route를 구분한다.
 - 390px mobile은 14–20px gutter, document width 390px 이하, 44px 이상 touch target과 56px primary CTA를 유지한다.
+- Consumer/Merchant mobile header는 neutral surface를 유지하고 product brand eyebrow 또는 작은 marker 한 곳에 `brand-accent`를 표시한다. Screen title 본문은 `on-surface`를 사용한다.
 - Mobile은 desktop panel을 의미 순서대로 쌓되 같은 정보를 반복하지 않는다. 기능을 숨겨 반응형을 해결하지 않는다.
 - Tablet card는 최대 2-column이며 금액과 status를 자르지 않는다.
 
@@ -179,6 +182,7 @@ Desktop grid는 `minmax(0, 2fr) minmax(320px, 1fr)`에 가깝다. 왼쪽 두 pan
 
 - Source의 사용자용 copy를 정확히 보존하고 긴 text·금액·ID까지 실제 viewport에서 확인한다.
 - 현재 actor, 조직 또는 실행 권한을 header나 rail에서 항상 확인 가능하게 한다.
+- Consumer/Merchant mobile header에서 neutral title과 구분되는 작은 brand accent를 한 곳만 사용한다.
 - 하나의 primary action, 조용한 secondary action과 명확한 danger action으로 우선순위를 만든다.
 - `min-width: 0`, `max-width: 100%`, wrap/reflow를 명시해 overflow를 예방한다.
 - 선택 범위 안의 navigation과 CTA를 실제 screen/state로 연결한다.
@@ -188,6 +192,7 @@ Desktop grid는 `minmax(0, 2fr) minmax(320px, 1fr)`에 가깝다. 왼쪽 두 pan
 
 - Gradient, decorative element, illustration, glass effect 또는 card shadow를 추가하지 않는다.
 - Primary blue를 배경 tint, informational banner, divider 또는 여러 CTA에 장식적으로 사용하지 않는다.
+- Mobile header 전체, screen title 전체 또는 넓은 띠를 brand blue로 채우지 않는다. Brand accent는 짧은 eyebrow나 작은 marker로 제한한다.
 - 모든 section을 card로 만들거나 card 안에 card를 중첩하지 않는다.
 - 모든 key-value row를 회색 rounded box로 만들거나 긴 값을 status pill로 감싸지 않는다.
 - Navigation에 의미 없는 dot, 원, 화살표 문자 또는 임의 CSS icon을 추가하지 않는다. Asset이 없으면 명확한 text-only item을 사용한다.

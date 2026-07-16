@@ -38,10 +38,12 @@
 - Layout QA가 Studio의 HTTP 404 `demo_not_found` JSON을 빈 정상 화면으로 통과시키던 문제를 수정해 navigation status가 성공이 아니면 실패하도록 했다.
 - `DESIGN.md` 1.9.0에서 지급 summary를 desktop 2×2/mobile 1-column metric으로 고정하고 금액 줄바꿈, raw `payoutFormula`·내부 schema 이름과 추상적인 `권위 행위` badge를 금지했다. Layout QA와 public checker가 이 조건을 실행 가능하게 검사한다.
 - `DESIGN.md` 1.10.0에서 mobile 2–4 route는 모두 동시에 보여야 하고, 더 큰 묶음은 명시적인 menu/overflow control을 가져야 한다고 규정했다. 표시 없는 horizontal scroll 뒤에 요청 화면을 숨기는 구현은 release verifier가 거부한다.
+- `DESIGN.md` 1.10.1에서 Consumer/Merchant mobile header의 neutral surface는 유지하되 짧은 brand eyebrow 또는 작은 marker 한 곳에 전용 `brand-accent`를 사용하도록 명시했다. Header 전체나 screen title 전체를 blue로 채우는 것은 계속 금지한다.
 - Layout QA가 screen-reader용으로 clip된 canonical route를 1px overflow로 오판하던 문제를 고쳤다. 반대로 실제 product navigation link가 scroll container 밖에 가려지는 경우는 ancestor clip 영역까지 계산해 실패시킨다.
 - Detail pilot release는 정적 `running` 문자열 존재만 보지 않는다. 정책 필수값 오류→정상 상신과 지급의 초기 차단→발행 검토 요청→재인증→확인→실행 중→terminal result를 실제 browser action으로 검증한다.
 - 실패 run에 정상적인 static demo 파일이 남아 있으면 상태를 바꾸지 않고 `Failed candidate · inspection only` snapshot으로 보존한다. Studio iframe과 `Open demo`에서 볼 수 있지만 onboard는 거부한다.
 - Execution timeline의 event offset과 node duration을 `0.016s`, `4m55.6s`, `1h2m3.4s` 같은 가변 `h/m/s` 단위로 통일했다. Snapshot materialization은 `ms` 대신 `s`로 표시한다.
+- 상단 `End-to-end time` 카드가 별도 formatter 때문에 `465.9 s`로 남던 회귀를 제거하고 execution timeline과 같은 `7m45.9s`, `1h2m3.4s` formatter를 사용하도록 통일했다.
 - `DESIGN.md` 변경만으로 model workflow를 자동 재실행하지 않는 운영 규칙을 추가했다. 명시적 재생성 시에도 고정된 대표 2–3화면 cohort만 사용한다.
 - Token coverage는 `required` node의 보고 여부로 판정하고 `optional` node usage는 있을 때 합산하도록 교정했다. 초기 verifier 통과로 optional repair가 model을 호출하지 않은 run도 실제 build usage를 `measured/complete`로 표시한다.
 
