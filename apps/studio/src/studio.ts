@@ -2,22 +2,62 @@ import { projectWorkflowGraph, type WorkflowEditorDocument } from "@awf/control-
 import { canonicalize } from "@awf/ir";
 import type { StudioExecutionDescriptor } from "./executor.js";
 
+export interface StudioWorkflowOption {
+  id: string;
+  version: string;
+  mode: string;
+  displayName: string;
+  description: string;
+  executable: boolean;
+  unavailableReason?: string;
+}
+
 export interface StudioViewModel {
   document: WorkflowEditorDocument;
   graph: ReturnType<typeof projectWorkflowGraph>;
   initialInputJson: string;
+  inputKind: "json" | "spec-to-demo";
+  displayName: string;
+  description: string;
+  unavailableReason?: string;
+  workflows: StudioWorkflowOption[];
   execution?: StudioExecutionDescriptor;
 }
 
 export function createStudioView(input: {
   document: WorkflowEditorDocument;
   initialInputs?: unknown;
+  inputKind?: "json" | "spec-to-demo";
+  displayName?: string;
+  description?: string;
+  unavailableReason?: string;
+  workflows?: StudioWorkflowOption[];
   execution?: StudioExecutionDescriptor;
 }): StudioViewModel {
+  const id = input.document.workflow.id;
   return {
     document: input.document,
     graph: projectWorkflowGraph(input.document.workflow),
     initialInputJson: canonicalize(input.initialInputs ?? {}),
+    inputKind: input.inputKind ?? "json",
+    displayName: input.displayName ?? id,
+    description: input.description ?? `${id} workflow`,
+    workflows: input.workflows ?? [
+      {
+        id,
+        version: input.document.workflow.version,
+        mode: input.document.workflow.mode,
+        displayName: input.displayName ?? id,
+        description: input.description ?? `${id} workflow`,
+        executable: input.execution !== undefined,
+        ...(input.unavailableReason === undefined
+          ? {}
+          : { unavailableReason: input.unavailableReason })
+      }
+    ],
+    ...(input.unavailableReason === undefined
+      ? {}
+      : { unavailableReason: input.unavailableReason }),
     ...(input.execution === undefined ? {} : { execution: input.execution })
   };
 }
@@ -31,15 +71,68 @@ function escapeHtml(value: unknown): string {
     .replaceAll("'", "&#39;");
 }
 
+export function formatCompactCount(value: unknown): string {
+  const count = Number(value);
+  if (!Number.isFinite(count)) return "—";
+  const magnitude = Math.abs(count);
+  if (magnitude < 1000) return count.toLocaleString("en-US");
+  const divisor = magnitude >= 999_500 ? 1_000_000 : 1000;
+  const suffix = divisor === 1_000_000 ? "M" : "K";
+  const scaled = count / divisor;
+  const maximumFractionDigits = Math.abs(scaled) < 10 ? 2 : 1;
+  return (
+    scaled.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits }) + suffix
+  );
+}
+
 export function renderStudioHtml(view: StudioViewModel): string {
   const executable = view.execution !== undefined;
   const executionLocation = executable
-    ? `${view.execution!.workingDirectory} · ${view.execution!.steps.length} local process steps`
+    ? `Project workspace · ${view.execution!.steps.length} local steps`
     : "실행 manifest가 없습니다. 이 화면은 simulation으로 대체 실행하지 않습니다.";
   const executionCommands = executable
-    ? view.execution!.steps.map((step) => `${step.nodeId}: ${step.command.join(" ")}`).join("\n")
+    ? [
+        `workspace: ${view.execution!.workingDirectory}`,
+        ...view.execution!.steps.map((step) => `${step.nodeId}: ${step.command.join(" ")}`)
+      ].join("\n")
     : "";
-  const graphNodes = view.graph.nodes
+  const workflowOptions = view.workflows
+    .map(
+      (workflow) =>
+        `<option value="${escapeHtml(workflow.id)}"${workflow.id === view.graph.workflowId ? " selected" : ""}>${escapeHtml(workflow.displayName)} · v${escapeHtml(workflow.version)}${workflow.executable ? "" : " · 준비 중"}</option>`
+    )
+    .join("");
+  const parsedInitialInputs = JSON.parse(view.initialInputJson) as unknown;
+  const initialInputs =
+    typeof parsedInitialInputs === "object" &&
+    parsedInitialInputs !== null &&
+    !Array.isArray(parsedInitialInputs)
+      ? (parsedInitialInputs as Record<string, unknown>)
+      : {};
+  const initialBrief =
+    typeof initialInputs.brief === "object" && initialInputs.brief !== null
+      ? (initialInputs.brief as Record<string, unknown>)
+      : {};
+  const initialSource =
+    typeof initialBrief.sourceSpec === "object" && initialBrief.sourceSpec !== null
+      ? (initialBrief.sourceSpec as Record<string, unknown>)
+      : {};
+  const initialScreens = Array.isArray(initialBrief.requestedScreens)
+    ? initialBrief.requestedScreens.filter((item): item is string => typeof item === "string")
+    : [];
+  const structuredInput = `
+        <div class="structured-input" data-input-kind="spec-to-demo">
+          <label class="field source-field"><span>Source spec</span><input id="source-spec-path" type="text" value="${escapeHtml(typeof initialSource.path === "string" ? initialSource.path : "")}" placeholder="specs/product-spec.json" autocomplete="off"${executable ? "" : " disabled"}></label>
+          <label class="field screens-field"><span>Screen IDs</span><textarea id="screen-ids" rows="3" placeholder="admin-policy-list&#10;admin-policy-detail"${executable ? "" : " disabled"}>${escapeHtml(initialScreens.join("\n"))}</textarea><small>쉼표 또는 줄바꿈으로 구분합니다. 전체 화면은 자동 선택하지 않습니다.</small></label>
+          <label class="field request-field"><span>Request</span><textarea id="request-text" rows="3" placeholder="선택한 화면 묶음의 동작 가능한 데모를 만들어줘"${executable ? "" : " disabled"}>${escapeHtml(typeof initialBrief.requestText === "string" ? initialBrief.requestText : "")}</textarea></label>
+        </div>`;
+  const runInput =
+    view.inputKind === "spec-to-demo"
+      ? structuredInput
+      : `<details class="input"><summary>Run input</summary><textarea id="run-input" aria-label="Workflow run input" spellcheck="false"${executable ? "" : " disabled"}>${escapeHtml(view.initialInputJson)}</textarea></details>`;
+  const graphNodeById = new Map(view.graph.nodes.map((node) => [node.id, node]));
+  const orderedGraphNodes = view.document.workflow.nodes.map((node) => graphNodeById.get(node.id)!);
+  const graphNodes = orderedGraphNodes
     .map(
       (node, index) => `
         <div class="workflow-node" data-node-id="${escapeHtml(node.id)}" data-node-display-name="${escapeHtml(node.displayName)}" data-node-description="${escapeHtml(node.description ?? "")}">
@@ -83,10 +176,10 @@ export function renderStudioHtml(view: StudioViewModel): string {
     * { box-sizing:border-box; }
     html { min-width:320px; background:#f3f5f8; }
     body { min-width:320px; min-height:100vh; margin:0; background:linear-gradient(180deg,#f8fafc 0,#f3f5f8 260px); }
-    button,textarea { font:inherit; }
+    button,input,select,textarea { font:inherit; }
     button,a,summary { -webkit-tap-highlight-color:transparent; }
     [hidden] { display:none!important; }
-    button:focus-visible,a:focus-visible,summary:focus-visible,textarea:focus-visible { outline:3px solid rgb(39 89 215 / 24%); outline-offset:2px; }
+    button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid rgb(39 89 215 / 24%); outline-offset:2px; }
     .topbar { position:sticky; z-index:20; top:0; border-bottom:1px solid rgb(223 228 234 / 90%); background:rgb(255 255 255 / 92%); backdrop-filter:blur(14px); }
     .topbar-inner { display:flex; width:min(1600px,100%); min-height:68px; align-items:center; justify-content:space-between; gap:24px; margin:0 auto; padding:0 32px; }
     .identity { display:flex; min-width:0; align-items:center; gap:12px; }
@@ -99,11 +192,21 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .mode.executable { border-color:#b7dfcf; color:var(--success); background:var(--success-soft); }
     .mode.executable::before { background:var(--success); }
     .page-shell { width:min(1600px,100%); margin:0 auto; padding:28px 32px 40px; }
-    .control-hero { display:flex; align-items:center; justify-content:space-between; gap:28px; padding:24px 26px; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:var(--shadow); }
+    .control-hero { display:grid; grid-template-columns:minmax(280px,.72fr) minmax(540px,1.28fr); align-items:start; gap:28px; padding:24px 26px; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:var(--shadow); }
     .eyebrow { display:block; margin-bottom:8px; color:var(--accent); font-size:10px; font-weight:760; letter-spacing:.11em; text-transform:uppercase; }
     .toolbar-copy h1 { margin:0; color:var(--ink); font-size:24px; font-weight:730; letter-spacing:-.035em; }
     .toolbar-copy p { max-width:640px; margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.55; }
-    .run-control { display:flex; flex:0 0 auto; align-items:center; gap:9px; }
+    .workflow-picker { margin-top:18px; }
+    .workflow-picker label,.field span { display:block; margin-bottom:7px; color:var(--muted); font-size:9px; font-weight:720; letter-spacing:.06em; text-transform:uppercase; }
+    .workflow-picker select,.field input,.field textarea { width:100%; border:1px solid #cfd6df; border-radius:9px; color:#344054; background:#fff; }
+    .workflow-picker select,.field input { height:42px; min-height:42px; padding:0 12px; }
+    .workflow-picker select { appearance:none; padding-right:38px; background-image:linear-gradient(45deg,transparent 50%,#667085 50%),linear-gradient(135deg,#667085 50%,transparent 50%); background-position:calc(100% - 17px) 18px,calc(100% - 12px) 18px; background-repeat:no-repeat; background-size:5px 5px,5px 5px; cursor:pointer; }
+    .workflow-picker small,.field small { display:block; margin-top:6px; color:var(--subtle); font-size:9px; line-height:1.45; }
+    .run-control { display:flex; min-width:0; flex-direction:column; align-items:stretch; gap:14px; }
+    .structured-input { display:grid; min-width:0; grid-template-columns:minmax(180px,.8fr) minmax(220px,1fr) minmax(220px,1fr); gap:12px; }
+    .field { display:block; min-width:0; }
+    .field textarea { display:block; min-height:88px; padding:10px 12px; resize:vertical; line-height:1.45; }
+    .run-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; }
     .run-button { min-width:146px; min-height:42px; padding:0 18px; border:1px solid var(--accent); border-radius:9px; color:#fff; background:var(--accent); box-shadow:0 1px 2px rgb(39 89 215 / 24%); font-size:12px; font-weight:720; cursor:pointer; transition:background 140ms ease,transform 140ms ease; }
     .run-button:hover { background:var(--accent-dark); }
     .run-button:active { transform:translateY(1px); }
@@ -224,6 +327,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .artifact small { margin:3px 0 6px; color:var(--muted); font-size:8px; }
     .artifact code { color:#7a8699; font-size:8px; }
     pre { max-height:300px; margin:0; overflow:auto; padding:13px; border-radius:8px; color:#dce5f1; background:#172033; font:9px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+    @media (max-width:1120px) {
+      .control-hero { grid-template-columns:1fr; }
+    }
     @media (max-width:1050px) {
       .workspace { grid-template-columns:260px minmax(0,1fr); }
       .summary { grid-template-columns:repeat(3,1fr); }
@@ -232,8 +338,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
     }
     @media (max-width:820px) {
       .topbar-inner,.page-shell { padding-right:18px; padding-left:18px; }
-      .control-hero { align-items:stretch; flex-direction:column; }
-      .run-control { justify-content:space-between; }
+      .structured-input { grid-template-columns:1fr 1fr; }
+      .source-field { grid-column:1 / -1; }
       .workspace { grid-template-columns:1fr; }
       .run-rail { border-right:0; border-bottom:1px solid var(--line); }
       .history { display:flex; max-height:190px; gap:4px; overflow:auto; }
@@ -249,8 +355,10 @@ export function renderStudioHtml(view: StudioViewModel): string {
       .page-shell { padding:14px 12px 28px; }
       .control-hero { padding:20px; border-radius:12px; }
       .toolbar-copy h1 { font-size:21px; }
-      .run-control { align-items:stretch; flex-direction:column-reverse; }
-      .run-button,details.input summary { width:100%; justify-content:center; }
+      .structured-input { grid-template-columns:1fr; }
+      .source-field { grid-column:auto; }
+      .run-actions { align-items:stretch; flex-direction:column; }
+      .run-button,details.input,details.input summary { width:100%; justify-content:center; }
       details.input textarea { right:auto; left:0; width:calc(100vw - 64px); }
       .workflow-panel,.workspace { border-radius:12px; }
       .workflow-title { padding:0 14px; }
@@ -278,14 +386,14 @@ export function renderStudioHtml(view: StudioViewModel): string {
   </header>
   <div class="page-shell">
     <section class="control-hero">
-      <div class="toolbar-copy"><span class="eyebrow">Workflow execution</span><h1>Execute and inspect</h1><p>${escapeHtml(view.graph.workflowId)}의 등록된 실제 실행 단계를 시작하고 전체 wall-clock, node, artifact, model token과 결과를 추적합니다.</p></div>
+      <div class="toolbar-copy"><span class="eyebrow">Workflow execution</span><h1>${escapeHtml(view.displayName)}</h1><p>${escapeHtml(view.description)}</p><div class="workflow-picker"><label for="workflow-select">Workflow</label><select id="workflow-select" aria-label="Workflow 선택">${workflowOptions}</select><small>${escapeHtml(view.graph.mode)} · v${escapeHtml(view.graph.version)} · ${executable ? "실제 local executor 연결됨" : "실행 bundle 미등록"}</small></div></div>
       <div class="run-control">
-        <details class="input"><summary>Run input</summary><textarea id="run-input" aria-label="Workflow run input" spellcheck="false">${escapeHtml(view.initialInputJson)}</textarea></details>
-        <button id="run-workflow" class="run-button" type="button"${executable ? "" : " disabled"}>Run ${escapeHtml(view.graph.workflowId)}</button>
+        ${runInput}
+        <div class="run-actions"><button id="run-workflow" class="run-button" type="button"${executable ? "" : " disabled"}>Run ${escapeHtml(view.graph.workflowId)}</button></div>
       </div>
     </section>
-    <div class="execution-contract" data-executable="${String(executable)}"><div><span>Executes at</span><code>${escapeHtml(executionLocation)}</code></div><details${executable ? "" : " hidden"}><summary>Commands</summary><pre>${escapeHtml(executionCommands)}</pre></details></div>
-    <p id="run-message" class="run-message" data-tone="${executable ? "neutral" : "error"}" aria-live="polite">${executable ? "실제 local process를 실행합니다. Codex JSONL과 AAWP usage event의 token을 합산합니다." : "실제 실행기가 없어 Run을 비활성화했습니다. 무효한 simulation 기록은 생성하지 않습니다."}</p>
+    <div class="execution-contract" data-executable="${String(executable)}"><div><span>Runtime</span><code>${escapeHtml(executionLocation)}</code></div><details${executable ? "" : " hidden"}><summary>Technical details</summary><pre>${escapeHtml(executionCommands)}</pre></details></div>
+    <p id="run-message" class="run-message" data-tone="${executable ? "neutral" : "error"}" aria-live="polite">${executable ? "등록된 실제 process를 순서대로 실행하고 wall-clock, token, artifact와 검증 결과를 기록합니다." : escapeHtml(view.unavailableReason ?? "실제 실행기가 없어 Run을 비활성화했습니다. 무효한 simulation 기록은 생성하지 않습니다.")}</p>
     <div class="workflow-panel">
       <div class="workflow-title"><strong>Workflow</strong><span>${escapeHtml(view.graph.mode)} · ${escapeHtml(view.graph.nodes.length)} steps · execution order</span></div>
       <div class="workflow-strip" aria-label="Workflow nodes">${graphNodes}</div>
@@ -312,7 +420,11 @@ export function renderStudioHtml(view: StudioViewModel): string {
   <script>
     (() => {
       const runButton = document.getElementById("run-workflow");
+      const workflowSelect = document.getElementById("workflow-select");
       const runInput = document.getElementById("run-input");
+      const sourceSpecPath = document.getElementById("source-spec-path");
+      const screenIds = document.getElementById("screen-ids");
+      const requestText = document.getElementById("request-text");
       const message = document.getElementById("run-message");
       const historyList = document.getElementById("run-history");
       const runCount = document.getElementById("run-count");
@@ -331,6 +443,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const demoEmpty = document.getElementById("demo-empty");
       const nodePresentation = Object.fromEntries(Array.from(document.querySelectorAll("[data-node-id]")).map((node) => [node.dataset.nodeId, { displayName:node.dataset.nodeDisplayName || node.dataset.nodeId, description:node.dataset.nodeDescription || "" }]));
       const runButtonLabel = ${canonicalize(`Run ${view.graph.workflowId}`)};
+      const selectedWorkflowId = ${canonicalize(view.graph.workflowId)};
+      const inputKind = ${canonicalize(view.inputKind)};
       let selectedRunId = null;
       let demoOnboarded = false;
       let selectedRunRunning = false;
@@ -341,11 +455,19 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const fullDateTime = (value) => new Date(value).toLocaleString("ko-KR", { dateStyle:"medium", timeStyle:"medium" });
       const formatSeconds = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; const seconds = milliseconds / 1000; const digits = seconds === 0 ? 0 : seconds < 1 ? 3 : seconds < 10 ? 2 : 1; return seconds.toFixed(digits).replace(/\.0$/, "") + " s"; };
       const formatTimelineDuration = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; const totalSeconds = milliseconds / 1000; const hours = Math.floor(totalSeconds / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); const remaining = totalSeconds - hours * 3600 - minutes * 60; const digits = remaining === 0 ? 0 : totalSeconds < 1 ? 3 : 1; const seconds = remaining.toFixed(digits).replace(/\.0$/, ""); return (hours > 0 ? hours + "h" : "") + (hours > 0 || minutes > 0 ? minutes + "m" : "") + seconds + "s"; };
+      ${formatCompactCount.toString()}
       const elapsedLabel = (value) => value === undefined ? "legacy" : formatTimelineDuration(value);
       const shortRunId = (value) => value.length > 22 ? value.slice(0, 12) + "…" + value.slice(-6) : value;
       const statusLabel = (value) => ({ waiting:"Waiting", scheduled:"Scheduled", running:"Running", completed:"Completed", failed:"Failed" })[value] || value;
       const setMessage = (text, tone = "neutral") => { message.textContent = text; message.dataset.tone = tone; };
-      const syncRunUrl = (runId) => { const url = new URL(window.location.href); url.searchParams.set("run", runId); window.history.replaceState({}, "", url); };
+      const syncRunUrl = (runId) => { const url = new URL(window.location.href); url.searchParams.set("workflow", selectedWorkflowId); url.searchParams.set("run", runId); window.history.replaceState({}, "", url); };
+      const collectRunRequest = () => {
+        if (inputKind === "spec-to-demo") {
+          const selectedScreens = screenIds.value.split(/[\\n,]/u).map((value) => value.trim()).filter(Boolean);
+          return { workflowId:selectedWorkflowId, launcher:{ kind:"spec-to-demo", sourcePath:sourceSpecPath.value.trim(), screenIds:selectedScreens, requestText:requestText.value.trim() } };
+        }
+        return { workflowId:selectedWorkflowId, inputs:JSON.parse(runInput.value) };
+      };
       const markSelected = () => document.querySelectorAll("[data-run-id]").forEach((row) => {
         const active = row.dataset.runId === selectedRunId;
         row.classList.toggle("active", active);
@@ -391,7 +513,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         document.getElementById("selected-duration").textContent = record.status === "running" ? formatTimelineDuration(Date.now() - new Date(record.createdAt).getTime()) + " · running" : formatTimelineDuration(workflowDuration);
         document.getElementById("selected-build-duration").textContent = resultBuild?.status === "measured" ? formatSeconds(resultBuild.durationMs) + " · after execution" : "N/A";
         const tokenElement = document.getElementById("selected-tokens");
-        tokenElement.textContent = !tokenUsage ? "legacy" : record.status === "running" && tokenUsage.status === "not_reported" ? "Tracking…" : tokenUsage.status === "not_reported" ? "Not reported" : tokenUsage.totalTokens.toLocaleString("ko-KR") + " · " + tokenUsage.modelInvocations + " calls";
+        tokenElement.textContent = !tokenUsage ? "legacy" : record.status === "running" && tokenUsage.status === "not_reported" ? "Tracking…" : tokenUsage.status === "not_reported" ? "Not reported" : formatCompactCount(tokenUsage.totalTokens) + " · " + tokenUsage.modelInvocations + " calls";
         tokenElement.title = !tokenUsage ? "기존 run에는 token telemetry가 없습니다." : "input " + (tokenUsage.inputTokens ?? 0).toLocaleString("ko-KR") + " · cached " + (tokenUsage.cachedInputTokens ?? 0).toLocaleString("ko-KR") + " · output " + (tokenUsage.outputTokens ?? 0).toLocaleString("ko-KR") + " · reasoning " + (tokenUsage.reasoningOutputTokens ?? 0).toLocaleString("ko-KR") + " · coverage " + (tokenUsage.coverage || "legacy");
         const trace = record.metrics?.trace;
         document.getElementById("trace-id").textContent = trace?.traceId || record.runId;
@@ -418,7 +540,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       };
 
       const loadHistory = async ({ selectLatest = false, preferredRunId = null } = {}) => {
-        const response = await fetch("/api/runs");
+        const response = await fetch("/api/runs?workflow=" + encodeURIComponent(selectedWorkflowId));
         if (!response.ok) throw new Error("실행 기록을 불러오지 못했습니다.");
         const payload = await response.json(); clear(historyList); runCount.textContent = String(payload.runs.length);
         if (!payload.runs.length) historyList.appendChild(make("div", "아직 실행 기록이 없습니다.", "history-empty"));
@@ -450,9 +572,16 @@ export function renderStudioHtml(view: StudioViewModel): string {
         const previousStates = Object.fromEntries(Array.from(document.querySelectorAll("[data-node-id]")).map((node) => [node.dataset.nodeId, node.dataset.runStatus || "waiting"]));
         const optimisticStates = Object.fromEntries(Object.keys(previousStates).map((nodeId, index) => [nodeId, index === 0 ? "running" : "waiting"]));
         runButton.disabled = true; runButton.textContent = "Running…"; runButton.setAttribute("aria-busy", "true"); updateGraph(optimisticStates); setMessage("Workflow를 실행하고 기록을 생성하는 중입니다…", "working");
-        try { const inputs = JSON.parse(runInput.value); const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({inputs}) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(); setMessage(record.status === "running" ? shortRunId(record.runId) + " 실제 workflow를 시작했습니다. 실행 중 event를 5초마다 갱신합니다." : shortRunId(record.runId) + " 실행과 결과 저장을 완료했습니다.", record.status === "running" ? "working" : "success"); }
+        try { const response = await fetch("/api/runs", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(collectRunRequest()) }); const record = await response.json(); if (!response.ok) throw new Error(record.message || "실행하지 못했습니다."); renderRun(record); await loadHistory(); setMessage(record.status === "running" ? shortRunId(record.runId) + " 실제 workflow를 시작했습니다. 실행 중 event를 5초마다 갱신합니다." : shortRunId(record.runId) + " 실행과 결과 저장을 완료했습니다.", record.status === "running" ? "working" : "success"); }
         catch (error) { updateGraph(previousStates); setMessage(error.message, "error"); }
         finally { runButton.disabled = ${String(!executable)} || selectedRunRunning; runButton.textContent = runButtonLabel; runButton.setAttribute("aria-busy", "false"); }
+      });
+
+      workflowSelect.addEventListener("change", () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("workflow", workflowSelect.value);
+        url.searchParams.delete("run");
+        window.location.assign(url);
       });
 
       toggleDemo.addEventListener("click", async () => {

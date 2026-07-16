@@ -8,8 +8,9 @@ import { createWorkflowEditorDocument } from "@awf/control-plane";
 import type { WorkflowDefinition } from "@awf/ir";
 import { LocalStudioDemoStore } from "./demo-store.js";
 import { LocalProcessWorkflowExecutor, parseLocalExecutionManifest } from "./executor.js";
+import type { StudioWorkflowExecutor } from "./executor.js";
 import type { StudioRunRecord, StudioRunSummary } from "./run-store.js";
-import { createStudioServer } from "./server.js";
+import { createStudioServer, loadStudioWorkflowCatalog, loadWorkflowDocument } from "./server.js";
 
 const port = { type: "value", schemaVersion: "1", visibility: "public" as const };
 const workflow: WorkflowDefinition = {
@@ -107,6 +108,145 @@ afterEach(async () => {
 });
 
 describe("Studio local server", () => {
+  it("turns structured web input into a pinned spec-to-demo request before execution", async () => {
+    directory = await mkdtemp(join(tmpdir(), "awf-studio-launcher-"));
+    await mkdir(join(directory, "specs"));
+    await writeFile(
+      join(directory, "DESIGN.md"),
+      "---\nname: Launcher fixture\nversion: 1.0.0\n---\n"
+    );
+    await writeFile(
+      join(directory, "specs", "source.json"),
+      JSON.stringify({ screens: [{ id: "admin-policy-list", actors: [], components: [] }] })
+    );
+    const document = await loadWorkflowDocument(
+      "workflows/templates/spec-to-demo/workflow.wir.yaml"
+    );
+    let capturedInputs: unknown;
+    const executor: StudioWorkflowExecutor = {
+      descriptor: {
+        kind: "local-process",
+        workflowId: "spec-to-demo",
+        workingDirectory: directory,
+        executionRoot: join(directory, "runs"),
+        tokenTelemetry: "codex-jsonl+aawp-events",
+        steps: []
+      },
+      async execute(input) {
+        capturedInputs = input.inputs;
+        return {
+          executionDirectory: join(directory!, "runs", input.runId),
+          inputPath: join(directory!, "runs", input.runId, "input.json"),
+          durationMs: 0,
+          steps: [],
+          outputs: {}
+        };
+      }
+    };
+    server = createStudioServer({
+      document,
+      workflows: [
+        {
+          document,
+          displayName: "Spec to demo",
+          description: "fixture",
+          inputKind: "spec-to-demo",
+          projectRoot: directory,
+          executor
+        }
+      ]
+    });
+    await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const base = `http://127.0.0.1:${address.port}`;
+
+    const started = (await fetch(`${base}/api/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        workflowId: "spec-to-demo",
+        launcher: {
+          kind: "spec-to-demo",
+          sourcePath: "specs/source.json",
+          screenIds: ["admin-policy-list"],
+          requestText: "정책 목록 데모를 만들어줘"
+        }
+      })
+    }).then(async (response) => response.json())) as StudioRunRecord;
+    await waitForTerminalRun(base, started.runId);
+    expect(capturedInputs).toMatchObject({
+      brief: {
+        requestText: "정책 목록 데모를 만들어줘",
+        requestedScreens: ["admin-policy-list"],
+        sourceSpec: { projection: "requested-screen-closure-v1" },
+        designContract: { version: "1.0.0" }
+      }
+    });
+
+    const escaping = await fetch(`${base}/api/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        workflowId: "spec-to-demo",
+        launcher: {
+          sourcePath: "../outside.json",
+          screenIds: ["admin-policy-list"],
+          requestText: "invalid"
+        }
+      })
+    });
+    expect(escaping.status).toBe(400);
+    await expect(escaping.json()).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringMatching(/workspace/)
+    });
+  });
+
+  it("serves a workflow catalog and keeps unfinished workflows non-executable", async () => {
+    directory = await mkdtemp(join(tmpdir(), "awf-studio-catalog-"));
+    const workflows = await loadStudioWorkflowCatalog({
+      path: "workflows/catalog.json",
+      executionRoot: join(directory, "runs")
+    });
+    expect(workflows.map((entry) => entry.document.workflow.id)).toEqual([
+      "spec-to-demo",
+      "spec-feedback-to-spec"
+    ]);
+    expect(workflows[0]?.executor).toBeDefined();
+    expect(workflows[1]?.executor).toBeUndefined();
+
+    server = createStudioServer({ document: workflows[0]!.document, workflows });
+    await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const base = `http://127.0.0.1:${address.port}`;
+
+    await expect(
+      fetch(`${base}/api/workflows`).then(async (response) => response.json())
+    ).resolves.toMatchObject({
+      workflows: [
+        { id: "spec-to-demo", inputKind: "spec-to-demo", executable: true },
+        { id: "spec-feedback-to-spec", inputKind: "json", executable: false }
+      ]
+    });
+    const executablePage = await fetch(`${base}/?workflow=spec-to-demo`).then(async (response) =>
+      response.text()
+    );
+    expect(executablePage).toContain("Project workspace · 4 local steps");
+    expect(executablePage).toContain('id="source-spec-path"');
+    expect(executablePage).toContain('id="screen-ids"');
+    expect(executablePage).toContain('id="request-text"');
+    const plannedPage = await fetch(`${base}/?workflow=spec-feedback-to-spec`).then(
+      async (response) => response.text()
+    );
+    expect(plannedPage).toContain("실행 bundle은 아직 준비 중입니다");
+    expect(plannedPage).toContain('id="run-workflow" class="run-button" type="button" disabled');
+    await expect(
+      fetch(`${base}/api/execution?workflow=spec-feedback-to-spec`).then(async (response) =>
+        response.json()
+      )
+    ).resolves.toMatchObject({ executable: false, reason: "NO_EXECUTION_MANIFEST" });
+  });
+
   it("serves a read-only source and compiler-backed candidate check", async () => {
     const document = createWorkflowEditorDocument(workflow);
     server = createStudioServer({ document });

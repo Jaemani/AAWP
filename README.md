@@ -15,7 +15,7 @@ AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration cat
 
 ## 현재 구현
 
-WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio의 실행 버튼은 별도 execution manifest로 WIR node마다 실제 local process가 등록된 경우에만 활성화된다. 이 경로는 입력 검증부터 process, verifier와 snapshot까지의 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. 원본/feedback child spec을 8개 담당 업무별로 비교하는 검토 fixture도 있다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio는 versioned workflow catalog를 읽고 execution manifest로 WIR node마다 실제 local process가 등록된 workflow만 실행한다. `spec-to-demo`는 웹의 typed launcher가 source spec, 명시적 screen 집합과 요청 원문을 pinned request로 만든 뒤 `codex exec → inspect → bounded repair → verify`를 시작한다. 이 경로는 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았으므로 catalog에서 실행 불가로 표시한다.
 
 ## 시작하기
 
@@ -30,26 +30,19 @@ node apps/cli/dist/index.js simulate examples/spec-to-demo.wir.yaml \
   --input examples/spec-to-demo.input.json
 ```
 
-실행 가능한 `spec-to-demo` 요청과 Studio:
+AAWP Studio:
 
 ```bash
-npm run request:spec-to-demo -- \
-  --source path/to/spec.json \
-  --screen screen-id-one \
-  --screen screen-id-two \
-  --request "두 화면을 만들어줘" \
-  --id my-demo-request
-
-npm run studio:spec-to-demo -- \
-  --input runs/requests/my-demo-request/request.json \
-  --port 4173
+npm run studio
 ```
 
-`http://127.0.0.1:4173/`에서 workflow, 실행 위치·명령, live node 상태, 모든 run 기록과 결과를 확인한다. 실행 정의는 [WIR](workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](workflows/templates/spec-to-demo/execution.manifest.json), [자급식 실행 지침](workflows/templates/spec-to-demo/WORKFLOW.md), browserless public artifact checker와 독립 release verifier로 구성된다. Demo의 유일한 디자인 입력은 [DESIGN.md](DESIGN.md)다. 이 문서는 YAML token과 intent·금지 규칙·responsive decision을 함께 제공하며 이전 demo, presentation contract나 대화 기억을 사용하지 않는다.
+`http://127.0.0.1:4173/`에서 workflow를 선택한다. `spec-to-demo`는 프로젝트 내부의 source spec 상대경로, 쉼표/줄바꿈으로 구분한 screen ID와 요청문을 입력하고 `Run spec-to-demo`를 누른다. Studio가 request artifact를 만들고 실제 executor를 시작하므로 별도 대화나 request JSON 작성은 필요하지 않다. 실행 위치 기본 표시는 checkout에 독립적인 `Project workspace`이며 실제 cwd와 argv는 접힌 기술 상세에서만 확인한다.
+
+실행 정의는 [workflow catalog](workflows/catalog.json), [WIR](workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](workflows/templates/spec-to-demo/execution.manifest.json), [자급식 실행 지침](workflows/templates/spec-to-demo/WORKFLOW.md), browserless public artifact checker와 독립 release verifier로 구성된다. Demo의 유일한 디자인 입력은 [DESIGN.md](DESIGN.md)다. 이 문서는 YAML token과 intent·금지 규칙·responsive decision을 함께 제공하며 이전 demo, presentation contract나 대화 기억을 사용하지 않는다.
 
 Request 생성기는 기본적으로 요청 화면과 직접 참조 정의만 deterministic projection으로 고정해 heavy source 전체를 model context에 넣지 않는다. Projection과 원본 digest를 모두 보존하며 전체 source 실행은 진단용 `--full-source`에서만 명시한다.
 
-모든 실행은 `runs/history.jsonl`과 `runs/<runId>/`에 저장된다. `--executor`가 없으면 Studio는 read-only이며 Run을 비활성화하고, simulation 성공 기록을 대신 만들지 않는다. 모델 node는 Codex JSONL 또는 `AAWP_EVENT` usage evidence가 없으면 실패한다. 모델 호출 없는 dry-run은 Studio Run이 아니라 위의 명시적 `awf simulate` 명령으로만 실행한다.
+모든 실행은 `runs/history.jsonl`과 `runs/<runId>/`에 저장된다. 실행 manifest가 없으면 Studio는 해당 workflow의 Run을 비활성화하고 simulation 성공 기록을 대신 만들지 않는다. 모델 node는 Codex JSONL 또는 `AAWP_EVENT` usage evidence가 없으면 실패한다. Token summary는 K/M으로 압축하지만 정확한 input/cached/output/reasoning 값은 run record와 tooltip에 남는다. 모델 호출 없는 dry-run은 Studio Run이 아니라 위의 명시적 `awf simulate` 명령으로만 실행한다.
 
 담당자별 원본/feedback candidate 비교 demo는 `examples/heavy-spec-role-comparison`에 있다. Candidate 실행 입력은 부모 내용을 모두 포함한 child JSON 한 파일이며 proposal·verdict는 감사 sidecar다.
 

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "aawp/studio-workflow-catalog/v1",
+  "workflows": [
+    {
+      "workflowPath": "workflows/templates/spec-to-demo/workflow.wir.yaml",
+      "executionManifestPath": "workflows/templates/spec-to-demo/execution.manifest.json",
+      "displayName": "Spec to demo",
+      "description": "Source spec에서 명시적으로 선택한 화면만 동작 가능한 웹 데모로 만들고 독립 검증합니다.",
+      "inputKind": "spec-to-demo"
+    },
+    {
+      "workflowPath": "examples/spec-feedback-to-spec.wir.yaml",
+      "displayName": "Spec feedback to spec",
+      "description": "기존 spec과 구조화 feedback으로 검토 가능한 새 spec revision을 생성합니다.",
+      "inputKind": "json",
+      "unavailableReason": "WIR과 deterministic revision core는 있으나 model activity, 독립 verifier, 승인 UI를 포함한 실행 bundle은 아직 준비 중입니다."
+    }
+  ]
+}

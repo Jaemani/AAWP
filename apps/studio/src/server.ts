@@ -26,6 +26,20 @@ import {
   LocalProcessWorkflowExecutor,
   type StudioWorkflowExecutor
 } from "./executor.js";
+import { prepareSpecToDemoRequest, type SpecToDemoLauncherInput } from "./spec-to-demo-request.js";
+
+export type StudioInputKind = "json" | "spec-to-demo";
+
+export interface StudioWorkflowRegistration {
+  document: WorkflowEditorDocument;
+  displayName: string;
+  description: string;
+  inputKind: StudioInputKind;
+  initialInputs?: unknown;
+  executor?: StudioWorkflowExecutor;
+  projectRoot?: string;
+  unavailableReason?: string;
+}
 
 export interface StudioServerOptions {
   document: WorkflowEditorDocument;
@@ -33,6 +47,105 @@ export interface StudioServerOptions {
   demoStore?: StudioDemoStore;
   initialInputs?: unknown;
   executor?: StudioWorkflowExecutor;
+  workflows?: StudioWorkflowRegistration[];
+}
+
+interface StudioCatalogFile {
+  schemaVersion: "aawp/studio-workflow-catalog/v1";
+  workflows: Array<{
+    workflowPath: string;
+    executionManifestPath?: string;
+    displayName: string;
+    description: string;
+    inputKind: StudioInputKind;
+    unavailableReason?: string;
+  }>;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeWorkflowRegistrations(
+  options: StudioServerOptions
+): StudioWorkflowRegistration[] {
+  const registrations = options.workflows ?? [
+    {
+      document: options.document,
+      displayName: options.document.workflow.id,
+      description: `${options.document.workflow.id} workflow`,
+      inputKind: "json" as const,
+      ...(options.initialInputs === undefined ? {} : { initialInputs: options.initialInputs }),
+      ...(options.executor === undefined ? {} : { executor: options.executor })
+    }
+  ];
+  if (registrations.length === 0) throw new Error("Studio workflow catalog is empty");
+  const ids = new Set<string>();
+  for (const registration of registrations) {
+    const id = registration.document.workflow.id;
+    if (ids.has(id)) throw new Error(`duplicate Studio workflow: ${id}`);
+    ids.add(id);
+    if (registration.executor !== undefined && registration.executor.descriptor.workflowId !== id) {
+      throw new Error(`Studio executor does not match workflow ${id}`);
+    }
+  }
+  return registrations;
+}
+
+export async function loadStudioWorkflowCatalog(input: {
+  path: string;
+  executionRoot: string;
+  projectRoot?: string;
+}): Promise<StudioWorkflowRegistration[]> {
+  const projectRoot = resolve(input.projectRoot ?? ".");
+  const raw = JSON.parse(await readFile(resolve(input.path), "utf8")) as unknown;
+  if (
+    !isRecord(raw) ||
+    raw.schemaVersion !== "aawp/studio-workflow-catalog/v1" ||
+    !Array.isArray(raw.workflows) ||
+    raw.workflows.length === 0
+  ) {
+    throw new Error("invalid Studio workflow catalog");
+  }
+  const catalog = raw as unknown as StudioCatalogFile;
+  const registrations: StudioWorkflowRegistration[] = [];
+  for (const [index, entry] of catalog.workflows.entries()) {
+    if (
+      !isRecord(entry) ||
+      typeof entry.workflowPath !== "string" ||
+      typeof entry.displayName !== "string" ||
+      typeof entry.description !== "string" ||
+      (entry.executionManifestPath !== undefined &&
+        typeof entry.executionManifestPath !== "string") ||
+      (entry.unavailableReason !== undefined && typeof entry.unavailableReason !== "string") ||
+      !["json", "spec-to-demo"].includes(String(entry.inputKind))
+    ) {
+      throw new Error(`invalid Studio workflow catalog entry ${index}`);
+    }
+    const document = await loadWorkflowDocument(resolve(projectRoot, entry.workflowPath));
+    const executor =
+      entry.executionManifestPath === undefined
+        ? undefined
+        : new LocalProcessWorkflowExecutor(
+            await loadLocalExecutionManifest(
+              resolve(projectRoot, entry.executionManifestPath),
+              document.workflow
+            ),
+            { executionRoot: resolve(input.executionRoot) }
+          );
+    registrations.push({
+      document,
+      displayName: entry.displayName,
+      description: entry.description,
+      inputKind: entry.inputKind,
+      projectRoot,
+      ...(executor === undefined ? {} : { executor }),
+      ...(entry.unavailableReason === undefined
+        ? {}
+        : { unavailableReason: entry.unavailableReason })
+    });
+  }
+  return registrations;
 }
 
 async function projectDemoLifecycle(
@@ -94,14 +207,42 @@ export async function loadStudioInputs(path: string): Promise<unknown> {
 export function createStudioServer(options: StudioServerOptions): Server {
   const runStore = options.runStore ?? new InMemoryStudioRunStore();
   const demoStore = options.demoStore;
-  const activeRunIds = new Set<string>();
-  const html = renderStudioHtml(
-    createStudioView({
-      document: options.document,
-      initialInputs: options.initialInputs ?? {},
-      ...(options.executor === undefined ? {} : { execution: options.executor.descriptor })
-    })
+  const workflows = normalizeWorkflowRegistrations(options);
+  const defaultWorkflowId = options.document.workflow.id;
+  const workflowById = new Map(
+    workflows.map((registration) => [registration.document.workflow.id, registration])
   );
+  const defaultWorkflow = workflowById.get(defaultWorkflowId) ?? workflows[0]!;
+  const activeRunIds = new Set<string>();
+  const registrationFor = (workflowId: string | null): StudioWorkflowRegistration | undefined =>
+    workflowId === null ? defaultWorkflow : workflowById.get(workflowId);
+  const viewFor = (registration: StudioWorkflowRegistration): string =>
+    renderStudioHtml(
+      createStudioView({
+        document: registration.document,
+        initialInputs: registration.initialInputs ?? {},
+        inputKind: registration.inputKind,
+        displayName: registration.displayName,
+        description: registration.description,
+        ...(registration.unavailableReason === undefined
+          ? {}
+          : { unavailableReason: registration.unavailableReason }),
+        workflows: workflows.map((entry) => ({
+          id: entry.document.workflow.id,
+          version: entry.document.workflow.version,
+          mode: entry.document.workflow.mode,
+          displayName: entry.displayName,
+          description: entry.description,
+          executable: entry.executor !== undefined,
+          ...(entry.unavailableReason === undefined
+            ? {}
+            : { unavailableReason: entry.unavailableReason })
+        })),
+        ...(registration.executor === undefined
+          ? {}
+          : { execution: registration.executor.descriptor })
+      })
+    );
   return createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
     const demoRoute = url.pathname.match(/^\/runs\/([^/]+)\/(demo|demo-preview)(?:\/(.*))?$/);
@@ -131,6 +272,16 @@ export function createStudioServer(options: StudioServerOptions): Server {
       return;
     }
     if (request.method === "GET" && url.pathname === "/") {
+      let registration = registrationFor(url.searchParams.get("workflow"));
+      const requestedRunId = url.searchParams.get("run");
+      if (url.searchParams.get("workflow") === null && requestedRunId !== null) {
+        const record = await runStore.get(requestedRunId);
+        if (record !== undefined) registration = workflowById.get(record.workflowId);
+      }
+      if (registration === undefined) {
+        sendJson(response, 404, { error: "workflow_not_found" });
+        return;
+      }
       response.writeHead(200, {
         "content-type": "text/html; charset=utf-8",
         "cache-control": "no-store",
@@ -139,32 +290,68 @@ export function createStudioServer(options: StudioServerOptions): Server {
         "x-content-type-options": "nosniff",
         "x-frame-options": "DENY"
       });
-      response.end(html);
+      response.end(viewFor(registration));
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/workflows") {
+      sendJson(response, 200, {
+        workflows: workflows.map((registration) => ({
+          id: registration.document.workflow.id,
+          version: registration.document.workflow.version,
+          mode: registration.document.workflow.mode,
+          displayName: registration.displayName,
+          description: registration.description,
+          inputKind: registration.inputKind,
+          executable: registration.executor !== undefined,
+          ...(registration.unavailableReason === undefined
+            ? {}
+            : { unavailableReason: registration.unavailableReason })
+        }))
+      });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/workflow") {
+      const registration = registrationFor(url.searchParams.get("workflow"));
+      if (registration === undefined) {
+        sendJson(response, 404, { error: "workflow_not_found" });
+        return;
+      }
       sendJson(response, 200, {
-        digest: options.document.digest,
-        canonicalJson: options.document.canonicalJson
+        digest: registration.document.digest,
+        canonicalJson: registration.document.canonicalJson
       });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/execution") {
+      const registration = registrationFor(url.searchParams.get("workflow"));
+      if (registration === undefined) {
+        sendJson(response, 404, { error: "workflow_not_found" });
+        return;
+      }
       sendJson(
         response,
         200,
-        options.executor === undefined
+        registration.executor === undefined
           ? {
               executable: false,
               reason: "NO_EXECUTION_MANIFEST",
-              message: "This workflow has no registered executor. Studio will not simulate it."
+              message:
+                registration.unavailableReason ??
+                "This workflow has no registered executor. Studio will not simulate it."
             }
-          : { executable: true, descriptor: options.executor.descriptor }
+          : { executable: true, descriptor: registration.executor.descriptor }
       );
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/runs") {
-      const summaries = await runStore.list();
+      const registration = registrationFor(url.searchParams.get("workflow"));
+      if (registration === undefined) {
+        sendJson(response, 404, { error: "workflow_not_found" });
+        return;
+      }
+      const summaries = (await runStore.list()).filter(
+        (summary) => summary.workflowId === registration.document.workflow.id
+      );
       sendJson(response, 200, {
         runs: await Promise.all(
           summaries.map(async (summary) => projectDemoLifecycle(summary, demoStore))
@@ -238,11 +425,24 @@ export function createStudioServer(options: StudioServerOptions): Server {
     }
     if (request.method === "POST" && url.pathname === "/api/runs") {
       try {
-        if (options.executor === undefined) {
+        const body = JSON.parse(await readBody(request)) as unknown;
+        const requestedWorkflowId =
+          isRecord(body) && typeof body.workflowId === "string" ? body.workflowId : null;
+        const registration = registrationFor(requestedWorkflowId);
+        if (registration === undefined) {
+          sendJson(response, 404, {
+            ok: false,
+            code: "WORKFLOW_NOT_FOUND",
+            message: `등록되지 않은 workflow입니다: ${requestedWorkflowId ?? ""}`
+          });
+          return;
+        }
+        if (registration.executor === undefined) {
           sendJson(response, 409, {
             ok: false,
             code: "WORKFLOW_NOT_EXECUTABLE",
             message:
+              registration.unavailableReason ??
               "이 workflow에는 실제 실행기가 등록되지 않았습니다. Studio는 simulation run을 생성하지 않습니다."
           });
           return;
@@ -255,11 +455,28 @@ export function createStudioServer(options: StudioServerOptions): Server {
           });
           return;
         }
-        const body = JSON.parse(await readBody(request)) as unknown;
-        const inputs =
-          typeof body === "object" && body !== null && "inputs" in body
-            ? (body as { inputs: unknown }).inputs
-            : body;
+        let inputs: unknown;
+        if (registration.inputKind === "spec-to-demo") {
+          if (!isRecord(body) || !("launcher" in body) || !isRecord(body.launcher)) {
+            throw new Error("spec-to-demo는 구조화 launcher input이 필요합니다.");
+          }
+          const screenIds = Array.isArray(body.launcher.screenIds)
+            ? body.launcher.screenIds.filter((item): item is string => typeof item === "string")
+            : [];
+          const prepared = await prepareSpecToDemoRequest({
+            projectRoot: registration.projectRoot ?? ".",
+            launcher: {
+              sourcePath:
+                typeof body.launcher.sourcePath === "string" ? body.launcher.sourcePath : "",
+              screenIds,
+              requestText:
+                typeof body.launcher.requestText === "string" ? body.launcher.requestText : ""
+            } satisfies SpecToDemoLauncherInput
+          });
+          inputs = prepared.inputs;
+        } else {
+          inputs = isRecord(body) && "inputs" in body ? body.inputs : body;
+        }
         const runId = `run_${randomUUID()}`;
         let notifyStarted!: (record: StudioRunRecord) => void;
         const started = new Promise<StudioRunRecord>((resolveStarted) => {
@@ -267,10 +484,10 @@ export function createStudioServer(options: StudioServerOptions): Server {
         });
         activeRunIds.add(runId);
         const completion = executeStudioProcessRun({
-          workflow: options.document.workflow,
+          workflow: registration.document.workflow,
           inputs,
           store: runStore,
-          executor: options.executor,
+          executor: registration.executor,
           runId,
           onStarted: notifyStarted,
           ...(demoStore === undefined
@@ -320,25 +537,32 @@ function argument(name: string): string | undefined {
 
 async function main(): Promise<void> {
   const workflowPath = argument("--workflow");
-  if (workflowPath === undefined) {
+  const catalogPath = argument("--catalog");
+  if (workflowPath === undefined && catalogPath === undefined) {
     throw new Error(
-      "usage: awf-studio --workflow <workflow.json|workflow.yaml> [--executor execution.json] [--input fixture.json] [--runs runs/history.jsonl] [--demo-source runs/{runId}/artifacts/demo] [--demo-root runs] [--execution-root runs] [--port 4173]"
+      "usage: awf-studio (--catalog workflows/catalog.json | --workflow workflow.yaml) [--executor execution.json] [--input fixture.json] [--runs runs/history.jsonl] [--demo-source runs/{runId}/artifacts/demo] [--demo-root runs] [--execution-root runs] [--port 4173]"
     );
   }
   const portValue = argument("--port") ?? "4173";
   const port = Number(portValue);
   if (!Number.isInteger(port) || port < 1 || port > 65_535)
     throw new Error(`invalid port ${portValue}`);
-  const document = await loadWorkflowDocument(workflowPath);
+  const executionRoot = resolve(argument("--execution-root") ?? "runs");
+  const workflowRegistrations =
+    catalogPath === undefined
+      ? undefined
+      : await loadStudioWorkflowCatalog({ path: catalogPath, executionRoot });
+  const document =
+    workflowRegistrations?.[0]?.document ?? (await loadWorkflowDocument(workflowPath!));
   const inputPath = argument("--input");
   const initialInputs = inputPath === undefined ? {} : await loadStudioInputs(inputPath);
   const executorPath = argument("--executor");
   const executor =
-    executorPath === undefined
+    workflowRegistrations !== undefined || executorPath === undefined
       ? undefined
       : new LocalProcessWorkflowExecutor(
           await loadLocalExecutionManifest(executorPath, document.workflow),
-          { executionRoot: resolve(argument("--execution-root") ?? "runs") }
+          { executionRoot }
         );
   const runStore = new JsonlStudioRunStore(resolve(argument("--runs") ?? "runs/history.jsonl"));
   const demoSource = argument("--demo-source");
@@ -352,6 +576,7 @@ async function main(): Promise<void> {
     runStore,
     demoStore,
     initialInputs,
+    ...(workflowRegistrations === undefined ? {} : { workflows: workflowRegistrations }),
     ...(executor === undefined ? {} : { executor })
   }).listen(port, host, () => {
     process.stdout.write(`AAWP Studio loaded at http://${host}:${port}\n`);

@@ -5,16 +5,20 @@ AAWP Studio는 WIR source를 읽어 workflow 실행, run 기록과 결과를 한
 ```bash
 npm run build
 node apps/studio/dist/server.js \
-  --workflow examples/spec-to-demo.wir.yaml \
-  --executor path/to/execution-manifest.json \
+  --catalog workflows/catalog.json \
+  --runs runs/history.jsonl \
+  --execution-root runs \
+  --demo-source 'runs/{runId}/artifacts/demo' \
+  --demo-root runs \
   --port 4173
 ```
 
+- `GET /api/workflows`는 catalog의 표시명, version, mode, input kind와 executable 상태를 반환한다.
 - `GET /`은 최소 Studio를 표시한다.
-- `GET /api/workflow`은 source WIR digest와 canonical JSON을 반환한다.
+- `GET /api/workflow?workflow=<id>`은 선택 WIR digest와 canonical JSON을 반환한다.
 - `POST /api/check`은 2 MiB 이하의 JSON 후보를 compiler로 검사하고 canonical digest를 반환한다.
 
-실행 입력과 기록까지 표시하려면 다음처럼 실행한다.
+Catalog를 우회해 단일 workflow와 기존 JSON fixture를 디버깅하는 호환 모드는 다음과 같다. 이 모드는 domain typed launcher 대신 raw JSON input을 사용하므로 사용자-facing 기본 명령으로 배포하지 않는다.
 
 ```bash
 node apps/studio/dist/server.js \
@@ -29,8 +33,8 @@ node apps/studio/dist/server.js \
 ```
 
 - `GET /api/execution`은 등록된 executor의 작업 디렉터리, node별 argv, timeout과 token policy를 반환한다.
-- `POST /api/runs`은 `202`와 running record를 반환한 뒤 manifest에 등록된 process를 실행한다. 실행기가 없으면 `409 WORKFLOW_NOT_EXECUTABLE`, 이미 실행 중이면 `409 WORKFLOW_ALREADY_RUNNING`이다.
-- `GET /api/runs`은 append-only JSONL의 최신 run snapshot 목록을 반환한다. Running 중에는 같은 run ID의 갱신 snapshot이 추가되고 조회 시 마지막 snapshot이 선택된다.
+- `POST /api/runs`은 `workflowId`와 workflow별 launcher를 받고 `202` running record를 반환한 뒤 manifest에 등록된 process를 실행한다. 실행기가 없으면 `409 WORKFLOW_NOT_EXECUTABLE`, 이미 실행 중이면 `409 WORKFLOW_ALREADY_RUNNING`이다.
+- `GET /api/runs?workflow=<id>`은 선택 workflow의 append-only 최신 run snapshot 목록을 반환한다. Running 중에는 같은 run ID의 갱신 snapshot이 추가되고 조회 시 마지막 snapshot이 선택된다.
 - `GET /api/runs/:runId`는 node 상태, event timeline, artifact와 output 기록을 반환한다.
 - 성공한 run의 `--demo-source`는 `runs/<run-id>/demo/`에 content digest가 붙은 offboarded snapshot으로 복사된다. `{runId}` placeholder를 사용하면 builder output도 같은 run의 `artifacts/demo` 아래에 보존된다.
 - `POST /api/runs/:runId/demo/onboard`는 저장된 snapshot을 run ID URL에서 제공한다.
@@ -43,12 +47,22 @@ node apps/studio/dist/server.js \
 
 Studio는 운영자가 가장 자주 확인하는 순서대로 화면을 구성한다.
 
-1. 상단의 `Run workflow`로 workflow를 실행한다.
+1. 상단 catalog selector에서 workflow를 고르고 typed input으로 `Run <workflow-id>`를 실행한다.
 2. workflow strip에서 단계별 `Waiting`, `Running`, `Completed`, `Failed` 상태를 확인한다.
 3. 왼쪽 `Runs` rail에서 영속화된 실행 기록을 선택한다.
 4. 오른쪽 상세 영역에서 결과 preview, node, artifact, event와 output을 확인한다.
 
 기록을 선택하면 dashboard 주소가 `/?run=<runId>`로 바뀐다. 이 주소를 다시 열면 해당 run을 바로 선택하므로 운영 검토 링크로 사용할 수 있다. 공개 lifecycle을 따르는 결과 주소는 `/runs/<runId>/demo/`, 저장된 결과를 독립 탭에서 검사하는 주소는 `/runs/<runId>/demo-preview/`다.
+
+`/?run=<runId>` 요청에는 workflow query가 없어도 run record의 `workflowId`로 catalog entry를 복원한다. 사용자가 selector를 바꾸면 `?workflow=<id>`로 이동하고 해당 workflow history만 표시한다.
+
+## Catalog와 typed launcher
+
+`workflows/catalog.json`은 WIR path, optional execution manifest path, 표시명·설명, input kind와 실행 bundle이 없는 경우의 이유를 등록한다. Manifest가 없는 entry는 graph inspection만 가능하며 POST Run을 거부한다. 현재 `spec-to-demo`만 executable이고 `spec-feedback-to-spec`은 production model activity, 독립 verifier와 승인 UI가 준비될 때까지 unavailable이다.
+
+`spec-to-demo` launcher는 `sourcePath`, `screenIds[]`, `requestText`를 받는다. Source는 서버 project root 내부의 상대경로여야 한다. 절대경로, `..` 탈출, workspace 밖을 가리키는 symlink와 source에 없는 screen ID는 process 시작 전에 거부한다. 성공하면 선택 screen closure와 현재 `DESIGN.md` digest를 `runs/requests/<requestId>`에 기록하고 이 self-contained brief만 executor input으로 전달한다.
+
+기본 UI의 Runtime 위치는 절대경로 대신 `Project workspace · N local steps`다. 실제 cwd와 command argv는 접힌 `Technical details`, `GET /api/execution`과 run event에 남기므로 감사 가능성을 잃지 않는다.
 
 새 웹 demo는 기본 offboard 상태다. `Open demo`는 snapshot이 있으면 onboard 여부와 무관하게 local inspection 주소를 새 탭에서 연다. `Onboard demo`는 run ID 공개 주소와 dashboard preview를 활성화한다. `Offboard demo`는 공개 preview와 URL 제공을 중단하되 snapshot과 inspection 주소는 남긴다. `Delete demo`는 해당 snapshot과 inspection 주소만 삭제하며 input file, source, run, node, artifact metadata와 event 기록은 남는다. 같은 workflow를 다시 실행하면 새 run ID로 snapshot을 재생성할 수 있다.
 
@@ -78,7 +92,7 @@ Studio Run은 WIR 자체를 실행 가능한 코드라고 가정하지 않는다
 }
 ```
 
-`command`는 문자열 하나가 아니라 argv 배열이다. `llm` node는 반드시 `tokenTracking: required`여야 하며 usage가 없으면 `MODEL_USAGE_MISSING`으로 실패한다. 비모델 node만 있는 workflow는 `tokenTracking: none`과 실제 `0 tokens · 0 calls`를 기록할 수 있다.
+`command`는 문자열 하나가 아니라 argv 배열이다. `llm` node는 반드시 `tokenTracking: required`여야 하며 usage가 없으면 `MODEL_USAGE_MISSING`으로 실패한다. 비모델 node만 있는 workflow는 `tokenTracking: none`과 실제 `0 · 0 calls`를 기록할 수 있다. Summary token 수는 K/M으로 압축하지만 record와 tooltip의 input/cached/output/reasoning 값은 정수 원본을 유지한다.
 
 ## 실행 계측 계약
 

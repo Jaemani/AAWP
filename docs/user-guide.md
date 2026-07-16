@@ -23,16 +23,18 @@ node apps/cli/dist/index.js simulate examples/spec-to-demo.wir.yaml \
 ## 2. AAWP Studio
 
 ```bash
-npm run studio:spec-to-demo -- --input runs/requests/<request-id>/request.json --port 4173
+npm run studio -- --port 4173
 ```
 
 `http://127.0.0.1:4173/`을 연다.
 
-1. 필요하면 `Run input`에서 JSON 입력을 확인한다.
-2. `Run <workflow-id>`를 누른다. 상단 `Executes at`과 `Commands`에서 실제 실행 위치와 argv를 확인할 수 있다.
-3. Workflow strip에서 기능적 작업명, 구현 설명과 node 상태를 확인한다. `displayName`과 `description`이 없는 이전 WIR은 기술 node ID로 fallback한다.
-4. `Runs`에서 과거 run을 선택한다.
-5. Result preview, node, 실제 artifact, execution timeline, token과 output을 확인한다.
+1. `Workflow`에서 실행할 workflow를 선택한다. Execution manifest가 없는 workflow는 구조를 볼 수 있지만 Run은 비활성화된다.
+2. `spec-to-demo`는 project-relative source spec 경로, screen ID와 요청 원문을 입력한다. Screen ID는 쉼표 또는 줄바꿈으로 구분하며 빈 선택을 전체 화면으로 해석하지 않는다.
+3. `Run <workflow-id>`를 누른다. Studio가 `runs/requests/<requestId>`에 source projection과 `DESIGN.md` digest를 고정한 뒤 등록된 실제 process chain을 시작한다.
+4. Workflow strip에서 기능적 작업명, 구현 설명과 node 상태를 확인한다. `displayName`과 `description`이 없는 이전 WIR은 기술 node ID로 fallback한다.
+5. `Runs`에서 선택 workflow의 과거 run을 열고 Result preview, artifact, execution timeline, token과 output을 확인한다.
+
+기본 `Runtime` 표시는 `Project workspace · N local steps`이므로 checkout 경로가 다른 팀원에게도 같은 의미를 갖는다. 실제 cwd와 argv는 접힌 `Technical details`에만 표시하며 run record에도 evidence로 보존한다.
 
 선택한 run의 dashboard 주소는 `/?run=<runId>`, onboarded demo 주소는 `/runs/<runId>/demo/`, 저장 snapshot 검사 주소는 `/runs/<runId>/demo-preview/`다.
 
@@ -45,7 +47,7 @@ npm run studio:spec-to-demo -- --input runs/requests/<request-id>/request.json -
 
 Studio server는 local-only이다. `--executor`가 없으면 `Not executable`로 표시하고 Run을 비활성화하며, 몇 ms짜리 simulation 성공 record를 대신 만들지 않는다. 실행 manifest가 있으면 `Local process`로 표시하고 Run 상세의 `End-to-end time`은 입력 검증부터 실제 builder, verifier와 snapshot 완료까지의 monotonic 경과 시간이다. `Snapshot`은 application compiler 시간이 아니라 검증된 결과를 run별로 복사·digest하는 후처리 시간이며 없으면 `N/A`다.
 
-`Tokens`는 executor가 보존한 Codex JSONL `turn.completed.usage` 또는 표준 `AAWP_EVENT model_usage`의 합계다. `llm` WIR node는 usage evidence가 없으면 성공하지 않는다. `0 tokens · 0 calls`는 모든 node가 `tokenTracking: none`인 실제 비모델 workflow에서만 유효하다. `Not reported`는 0과 다르며 telemetry가 불완전하다는 뜻이다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 실제 execution event digest를 함께 표시한다.
+`Tokens`는 executor가 보존한 Codex JSONL `turn.completed.usage` 또는 표준 `AAWP_EVENT model_usage`의 합계다. Summary는 `1.23K`, `925.8K`, `1.23M`처럼 압축해 표시하고 hover title은 input/cached/output/reasoning 정확값과 coverage를 유지한다. `llm` WIR node는 usage evidence가 없으면 성공하지 않는다. `0 · 0 calls`는 모든 node가 `tokenTracking: none`인 실제 비모델 workflow에서만 유효하다. `Not reported`는 0과 다르며 telemetry가 불완전하다는 뜻이다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 실제 execution event digest를 함께 표시한다.
 
 `Execution timeline`의 `elapsedMs`는 run 시작 기준 monotonic offset이다. 같은 표시 시각의 연속 event는 첫 행에만 시간을 표시하고, model/verifier completion이 이미 보여준 node duration은 후속 `NodeCompleted`에서 반복하지 않는다. `ModelInvoked`는 model process 시작 시점, `ModelCompleted`는 duration과 usage가 확정된 종료 시점이다. Timeline의 작업명은 WIR node의 `displayName`을 사용하고 구현 `description`은 해당 node의 첫 event에만 붙인다. 기술 ID는 tooltip과 workflow strip에 보존한다. Node 완료 event에는 실제 child-process `durationMs`, exit code와 stdout/stderr log path가 계속 저장된다. POST는 running record를 먼저 반환하고 Studio는 5초마다 갱신한다. Timing 계약 추가 전의 기존 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다. 현재 executor는 local process이고 Temporal worker 복구, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
 
@@ -63,9 +65,13 @@ runs/<runId>/{run.json,input.json,logs/,artifacts/,demo/}
 
 명시적인 model 없는 dry-run이 필요하면 Studio Run이 아니라 `awf simulate`를 사용한다. 두 경로는 기록과 UI에서 합치지 않는다. Execution manifest 형식과 오류 코드는 [Studio 운영 문서](operations/studio.md)를 참고한다.
 
+현재 Studio는 대화와 독립적으로 실행되지만 local-only이다. WIR, catalog, execution manifest, `WORKFLOW.md`, source request와 `DESIGN.md`만으로 같은 경계를 재구성할 수 있으나 실행 머신에는 Codex CLI 설치·인증이 필요하다. 인증·tenant isolation·remote worker·secret broker·pause/cancel과 durable resume가 필요한 팀 배포 단계는 아직 아니다.
+
 ## 3. `spec-to-demo` 입력 범위
 
 새 실행은 먼저 source spec을 pinned request로 복사한다.
+
+Studio의 structured input이 아래 과정을 자동 수행한다. CLI에서 request를 미리 만들고 싶을 때만 다음 명령을 사용한다.
 
 ```bash
 npm run request:spec-to-demo -- \

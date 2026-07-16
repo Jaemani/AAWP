@@ -238,3 +238,17 @@
 - 원인: JSONL store가 `run.json`을 쓰기 위해 run directory를 먼저 만들었지만 executor는 directory가 존재하지 않아야 한다고 가정했다.
 - 교정: Executor는 run root의 사전 존재를 허용하고 `input.json`과 `logs/`의 독립 생성에서 충돌을 검출한다.
 - 재발 방지: Store가 `run.json`을 먼저 만든 상태에서 실제 local process artifact를 쓰는 회귀 test를 추가했다.
+
+## 실행 bundle은 독립적이었지만 Studio 입력은 대화와 CLI에 의존했다
+
+- 관찰: WIR, execution manifest와 `WORKFLOW.md`가 있어도 Studio는 시작 시 한 workflow와 이미 생성된 request JSON만 받았다. 사용자가 웹에서 `Run workflow`를 눌러도 어떤 source와 screen scope를 고정해야 하는지 알 수 없었고, 실제 request 생성은 대화 중인 agent나 별도 CLI가 대신했다.
+- 원인: Runtime 독립성을 곧 사용자 실행 UX의 독립성으로 간주했다. 실행 process가 self-contained인 것과 사용자가 올바른 typed input을 만드는 것은 서로 다른 경계다.
+- 교정: Versioned workflow catalog와 `spec-to-demo` typed launcher를 추가했다. 웹 입력은 project-relative source, 명시적 screen ID와 요청 원문을 새 request artifact로 고정한 뒤에만 executor를 호출한다. 실행 manifest가 없는 workflow는 선택 가능하지만 Run은 비활성화한다.
+- 재발 방지: 새 workflow 승격 조건에 catalog metadata, typed launcher 또는 명시적 raw contract, path/scope validation, execution manifest와 unavailable 상태를 포함한다. WIR만 존재하는 것을 웹 실행 준비 완료로 표시하지 않는다.
+
+## 로컬 절대경로를 기본 제품 정보로 노출했다
+
+- 관찰: Studio 상단에 `EXECUTES AT /Users/...`가 항상 보여 checkout 위치가 실행 의미인 것처럼 보였고 팀 공유 화면에도 개인 경로가 노출됐다.
+- 원인: 감사용 executor descriptor와 기본 운영 UI의 정보 위계를 구분하지 않았다.
+- 교정: 기본 표시는 `Project workspace · N local steps`로 바꾸고 절대 cwd와 argv는 접힌 `Technical details`, execution API와 run evidence에 보존했다.
+- 재발 방지: 이식 가능한 logical location을 기본 projection으로 사용하고 host-specific path, secret reference와 command detail은 명시적 기술 상세에서만 공개한다.

@@ -59,6 +59,8 @@ scopePolicy:
   maxWorkflowCostUsd: 1
 nodes:
   - id: compile-feedback
+    displayName: 피드백 범위 계약
+    description: 피드백 대상과 허용 수정 경계를 결정적 contract로 고정
     kind: deterministic
     version: 1.0.0
     owner:
@@ -95,6 +97,8 @@ nodes:
       retryableClasses: []
       backoff: fixed
   - id: propose-patch
+    displayName: 스펙 수정안 작성
+    description: 원본을 변경하지 않고 허용 범위 안의 patch proposal 생성
     kind: llm
     version: 1.0.0
     owner:
@@ -136,6 +140,8 @@ nodes:
       retryableClasses: [capacity]
       backoff: fixed
   - id: materialize-revision
+    displayName: 새 스펙 후보 생성
+    description: 검증된 patch를 적용해 독립된 단일 spec revision 후보 생성
     kind: deterministic
     version: 1.0.0
     owner:
@@ -176,6 +182,8 @@ nodes:
       retryableClasses: []
       backoff: fixed
   - id: verify-revision
+    displayName: 수정 결과 독립 검증
+    description: 범위 위반, schema, 요구사항 보존과 변경 증거 판정
     kind: judge
     version: 1.0.0
     owner:
@@ -215,6 +223,8 @@ nodes:
       retryableClasses: [capacity]
       backoff: fixed
   - id: approve-revision
+    displayName: 스펙 승격 승인
+    description: 검증된 후보를 사람 승인 후 새 revision으로 승격
     kind: approval
     version: 1.0.0
     owner:

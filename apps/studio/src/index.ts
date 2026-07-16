@@ -1,4 +1,10 @@
-export { createStudioView, renderStudioHtml, type StudioViewModel } from "./studio.js";
+export {
+  createStudioView,
+  formatCompactCount,
+  renderStudioHtml,
+  type StudioViewModel,
+  type StudioWorkflowOption
+} from "./studio.js";
 export {
   LocalStudioDemoStore,
   type StudioDemoAsset,
@@ -8,9 +14,17 @@ export {
 export {
   createStudioServer,
   loadStudioInputs,
+  loadStudioWorkflowCatalog,
   loadWorkflowDocument,
-  type StudioServerOptions
+  type StudioInputKind,
+  type StudioServerOptions,
+  type StudioWorkflowRegistration
 } from "./server.js";
+export {
+  prepareSpecToDemoRequest,
+  type PreparedSpecToDemoRequest,
+  type SpecToDemoLauncherInput
+} from "./spec-to-demo-request.js";
 export {
   executeStudioProcessRun,
   executeStudioRun,

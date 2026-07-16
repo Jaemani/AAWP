@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createWorkflowEditorDocument } from "@awf/control-plane";
 import type { WorkflowDefinition } from "@awf/ir";
-import { createStudioView, renderStudioHtml } from "./studio.js";
+import { createStudioView, formatCompactCount, renderStudioHtml } from "./studio.js";
 
 const port = { type: "value", schemaVersion: "1", visibility: "public" as const };
 const workflow: WorkflowDefinition = {
@@ -53,6 +53,14 @@ const workflow: WorkflowDefinition = {
 };
 
 describe("Studio HTML", () => {
+  it("formats token totals with readable K and M suffixes", () => {
+    expect(formatCompactCount(999)).toBe("999");
+    expect(formatCompactCount(1_234)).toBe("1.23K");
+    expect(formatCompactCount(925_800)).toBe("925.8K");
+    expect(formatCompactCount(999_500)).toBe("1M");
+    expect(formatCompactCount(1_234_000)).toBe("1.23M");
+  });
+
   it("renders one run action with history and run details", () => {
     const document = createWorkflowEditorDocument(workflow);
     const html = renderStudioHtml(createStudioView({ document }));
@@ -60,7 +68,9 @@ describe("Studio HTML", () => {
     expect(html).toContain("AAWP Studio");
     expect(html).toContain("Adaptive Artifact Workflow Platform");
     expect(html).not.toContain("Adaptive Workflow Studio");
-    expect(html).toContain("Execute and inspect");
+    expect(html).toContain("studio-fixture workflow");
+    expect(html).toContain('id="workflow-select"');
+    expect(html).toContain("Runtime");
     expect(html).toContain('data-node-id="execute"');
     expect(html).toContain('data-node-display-name="데모 구현"');
     expect(html).toContain("HTML·CSS artifact 생성");
@@ -102,6 +112,9 @@ describe("Studio HTML", () => {
     expect(html).toContain("End-to-end time");
     expect(html).toContain("Snapshot");
     expect(html).toContain("Tokens");
+    expect(html).toContain("function formatCompactCount");
+    expect(html).toContain("formatCompactCount(tokenUsage.totalTokens)");
+    expect(html).not.toContain('tokenUsage.totalTokens.toLocaleString("ko-KR")');
     expect(html).toContain("Traceability");
     expect(html).toContain("/api/runs");
     expect(html).toContain("URLSearchParams");

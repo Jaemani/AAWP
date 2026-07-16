@@ -2,6 +2,18 @@
 
 형식은 사용자·운영자에게 영향을 주는 변경을 중심으로 기록한다. 아직 안정 release 전이므로 날짜별 update note를 사용한다.
 
+## 2026-07-16
+
+### Workflow catalog와 실제 웹 실행 입력
+
+- `workflows/catalog.json`과 `GET /api/workflows`를 추가해 Studio에서 workflow를 선택할 수 있게 했다. `spec-to-demo`는 실행 가능하고, 실행 bundle이 미완성인 `spec-feedback-to-spec`은 상태와 이유를 표시하되 Run을 비활성화한다.
+- `spec-to-demo`의 raw JSON 입력을 source spec 상대경로, screen ID 집합과 요청 원문으로 구성된 typed launcher로 교체했다. Run 버튼은 새 pinned request를 만든 뒤 등록된 `codex exec → inspect → bounded repair → verify` local process를 실제 실행한다.
+- Source path는 project workspace 내부 상대경로만 허용하고 `..`, 절대경로와 workspace 밖 symlink를 거부한다. 선택 screen projection, 원본 digest와 현재 `DESIGN.md` version/digest는 `runs/requests/<requestId>`에 보존한다.
+- Run history를 workflow별로 필터링하고 `/?run=<runId>`가 해당 run의 workflow graph를 자동 복원하도록 했다.
+- 기본 실행 위치를 checkout 절대경로 대신 `Project workspace · N local steps`로 표시한다. 실제 cwd와 argv는 `Technical details`와 run evidence에만 보존한다.
+- Token summary를 `1.23K`, `925.8K`, `1.23M` 형식으로 압축했다. Input/cached/output/reasoning의 정확한 정수값과 telemetry coverage는 tooltip과 run record에 유지한다.
+- `spec-feedback-to-spec` WIR node에 기능적 작업명과 구현 설명을 추가해 workflow strip이 기술 ID만 나열하지 않게 했다.
+
 ## 2026-07-15
 
 ### 독립 demo 검사와 form layout QA
