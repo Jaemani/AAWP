@@ -30,7 +30,7 @@ npm run studio:spec-to-demo -- --input runs/requests/<request-id>/request.json -
 
 1. 필요하면 `Run input`에서 JSON 입력을 확인한다.
 2. `Run <workflow-id>`를 누른다. 상단 `Executes at`과 `Commands`에서 실제 실행 위치와 argv를 확인할 수 있다.
-3. Workflow strip에서 node 상태를 확인한다.
+3. Workflow strip에서 기능적 작업명, 구현 설명과 node 상태를 확인한다. `displayName`과 `description`이 없는 이전 WIR은 기술 node ID로 fallback한다.
 4. `Runs`에서 과거 run을 선택한다.
 5. Result preview, node, 실제 artifact, execution timeline, token과 output을 확인한다.
 
@@ -47,7 +47,7 @@ Studio server는 local-only이다. `--executor`가 없으면 `Not executable`로
 
 `Tokens`는 executor가 보존한 Codex JSONL `turn.completed.usage` 또는 표준 `AAWP_EVENT model_usage`의 합계다. `llm` WIR node는 usage evidence가 없으면 성공하지 않는다. `0 tokens · 0 calls`는 모든 node가 `tokenTracking: none`인 실제 비모델 workflow에서만 유효하다. `Not reported`는 0과 다르며 telemetry가 불완전하다는 뜻이다. `Traceability`는 run ID를 trace ID로 사용하고 workflow, input과 실제 execution event digest를 함께 표시한다.
 
-`Execution timeline`의 `elapsedMs`는 run 시작 기준 monotonic offset이다. `ModelInvoked`는 model process 시작 시점, `ModelCompleted`는 duration과 usage가 확정된 종료 시점이다. Node 완료에는 실제 child-process `durationMs`, exit code와 stdout/stderr log path가 포함된다. POST는 running record를 먼저 반환하고 Studio는 5초마다 갱신한다. Timing 계약 추가 전의 기존 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다. 현재 executor는 local process이고 Temporal worker 복구, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
+`Execution timeline`의 `elapsedMs`는 run 시작 기준 monotonic offset이다. 같은 표시 시각의 연속 event는 첫 행에만 시간을 표시하고, model/verifier completion이 이미 보여준 node duration은 후속 `NodeCompleted`에서 반복하지 않는다. `ModelInvoked`는 model process 시작 시점, `ModelCompleted`는 duration과 usage가 확정된 종료 시점이다. Timeline의 작업명은 WIR node의 `displayName`과 `description`을 사용하고 기술 ID는 tooltip과 workflow strip에 보존한다. Node 완료 event에는 실제 child-process `durationMs`, exit code와 stdout/stderr log path가 계속 저장된다. POST는 running record를 먼저 반환하고 Studio는 5초마다 갱신한다. Timing 계약 추가 전의 기존 `DETERMINISTIC_SIMULATION` 기록은 `legacy`로 표시한다. 현재 executor는 local process이고 Temporal worker 복구, 인증, 승인, pause/resume/cancel은 아직 연결되지 않았다.
 
 ### Run 파일 구조
 

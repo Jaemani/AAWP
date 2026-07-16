@@ -3,6 +3,8 @@ import { workflowEdgeId } from "./editor.js";
 
 export interface WorkflowGraphNode {
   id: string;
+  displayName: string;
+  description?: string;
   kind: WorkflowNode["kind"];
   version: string;
   owner: WorkflowNode["owner"];
@@ -57,6 +59,8 @@ export function projectWorkflowGraph(workflow: WorkflowDefinition): WorkflowGrap
   const nodes = workflow.nodes
     .map((node): WorkflowGraphNode => ({
       id: node.id,
+      displayName: node.displayName ?? node.id,
+      ...(node.description === undefined ? {} : { description: node.description }),
       kind: node.kind,
       version: node.version,
       owner: { ...node.owner },

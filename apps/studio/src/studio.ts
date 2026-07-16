@@ -42,9 +42,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
   const graphNodes = view.graph.nodes
     .map(
       (node, index) => `
-        <div class="workflow-node" data-node-id="${escapeHtml(node.id)}">
+        <div class="workflow-node" data-node-id="${escapeHtml(node.id)}" data-node-display-name="${escapeHtml(node.displayName)}" data-node-description="${escapeHtml(node.description ?? "")}">
           <span class="node-index">${String(index + 1).padStart(2, "0")}</span>
-          <div class="node-copy"><strong>${escapeHtml(node.id)}</strong><small>${escapeHtml(node.kind)}</small></div>
+          <div class="node-copy"><strong>${escapeHtml(node.displayName)}</strong><small>${escapeHtml(node.id)} · ${escapeHtml(node.kind)}</small>${node.description === undefined ? "" : `<em>${escapeHtml(node.description)}</em>`}</div>
           <span class="node-state">Waiting</span>
         </div>`
     )
@@ -130,12 +130,13 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .workflow-title strong { font-size:12px; font-weight:700; }
     .workflow-title span { color:var(--muted); font-size:10px; }
     .workflow-strip { display:grid; grid-auto-columns:minmax(220px,1fr); grid-auto-flow:column; gap:10px; overflow-x:auto; padding:14px; background:var(--panel-soft); }
-    .workflow-node { display:grid; min-width:220px; grid-template-columns:30px minmax(0,1fr) auto; align-items:center; gap:10px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+    .workflow-node { display:grid; min-width:220px; grid-template-columns:30px minmax(0,1fr) auto; align-items:start; gap:10px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
     .node-index { display:grid; width:30px; height:30px; place-items:center; border-radius:8px; color:#6f7b8d; background:#f1f4f7; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
     .node-copy { min-width:0; }
     .node-copy strong,.node-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .node-copy strong { font-size:11px; font-weight:690; }
     .node-copy small { margin-top:3px; color:var(--muted); font-size:9px; }
+    .node-copy em { display:block; margin-top:6px; color:var(--muted); font-size:9px; font-style:normal; line-height:1.45; overflow-wrap:anywhere; }
     .node-state { padding:4px 7px; border-radius:999px; color:#667085; background:#f2f4f7; font-size:8px; font-weight:720; text-transform:uppercase; letter-spacing:.04em; }
     .workflow-node[data-run-status="running"] { border-color:#b9c9f5; box-shadow:0 0 0 3px var(--accent-soft); }
     .workflow-node[data-run-status="running"] .node-state { color:var(--accent); background:var(--accent-soft); }
@@ -328,6 +329,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const previewLabel = document.getElementById("preview-label");
       const demoFrame = document.getElementById("demo-frame");
       const demoEmpty = document.getElementById("demo-empty");
+      const nodePresentation = Object.fromEntries(Array.from(document.querySelectorAll("[data-node-id]")).map((node) => [node.dataset.nodeId, { displayName:node.dataset.nodeDisplayName || node.dataset.nodeId, description:node.dataset.nodeDescription || "" }]));
       const runButtonLabel = ${canonicalize(`Run ${view.graph.workflowId}`)};
       let selectedRunId = null;
       let demoOnboarded = false;
@@ -397,12 +399,14 @@ export function renderStudioHtml(view: StudioViewModel): string {
         document.getElementById("trace-input-digest").textContent = trace?.inputDigest || record.inputDigest || "legacy";
         document.getElementById("trace-digest").textContent = trace?.traceDigest || record.traceDigest || "legacy";
         clear(nodeRecords);
-        Object.entries(record.nodeStates).sort(([a],[b]) => a.localeCompare(b)).forEach(([nodeId,state]) => { const card = make("div", undefined, "node-record" + (state === "failed" ? " failed" : "")); card.appendChild(make("i")); card.appendChild(make("span", nodeId + " · " + state)); nodeRecords.appendChild(card); });
+        Object.entries(record.nodeStates).sort(([a],[b]) => a.localeCompare(b)).forEach(([nodeId,state]) => { const presentation = nodePresentation[nodeId]; const workName = presentation ? presentation.displayName + (presentation.description ? " — " + presentation.description : "") : nodeId; const card = make("div", undefined, "node-record" + (state === "failed" ? " failed" : "")); card.title = nodeId; card.appendChild(make("i")); card.appendChild(make("span", workName + " · " + state)); nodeRecords.appendChild(card); });
         clear(artifactRecords);
         if (!record.artifacts.length) artifactRecords.appendChild(make("div", "No artifacts", "history-empty"));
         record.artifacts.forEach((artifact) => { const card = make("div", undefined, "artifact"); card.appendChild(make("strong", artifact.artifactId)); card.appendChild(make("small", artifact.nodeId + " / " + artifact.port + (artifact.source ? " · " + artifact.source : ""))); if (artifact.path) card.appendChild(make("code", artifact.path)); card.appendChild(make("code", artifact.contentHash)); artifactRecords.appendChild(card); });
         clear(timeline);
-        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const timing = make("time", elapsedLabel(event.elapsedMs), "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : event.occurredAt; const terminalRunEvent = event.type === "RunCompleted" || event.type === "RunFailed"; const duration = payload.durationMs === undefined || terminalRunEvent ? "" : " · " + formatTimelineDuration(payload.durationMs); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : "") + duration)); timeline.appendChild(row); });
+        let previousTimelineLabel = null;
+        const reportedDurationNodes = new Set();
+        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const formattedElapsed = elapsedLabel(event.elapsedMs); const displayElapsed = formattedElapsed === previousTimelineLabel ? "" : formattedElapsed; previousTimelineLabel = formattedElapsed; const timing = make("time", displayElapsed, "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : formattedElapsed + " elapsed · " + event.occurredAt; const terminalRunEvent = event.type === "RunCompleted" || event.type === "RunFailed"; const duplicateNodeDuration = event.type === "NodeCompleted" && payload.nodeId && reportedDurationNodes.has(payload.nodeId); const showDuration = payload.durationMs !== undefined && !terminalRunEvent && !duplicateNodeDuration; const duration = showDuration ? " · " + formatTimelineDuration(payload.durationMs) : ""; if (showDuration && payload.nodeId && (event.type === "ModelCompleted" || event.type === "VerifierCompleted" || event.type === "NodeCompleted")) reportedDurationNodes.add(payload.nodeId); const presentation = payload.nodeId ? nodePresentation[payload.nodeId] : undefined; const workName = presentation ? presentation.displayName + (presentation.description ? " — " + presentation.description : "") : payload.nodeId; const summary = make("span", event.type + (workName ? " · " + workName : "") + duration); if (payload.nodeId) summary.title = payload.nodeId; row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(summary); timeline.appendChild(row); });
         document.getElementById("run-output").textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
       };
 

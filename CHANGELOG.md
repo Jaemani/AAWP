@@ -46,6 +46,8 @@
 - 상단 `End-to-end time` 카드가 별도 formatter 때문에 `465.9 s`로 남던 회귀를 제거하고 execution timeline과 같은 `7m45.9s`, `1h2m3.4s` formatter를 사용하도록 통일했다.
 - `RunCompleted`와 `RunFailed`는 event offset이 이미 전체 실행시간이므로 동일한 `durationMs`를 다시 붙이지 않는다. Timeline 종결 행은 `7m45.9s · RunFailed`처럼 한 번만 표시한다.
 - Execution timeline은 이미 run 시작 기준 경과시간이라는 문맥이 분명하므로 각 offset 앞의 `+` 기호를 제거했다. 종결 행은 `7m45.9s · RunFailed`로 표시한다.
+- 같은 표시 시각에 연속된 event는 첫 행에만 elapsed time을 표시한다. `ModelCompleted`/`VerifierCompleted`가 이미 node duration을 보여주면 뒤따르는 `NodeCompleted`에서는 같은 duration을 반복하지 않으며, duration source가 없는 deterministic node와 `NodeFailed`는 계속 자체 시간을 표시한다.
+- WIR node에 optional `displayName`과 `description`을 추가했다. Studio의 workflow strip, node 상태와 execution timeline은 기술 ID 대신 기능적 작업명과 구현 산출물 설명을 우선 표시하며 node ID는 보조 정보와 tooltip으로 유지한다.
 - `DESIGN.md` 변경만으로 model workflow를 자동 재실행하지 않는 운영 규칙을 추가했다. 명시적 재생성 시에도 고정된 대표 2–3화면 cohort만 사용한다.
 - Token coverage는 `required` node의 보고 여부로 판정하고 `optional` node usage는 있을 때 합산하도록 교정했다. 초기 verifier 통과로 optional repair가 model을 호출하지 않은 run도 실제 build usage를 `measured/complete`로 표시한다.
 

@@ -20,6 +20,19 @@ describe("control-plane workflow editor", () => {
       worstCaseCostUsd: 0.2,
       contracts: { verifierIds: ["release"] }
     });
+
+    const firstNode = reparsed.workflow.nodes[0]!;
+    const named = projectWorkflowGraph({
+      ...reparsed.workflow,
+      nodes: [
+        { ...firstNode, displayName: "기능 작업", description: "구현 산출물 생성" },
+        ...reparsed.workflow.nodes.slice(1)
+      ]
+    }).nodes.find((node) => node.id === firstNode.id);
+    expect(named).toMatchObject({
+      displayName: "기능 작업",
+      description: "구현 산출물 생성"
+    });
   });
 
   it("produces a compiler-checked edit and a stable semantic diff", () => {

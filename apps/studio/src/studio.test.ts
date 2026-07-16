@@ -17,6 +17,8 @@ const workflow: WorkflowDefinition = {
   nodes: [
     {
       id: "execute",
+      displayName: "데모 구현",
+      description: "HTML·CSS artifact 생성",
       kind: "deterministic",
       version: "1",
       owner: { id: "operator", role: "operator" },
@@ -60,6 +62,8 @@ describe("Studio HTML", () => {
     expect(html).not.toContain("Adaptive Workflow Studio");
     expect(html).toContain("Execute and inspect");
     expect(html).toContain('data-node-id="execute"');
+    expect(html).toContain('data-node-display-name="데모 구현"');
+    expect(html).toContain("HTML·CSS artifact 생성");
     expect(html).toContain("Run studio-fixture");
     expect(html).toContain("Not executable");
     expect(html).toContain('id="run-workflow" class="run-button" type="button" disabled');
@@ -81,7 +85,11 @@ describe("Studio HTML", () => {
     expect(html).toContain('value === undefined ? "legacy" : formatTimelineDuration(value)');
     expect(html).not.toContain('"+" + formatTimelineDuration(value)');
     expect(html).toContain('event.type === "RunCompleted" || event.type === "RunFailed"');
-    expect(html).toContain("payload.durationMs === undefined || terminalRunEvent");
+    expect(html).toContain("formattedElapsed === previousTimelineLabel");
+    expect(html).toContain('event.type === "NodeCompleted" && payload.nodeId');
+    expect(html).toContain("reportedDurationNodes.has(payload.nodeId)");
+    expect(html).toContain("!terminalRunEvent && !duplicateNodeDuration");
+    expect(html).toContain("const nodePresentation = Object.fromEntries");
     expect(html).toContain("formatTimelineDuration(workflowDuration)");
     expect(html).toContain(
       "formatTimelineDuration(Date.now() - new Date(record.createdAt).getTime())"

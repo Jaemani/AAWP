@@ -142,6 +142,8 @@
         ],
         "properties": {
           "id": { "minLength": 1, "type": "string" },
+          "displayName": { "minLength": 1, "maxLength": 80, "type": "string" },
+          "description": { "minLength": 1, "maxLength": 240, "type": "string" },
           "kind": {
             "anyOf": [
               { "const": "deterministic", "type": "string" },

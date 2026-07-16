@@ -40,6 +40,8 @@ scopePolicy:
   maxWorkflowCostUsd: 15
 nodes:
   - id: build-demo
+    displayName: 데모 화면 구현
+    description: 요청 화면의 HTML·CSS·상호작용 artifact 생성
     kind: llm
     version: 1.0.0
     owner: { id: builder-team, role: builder }
@@ -66,6 +68,8 @@ nodes:
     verifiers: []
     retryPolicy: { retryableClasses: [capacity], backoff: fixed }
   - id: inspect-release
+    displayName: 초기 품질 검사
+    description: 레이아웃·오버플로·상호작용 release finding 생성
     kind: judge
     version: 1.0.0
     owner: { id: verifier-team, role: verifier }
@@ -92,6 +96,8 @@ nodes:
     verifiers: []
     retryPolicy: { retryableClasses: [], backoff: fixed }
   - id: repair-demo
+    displayName: 제한 수정
+    description: 초기 finding 범위에서 demo artifact를 한 번 수정
     kind: tool
     version: 1.0.0
     owner: { id: repair-team, role: operator }
@@ -127,6 +133,8 @@ nodes:
     verifiers: []
     retryPolicy: { retryableClasses: [capacity], backoff: fixed }
   - id: verify-release
+    displayName: 최종 릴리스 검증
+    description: 수정 candidate를 동일 acceptance로 재검증
     kind: judge
     version: 1.0.0
     owner: { id: verifier-team, role: verifier }

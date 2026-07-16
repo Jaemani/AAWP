@@ -218,6 +218,13 @@
 - 교정: LLM step 시작 callback에서 `ModelInvoked`를 기록하고 종료 usage는 `ModelCompleted`에 duration과 함께 기록한다.
 - 재발 방지: Timeline test가 model start elapsed가 completion elapsed보다 작은지 검증한다. Invocation과 telemetry collection을 같은 event로 재사용하지 않는다.
 
+## 원시 event마다 elapsed와 duration을 반복해 사람용 timeline을 흐림
+
+- 관찰: 같은 시각의 `ModelCompleted → ArtifactPublished → NodeCompleted`가 모두 같은 elapsed를 반복했고, model/verifier duration도 뒤따르는 `NodeCompleted`에 한 번 더 표시됐다.
+- 원인: Append-only event trace의 완전성을 그대로 시각적 timeline의 정보 밀도로 사용했다. Event 보존과 화면에서 같은 값을 반복하는 것은 별개인데 구분하지 않았다.
+- 교정: 같은 formatted elapsed의 연속 행은 첫 행에만 시간을 표시한다. Model/verifier completion이 보고한 node duration은 후속 `NodeCompleted`에서 숨기고, standalone deterministic completion과 실패 duration만 유지한다.
+- 재발 방지: 저장 event는 손실 없이 보존하되 Studio projection은 시각·duration의 canonical owner를 한 번만 보여준다.
+
 ## Studio마다 다른 run store를 사용해 기록이 사라진 것처럼 보였다
 
 - 관찰: 기본 Studio, smoke와 design pilot이 서로 다른 JSONL·execution·demo root를 사용해 한 Studio에서 이전 runs가 보이지 않았다.

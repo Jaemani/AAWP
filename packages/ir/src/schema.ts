@@ -168,6 +168,8 @@ const endpointTarget = Type.Union([
 export const WorkflowNodeSchema = Type.Object(
   {
     id: Type.String({ minLength: 1 }),
+    displayName: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
+    description: Type.Optional(Type.String({ minLength: 1, maxLength: 240 })),
     kind: nodeKind,
     version: Type.String({ minLength: 1 }),
     owner: owner,
