@@ -339,7 +339,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const fullDateTime = (value) => new Date(value).toLocaleString("ko-KR", { dateStyle:"medium", timeStyle:"medium" });
       const formatSeconds = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; const seconds = milliseconds / 1000; const digits = seconds === 0 ? 0 : seconds < 1 ? 3 : seconds < 10 ? 2 : 1; return seconds.toFixed(digits).replace(/\.0$/, "") + " s"; };
       const formatTimelineDuration = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; const totalSeconds = milliseconds / 1000; const hours = Math.floor(totalSeconds / 3600); const minutes = Math.floor((totalSeconds % 3600) / 60); const remaining = totalSeconds - hours * 3600 - minutes * 60; const digits = remaining === 0 ? 0 : totalSeconds < 1 ? 3 : 1; const seconds = remaining.toFixed(digits).replace(/\.0$/, ""); return (hours > 0 ? hours + "h" : "") + (hours > 0 || minutes > 0 ? minutes + "m" : "") + seconds + "s"; };
-      const elapsedLabel = (value) => value === undefined ? "legacy" : "+" + formatTimelineDuration(value);
+      const elapsedLabel = (value) => value === undefined ? "legacy" : formatTimelineDuration(value);
       const shortRunId = (value) => value.length > 22 ? value.slice(0, 12) + "…" + value.slice(-6) : value;
       const statusLabel = (value) => ({ waiting:"Waiting", scheduled:"Scheduled", running:"Running", completed:"Completed", failed:"Failed" })[value] || value;
       const setMessage = (text, tone = "neutral") => { message.textContent = text; message.dataset.tone = tone; };

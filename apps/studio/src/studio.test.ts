@@ -78,6 +78,8 @@ describe("Studio HTML", () => {
     expect(html).toContain("Execution timeline");
     expect(html).toContain("monotonic clock");
     expect(html).toContain("formatTimelineDuration(payload.durationMs)");
+    expect(html).toContain('value === undefined ? "legacy" : formatTimelineDuration(value)');
+    expect(html).not.toContain('"+" + formatTimelineDuration(value)');
     expect(html).toContain('event.type === "RunCompleted" || event.type === "RunFailed"');
     expect(html).toContain("payload.durationMs === undefined || terminalRunEvent");
     expect(html).toContain("formatTimelineDuration(workflowDuration)");
