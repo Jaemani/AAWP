@@ -35,6 +35,34 @@
       ]
     },
     {
+      "nodeId": "inspect-release",
+      "command": ["node", "scripts/inspect-spec-to-demo-run.mjs"],
+      "timeoutSec": 120,
+      "tokenTracking": "none",
+      "outputs": [
+        {
+          "port": "output",
+          "source": "file",
+          "path": "artifacts/verification/initial-findings.json",
+          "base": "executionDirectory"
+        }
+      ]
+    },
+    {
+      "nodeId": "repair-demo",
+      "command": ["node", "scripts/repair-spec-to-demo-run.mjs"],
+      "timeoutSec": 900,
+      "tokenTracking": "optional",
+      "outputs": [
+        {
+          "port": "output",
+          "source": "file",
+          "path": "artifacts/demo/manifest.json",
+          "base": "executionDirectory"
+        }
+      ]
+    },
+    {
       "nodeId": "verify-release",
       "command": ["node", "scripts/verify-spec-to-demo-run.mjs"],
       "timeoutSec": 120,

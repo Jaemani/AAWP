@@ -296,7 +296,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         <div id="run-detail" hidden>
           <div class="detail-head"><div class="detail-heading"><span class="detail-kicker">Run details</span><h2 id="selected-run-id"></h2><p id="selected-run-time"></p></div><div class="detail-actions"><span id="selected-status" class="status-label"></span><a id="open-demo" class="demo-open" target="_blank" rel="noopener noreferrer" hidden>Open demo</a><button id="toggle-demo" class="demo-lifecycle" type="button" hidden>Onboard demo</button><button id="delete-demo" class="delete-result" type="button" hidden>Delete demo</button></div></div>
           <div class="summary"><div><span>End-to-end time</span><strong id="selected-duration"></strong></div><div><span>Snapshot</span><strong id="selected-build-duration"></strong></div><div><span>Tokens</span><strong id="selected-tokens"></strong></div><div><span>Events</span><strong id="selected-events"></strong></div><div><span>Artifacts</span><strong id="selected-artifacts"></strong></div><div><span>Executor</span><strong id="selected-mode"></strong></div></div>
-          <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe><div id="demo-empty" class="demo-empty" hidden></div></div></section>
+          <section id="demo-result" class="demo-result" hidden><div class="demo-result-head"><div><span class="detail-kicker">Result preview</span><h3>Web demo</h3><p id="demo-address"></p></div><span id="preview-label" class="preview-label">Isolated run snapshot</span></div><div class="preview-shell"><iframe id="demo-frame" class="demo-frame" title="Run demo preview" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe><div id="demo-empty" class="demo-empty" hidden></div></div></section>
           <div class="detail-grid">
             <section class="trace-contract-section"><div class="section-heading"><h3>Traceability</h3><p>Run을 실제 executor, workflow, 고정 input과 execution event digest에 연결합니다.</p></div><div class="trace-contract"><div><span>Trace ID</span><code id="trace-id"></code></div><div><span>Workflow digest</span><code id="trace-workflow-digest"></code></div><div><span>Input digest</span><code id="trace-input-digest"></code></div><div><span>Trace digest</span><code id="trace-digest"></code></div></div></section>
             <section><h3>Nodes</h3><div id="node-records" class="nodes"></div></section>
@@ -325,6 +325,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const toggleDemo = document.getElementById("toggle-demo");
       const deleteDemo = document.getElementById("delete-demo");
       const demoAddress = document.getElementById("demo-address");
+      const previewLabel = document.getElementById("preview-label");
       const demoFrame = document.getElementById("demo-frame");
       const demoEmpty = document.getElementById("demo-empty");
       const runButtonLabel = ${canonicalize(`Run ${view.graph.workflowId}`)};
@@ -336,9 +337,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const make = (tag, text, className) => { const item = document.createElement(tag); if (text !== undefined) item.textContent = text; if (className) item.className = className; return item; };
       const shortTime = (value) => new Date(value).toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
       const fullDateTime = (value) => new Date(value).toLocaleString("ko-KR", { dateStyle:"medium", timeStyle:"medium" });
-      const formatMilliseconds = (value) => { const number = Number(value); if (!Number.isFinite(number)) return "—"; if (number === 0) return "0 ms"; if (number < 1) return number.toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + " ms"; return number.toFixed(number < 10 ? 2 : 1).replace(/\.0$/, "") + " ms"; };
+      const formatSeconds = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; const seconds = milliseconds / 1000; const digits = seconds === 0 ? 0 : seconds < 1 ? 3 : seconds < 10 ? 2 : 1; return seconds.toFixed(digits).replace(/\.0$/, "") + " s"; };
       const formatDuration = (value) => { const milliseconds = Number(value); if (!Number.isFinite(milliseconds)) return "—"; if (milliseconds < 60000) return (milliseconds / 1000).toFixed(milliseconds < 10000 ? 3 : 1).replace(/0+$/, "").replace(/\.$/, "") + " s"; const seconds = Math.floor(milliseconds / 1000); const minutes = Math.floor(seconds / 60); const hours = Math.floor(minutes / 60); const remainingMinutes = minutes % 60; const remainingSeconds = seconds % 60; return hours > 0 ? hours + "h " + remainingMinutes + "m " + remainingSeconds + "s" : minutes + "m " + remainingSeconds + "s"; };
-      const elapsedLabel = (value) => value === undefined ? "legacy" : "+" + formatMilliseconds(value);
+      const elapsedLabel = (value) => value === undefined ? "legacy" : "+" + formatSeconds(value);
       const shortRunId = (value) => value.length > 22 ? value.slice(0, 12) + "…" + value.slice(-6) : value;
       const statusLabel = (value) => ({ waiting:"Waiting", scheduled:"Scheduled", running:"Running", completed:"Completed", failed:"Failed" })[value] || value;
       const setMessage = (text, tone = "neutral") => { message.textContent = text; message.dataset.tone = tone; };
@@ -357,15 +358,17 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const renderDemo = (record) => {
         if (!record.demo) { demoResult.hidden = true; openDemo.hidden = true; openDemo.removeAttribute("href"); toggleDemo.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; demoOnboarded = false; return; }
         const snapshotAvailable = record.demo.snapshotAvailable === true;
+        const inspectionOnly = record.status !== "completed";
         demoOnboarded = snapshotAvailable && record.demo.onboarded === true;
-        demoResult.hidden = false; openDemo.hidden = !snapshotAvailable; toggleDemo.hidden = !snapshotAvailable; deleteDemo.hidden = !snapshotAvailable;
+        demoResult.hidden = false; openDemo.hidden = !snapshotAvailable; toggleDemo.hidden = !snapshotAvailable || inspectionOnly; deleteDemo.hidden = !snapshotAvailable;
         if (snapshotAvailable) openDemo.href = record.demo.previewUrl || "/runs/" + encodeURIComponent(record.runId) + "/demo-preview/"; else openDemo.removeAttribute("href");
         toggleDemo.textContent = demoOnboarded ? "Offboard demo" : "Onboard demo";
-        demoEmpty.hidden = demoOnboarded; demoFrame.hidden = !demoOnboarded;
-        demoEmpty.textContent = snapshotAvailable ? "Demo가 offboard 상태입니다. Snapshot과 실행 기록은 보존되며 Onboard demo를 눌러 다시 활성화할 수 있습니다." : "Demo snapshot이 삭제되었습니다. Input, source와 실행 기록은 보존됩니다.";
+        demoEmpty.hidden = snapshotAvailable; demoFrame.hidden = !snapshotAvailable;
+        demoEmpty.textContent = "Demo snapshot이 삭제되었습니다. Input, source와 실행 기록은 보존됩니다.";
         const inspectionUrl = record.demo.previewUrl || "/runs/" + encodeURIComponent(record.runId) + "/demo-preview/";
-        demoAddress.textContent = (demoOnboarded ? record.demo.entryUrl : inspectionUrl) + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (demoOnboarded ? "Onboarded" : snapshotAvailable ? "Stored inspection" : "Deleted");
-        demoFrame.src = demoOnboarded ? record.demo.entryUrl : "about:blank";
+        previewLabel.textContent = inspectionOnly ? "Failed candidate · inspection only" : demoOnboarded ? "Onboarded snapshot" : "Stored inspection";
+        demoAddress.textContent = (demoOnboarded ? record.demo.entryUrl : inspectionUrl) + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (inspectionOnly ? "Failed candidate" : demoOnboarded ? "Onboarded" : snapshotAvailable ? "Stored inspection" : "Deleted");
+        demoFrame.src = snapshotAvailable ? (demoOnboarded ? record.demo.entryUrl : inspectionUrl) : "about:blank";
       };
 
       const renderRun = (record) => {
@@ -384,7 +387,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         const resultBuild = record.metrics?.timing?.resultBuild;
         const tokenUsage = record.metrics?.tokens;
         document.getElementById("selected-duration").textContent = record.status === "running" ? formatDuration(Date.now() - new Date(record.createdAt).getTime()) + " · running" : formatDuration(workflowDuration);
-        document.getElementById("selected-build-duration").textContent = resultBuild?.status === "measured" ? formatMilliseconds(resultBuild.durationMs) + " · after execution" : "N/A";
+        document.getElementById("selected-build-duration").textContent = resultBuild?.status === "measured" ? formatSeconds(resultBuild.durationMs) + " · after execution" : "N/A";
         const tokenElement = document.getElementById("selected-tokens");
         tokenElement.textContent = !tokenUsage ? "legacy" : record.status === "running" && tokenUsage.status === "not_reported" ? "Tracking…" : tokenUsage.status === "not_reported" ? "Not reported" : tokenUsage.totalTokens.toLocaleString("ko-KR") + " · " + tokenUsage.modelInvocations + " calls";
         tokenElement.title = !tokenUsage ? "기존 run에는 token telemetry가 없습니다." : "input " + (tokenUsage.inputTokens ?? 0).toLocaleString("ko-KR") + " · cached " + (tokenUsage.cachedInputTokens ?? 0).toLocaleString("ko-KR") + " · output " + (tokenUsage.outputTokens ?? 0).toLocaleString("ko-KR") + " · reasoning " + (tokenUsage.reasoningOutputTokens ?? 0).toLocaleString("ko-KR") + " · coverage " + (tokenUsage.coverage || "legacy");
@@ -399,7 +402,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         if (!record.artifacts.length) artifactRecords.appendChild(make("div", "No artifacts", "history-empty"));
         record.artifacts.forEach((artifact) => { const card = make("div", undefined, "artifact"); card.appendChild(make("strong", artifact.artifactId)); card.appendChild(make("small", artifact.nodeId + " / " + artifact.port + (artifact.source ? " · " + artifact.source : ""))); if (artifact.path) card.appendChild(make("code", artifact.path)); card.appendChild(make("code", artifact.contentHash)); artifactRecords.appendChild(card); });
         clear(timeline);
-        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const timing = make("time", elapsedLabel(event.elapsedMs), "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : event.occurredAt; const duration = payload.durationMs === undefined ? "" : " · " + formatDuration(payload.durationMs); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : "") + duration)); timeline.appendChild(row); });
+        record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const timing = make("time", elapsedLabel(event.elapsedMs), "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : event.occurredAt; const duration = payload.durationMs === undefined ? "" : " · " + formatSeconds(payload.durationMs); row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(make("span", event.type + (payload.nodeId ? " · " + payload.nodeId : "") + duration)); timeline.appendChild(row); });
         document.getElementById("run-output").textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
       };
 

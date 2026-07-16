@@ -11,6 +11,40 @@
 - `DESIGN.md`를 1.2.0으로 올려 native select/input 48px geometry, field/action 간격, text·금액 overflow와 Playwright 1440px/390px 검증을 명시했다.
 - Pilot에서 확인된 select 45.33px 대 date input 48px 불일치, 금액 card overflow와 sticky action의 field 겹침을 교정했다.
 
+### `DESIGN.md` compact detail refinement
+
+- 동일 source의 기존/신규 pilot을 Playwright 1440px·390px에서 비교해 panel 수, page height, border, typography와 identity 차이를 측정했다.
+- `DESIGN.md`를 1.3.0으로 올려 제품 shell에서 AAWP identity를 금지하고 source product identity, compact governance header와 panel head/body/action anatomy를 명시했다.
+- Configuration의 연령·상한·일정 같은 문맥을 큰 KPI tile로 만들지 않고 key-value row로 표현하며, 기본 구성을 context + form + evidence로 제한했다.
+- Focused configuration의 1180px content 폭, `surface-strong` hairline, 18px panel title, 13–14px dense text와 1440×1100 first-viewport 목표를 추가했다.
+
+### Browser-gated detail refinement
+
+- `DESIGN.md`를 1.4.0으로 올려 두 pilot의 정확한 세 panel layout, panel 내부 action footer, mobile 390px 폭·2400px 높이 한계와 text glyph icon 금지를 명시했다.
+- 공용 Playwright layout QA를 CLI와 `spec-to-demo` release verifier가 함께 사용하도록 연결했다. Input/select 높이, 비의도 overflow, field/action overlap, action divider와 pilot page height를 snapshot 승격 전에 검사한다.
+- 1.3.0 결과를 새 verifier로 재검증해 Unicode navigation icon이 실제로 release를 실패시키는 것을 확인했다.
+- `file://`에서 script가 실행되지 않은 빈 shell과 hash-only navigation state를 검사해 false pass한 오류를 수정했다. Verifier는 임시 local HTTP server와 화면별 fresh navigation을 사용한다.
+- `DESIGN.md` 1.5.0에 canonical product brand, policy pilot의 panel별 정보 책임, 사용자용 projection copy와 구조용 영문 label 금지를 추가했다.
+- `DESIGN.md` 1.6.0에 dark authority rail, 2-column focused layout과 panel role marker를 추가하고 computed rail color·desktop/mobile geometry·48px control 높이를 release acceptance로 검증한다.
+- 1.45MB heavy spec 전체를 두 화면 builder context에 넣어 stream disconnect와 약 90만 input token을 유발하던 구조를 수정했다. Request 생성 시 선택 screen과 직접 참조 actor/component/interaction만 deterministic projection으로 고정하고 원본 digest는 별도 provenance로 보존한다.
+- Build model이 독립 verifier를 sandbox 안에서 반복 실행하며 localhost/Chromium 권한 오류를 추적하던 책임 중복을 제거했다. Builder는 artifact 문법만 확인하고 종료하며 Playwright와 release 판정은 등록된 `verify-release` node만 수행한다.
+- Builder 종료 전에 실행하는 browserless public artifact checker를 추가했다. 네 필수 파일·JavaScript 문법·manifest schema, 선택 화면의 canonical ID/hash route·정확한 source copy·canonical product identity·제품 UI로 노출된 구조용 영문 label, `DESIGN.md`의 rail token·240px desktop shell·1280px/600px breakpoint를 한 번에 검사하고 누락 위치를 짧게 보고한다.
+- 독립 release verifier는 public checker와 분리된 상태로 실제 HTTP/Playwright layout·interaction acceptance를 계속 소유한다.
+- `DESIGN.md` 1.7.0을 YAML front matter의 portable token과 `Overview → Colors → Typography → Layout → Elevation → Components → Do's and Don'ts → Agent Instructions`의 결정 중심 prose로 재구성했다. 380줄/25KB에서 204줄/14KB로 줄이고, primary/authority 색 사용 의도, flat card, 정보 밀도, responsive edge case와 금지 규칙을 명시했다.
+- 구조용 영문 `evidence` 노출을 금지하면서 payout pilot 제목에는 `권한·실행 evidence`를 요구하던 1.6.0의 내부 모순을 `권한·실행 근거`로 교정했다.
+- 동일 source의 1.4.0/1.7.0 결과를 같은 viewport에서 비교하고 `DESIGN.md` 1.8.0에 box와 badge의 사용 경계를 추가했다. 일반 key-value는 flat divider row, badge는 짧은 상태 label만 사용하며 긴 문장·금액·ID를 pill로 감싸거나 navigation에 장식 점을 만드는 것을 금지했다.
+- Empty/loading/error의 layout 유지, 중복 action disable, 복구 action과 live status 규칙을 추가하고 root `AGENTS.md`가 `spec-to-demo`의 유일한 시각 입력으로 `DESIGN.md`를 명시하도록 연결했다.
+- Public checker가 JavaScript template interpolation의 비가시 `data-panel-role` 값을 visible authoring label로 오인하던 문제를 수정하고 회귀 test를 추가했다.
+- Layout QA가 Studio의 HTTP 404 `demo_not_found` JSON을 빈 정상 화면으로 통과시키던 문제를 수정해 navigation status가 성공이 아니면 실패하도록 했다.
+- `DESIGN.md` 1.9.0에서 지급 summary를 desktop 2×2/mobile 1-column metric으로 고정하고 금액 줄바꿈, raw `payoutFormula`·내부 schema 이름과 추상적인 `권위 행위` badge를 금지했다. Layout QA와 public checker가 이 조건을 실행 가능하게 검사한다.
+- `DESIGN.md` 1.10.0에서 mobile 2–4 route는 모두 동시에 보여야 하고, 더 큰 묶음은 명시적인 menu/overflow control을 가져야 한다고 규정했다. 표시 없는 horizontal scroll 뒤에 요청 화면을 숨기는 구현은 release verifier가 거부한다.
+- Layout QA가 screen-reader용으로 clip된 canonical route를 1px overflow로 오판하던 문제를 고쳤다. 반대로 실제 product navigation link가 scroll container 밖에 가려지는 경우는 ancestor clip 영역까지 계산해 실패시킨다.
+- Detail pilot release는 정적 `running` 문자열 존재만 보지 않는다. 정책 필수값 오류→정상 상신과 지급의 초기 차단→발행 검토 요청→재인증→확인→실행 중→terminal result를 실제 browser action으로 검증한다.
+- 실패 run에 정상적인 static demo 파일이 남아 있으면 상태를 바꾸지 않고 `Failed candidate · inspection only` snapshot으로 보존한다. Studio iframe과 `Open demo`에서 볼 수 있지만 onboard는 거부한다.
+- Execution timeline의 event offset과 node duration을 모두 초(`s`) 단위로 통일했다. Snapshot materialization도 `ms` 대신 `s`로 표시한다.
+- `DESIGN.md` 변경만으로 model workflow를 자동 재실행하지 않는 운영 규칙을 추가했다. 명시적 재생성 시에도 고정된 대표 2–3화면 cohort만 사용한다.
+- Token coverage는 `required` node의 보고 여부로 판정하고 `optional` node usage는 있을 때 합산하도록 교정했다. 초기 verifier 통과로 optional repair가 model을 호출하지 않은 run도 실제 build usage를 `measured/complete`로 표시한다.
+
 ### 단일 run root와 self-contained workflow
 
 - 모든 local history를 `runs/history.jsonl`, 최신 record·input·log·artifact·demo를 `runs/<runId>/`에 저장하도록 기본 경로를 통일했다.

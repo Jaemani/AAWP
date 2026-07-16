@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
+import { parseDesignContractVersion } from "./design-contract-lib.mjs";
+import { projectSpecToDemoSource } from "./spec-to-demo-source-projection.mjs";
 
 function values(name) {
   const result = [];
@@ -41,8 +43,7 @@ for (const screenId of requestedScreens) {
 
 const designPath = resolve(root, "DESIGN.md");
 const designBytes = await readFile(designPath);
-const version = designBytes.toString("utf8").match(/^- 버전:\s*([^\s]+)$/m)?.[1];
-if (!version) throw new Error("DESIGN.md has no version field");
+const version = parseDesignContractVersion(designBytes.toString("utf8"));
 
 const generatedId = new Date()
   .toISOString()
@@ -54,7 +55,13 @@ const requestDirectory = resolve(root, "runs", "requests", requestId);
 await mkdir(resolve(root, "runs", "requests"), { recursive: true });
 await mkdir(requestDirectory, { recursive: false });
 const pinnedSourcePath = resolve(requestDirectory, "source-spec.json");
-await copyFile(sourcePath, pinnedSourcePath);
+const originalSourceDigest = sha256(sourceBytes);
+const useFullSource = process.argv.includes("--full-source");
+const pinnedSource = useFullSource
+  ? source
+  : projectSpecToDemoSource(source, requestedScreens, originalSourceDigest);
+const pinnedSourceBytes = Buffer.from(`${JSON.stringify(pinnedSource, null, 2)}\n`);
+await writeFile(pinnedSourcePath, pinnedSourceBytes, { mode: 0o600 });
 
 const request = {
   brief: {
@@ -63,7 +70,9 @@ const request = {
     sourceSpec: {
       path: relative(root, pinnedSourcePath),
       originalFilename: basename(sourcePath),
-      byteSha256: sha256(sourceBytes)
+      byteSha256: sha256(pinnedSourceBytes),
+      originalByteSha256: originalSourceDigest,
+      projection: useFullSource ? "full" : "requested-screen-closure-v1"
     },
     designContract: {
       path: "DESIGN.md",

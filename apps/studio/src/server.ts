@@ -195,6 +195,13 @@ export function createStudioServer(options: StudioServerOptions): Server {
         sendJson(response, 404, { error: "run_not_found" });
         return;
       }
+      if (record.status !== "completed") {
+        sendJson(response, 409, {
+          error: "demo_not_releasable",
+          message: "실패한 run의 candidate는 inspection만 가능하며 onboard할 수 없습니다."
+        });
+        return;
+      }
       if (
         record.demo === undefined ||
         demoStore === undefined ||

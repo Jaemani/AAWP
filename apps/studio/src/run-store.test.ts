@@ -74,7 +74,7 @@ describe("Studio JSONL run history", () => {
             nodeId: "verify-release",
             command: ["fixture-verifier"],
             timeoutSec: 30,
-            tokenTracking: "none"
+            tokenTracking: "optional"
           }
         ]
       },
@@ -130,7 +130,63 @@ describe("Studio JSONL run history", () => {
       }
     });
     expect(invoked?.elapsedMs).toBeLessThan(completed?.elapsedMs ?? 0);
-    expect(run.metrics?.tokens).toMatchObject({ modelInvocations: 1, totalTokens: 18 });
+    expect(run.metrics?.tokens).toMatchObject({
+      status: "measured",
+      coverage: "complete",
+      modelInvocations: 1,
+      totalTokens: 18
+    });
+  });
+
+  it("preserves an inspectable demo candidate when a process run fails", async () => {
+    const document = await loadWorkflowDocument(
+      "workflows/templates/spec-to-demo/workflow.wir.yaml"
+    );
+    const inputs = await loadStudioInputs("workflows/templates/spec-to-demo/input.example.json");
+    const executor: StudioWorkflowExecutor = {
+      descriptor: {
+        kind: "local-process",
+        workflowId: document.workflow.id,
+        workingDirectory: "/fixture",
+        executionRoot: "/fixture/runs",
+        tokenTelemetry: "codex-jsonl+aawp-events",
+        steps: document.workflow.nodes.map((node) => ({
+          nodeId: node.id,
+          command: ["fixture"],
+          timeoutSec: 30,
+          tokenTracking: "none"
+        }))
+      },
+      async execute() {
+        throw new Error("release verifier failed");
+      }
+    };
+
+    const run = await executeStudioProcessRun({
+      workflow: document.workflow,
+      inputs,
+      store: new InMemoryStudioRunStore(),
+      executor,
+      runId: "run-failed-candidate",
+      createDemoSnapshot: async () => ({
+        label: "demo",
+        entryUrl: "/runs/run-failed-candidate/demo/",
+        contentDigest: "candidate-digest"
+      })
+    });
+
+    expect(run).toMatchObject({
+      status: "failed",
+      demo: {
+        entryUrl: "/runs/run-failed-candidate/demo/",
+        contentDigest: "candidate-digest"
+      },
+      metrics: {
+        timing: {
+          resultBuild: { kind: "snapshot_materialization", status: "measured" }
+        }
+      }
+    });
   });
 
   it("preserves a completed run across store instances", async () => {

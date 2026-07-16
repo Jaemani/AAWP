@@ -140,7 +140,69 @@
 - 원인: 새 문서를 기존 가이드의 상위 요약으로 취급하고, 사용자가 요구한 입력 격리 실험으로 해석하지 않았다. Manifest에도 visual reference와 adapter version을 요구했다.
 - 영향: 결과 품질은 확인할 수 있어도 `DESIGN.md` 하나만으로 같은 디자인을 만들 수 있다는 증거가 아니었다.
 - 교정: 필요한 token, web/mobile composition, interaction과 접근성 규칙을 `DESIGN.md`에 흡수했다. 현재 1.2.0은 native control geometry, form/action spacing과 overflow 검증까지 포함한다. `spec-to-demo` 0.3.0 builder는 이전 demo·CSS·presentation/visual contract 접근을 금지하고 manifest에 `designInputs: ["DESIGN.md"]`와 byte digest만 기록한다.
+
+### `DESIGN.md` 단독 pilot이 구조보다 token을 과도하게 재현함
+
+- 관찰: 동일 source spec의 기존 compact 화면은 3개 panel과 44px fact row로 desktop 1100px 안에 핵심 업무가 들어왔지만, `DESIGN.md` 1.1.0 단독 pilot은 6개 panel과 큰 metric tile을 사용해 desktop 1420px, mobile 2670px로 늘어났다.
+- 원인: 색상, spacing과 shell token은 충분했지만 page title 중복 금지, product/viewer identity 경계, panel head/body/action anatomy와 configuration에서 metric 사용을 제한하는 composition 규칙이 약했다.
+- 영향: 개별 token은 맞아도 화면이 무겁고 generic dashboard처럼 보였으며, AAWP identity가 제품 rail에 섞였다.
+- 교정: `DESIGN.md` 1.3.0–1.6.0에서 실제 product identity, compact governance header, 세 panel composition, hairline, dense typography, mobile geometry와 executable browser acceptance를 추가했다. 1.7.0에서는 token보다 intent와 restraint가 먼저 읽히도록 8개 표준 section으로 재구성하고 primary/authority 색의 금지 용도, flat card, 한 화면 한 primary action, no decoration, responsive edge case와 Agent Instructions를 명시했다. 이전 run 자체는 builder 입력으로 재사용하지 않고 이 일반 규칙만 새 request에 고정한다.
+
+### 디자인 계약 안의 모순을 model 불이행으로 오판함
+
+- 관찰: `DESIGN.md` 1.6.0은 visible product copy에서 `evidence` 같은 구조용 영문을 금지하면서 payout pilot의 정확한 panel 제목을 `권한·실행 evidence`로 지정했다. Builder가 이 제목을 그대로 렌더링하자 verifier는 영문 노출로 실패시켰다.
+- 원인: 규칙을 실패 사례별로 누적하며 긍정 예시와 금지 규칙의 양방향 일관성을 검토하지 않았다. 380줄 문서에서 token, composition, acceptance가 반복돼 모순을 찾기 어려웠다.
+- 교정: 1.7.0에서 제목을 `권한·실행 근거`로 바꾸고 YAML token과 decision prose를 분리했다. 문서를 204줄로 줄여 Overview, Do/Don't와 Agent Instructions가 한 번씩만 진실원이 되게 했다.
+- 재발 방지: Verifier failure를 model 불이행으로 분류하기 전에 source/design/verifier 계약의 상호 모순을 먼저 검사한다. 새 금지 규칙은 같은 문서의 required copy와 함께 검색한다.
+
+### Token은 맞지만 모든 정보를 box와 pill로 표현함
+
+- 관찰: 1.7.0 결과는 색·shell·세 panel·반응형 조건을 지켰지만 일반 정보 행까지 회색 rounded box로 만들고 긴 문장·금액을 status pill에 넣어 이전 compact 결과보다 무겁고 generic하게 보였다.
+- 원인: `neutral fill을 사용할 수 있다`, `badge는 semantic pair를 쓴다`는 허용 규칙은 있었지만 어떤 정보에는 쓰지 말아야 하는지와 기본 row 표현이 분명하지 않았다.
+- 교정: 1.8.0에서 일반 key-value는 흰 surface와 divider가 기본이고, badge는 짧은 상태 label에만 사용하도록 했다. 긴 문장·금액·공식·ID의 pill, 장식 navigation dot와 모든 row의 filled box를 금지했다.
+- 재발 방지: Token 준수와 시각 품질을 같은 판정으로 취급하지 않는다. 같은 source·viewport의 이전/신규 screenshot을 비교하고 반복되는 생성 오류는 token 추가가 아니라 의도·금지 prose로 환원한다.
+- 후속 교정: 1.8.0 screenshot에서 4-column summary의 긴 원화 금액이 두 줄로 갈라지고 `dataNeeds`의 `payoutFormula=`가 form에 그대로 노출된 것을 확인했다. 1.9.0은 pilot metric을 2×2/1-column으로 고정하고 financial value 줄바꿈과 대표 raw schema identifier를 verifier finding으로 승격한다.
+
+### 비가시 구조 marker와 오류 응답을 visible UI로 잘못 판정함
+
+- 관찰: Public checker는 비가시 `data-panel-role="form"`을 제품 copy 노출로 오인해 bounded repair를 실패시켰다. 별도 layout QA는 Studio의 404 `demo_not_found` JSON을 overflow 없는 정상 화면으로 통과시켰다.
+- 원인: JavaScript template interpolation과 실제 text node를 구분하지 않았고 browser navigation status를 acceptance에 포함하지 않았다.
+- 교정: Interpolation source는 visible text 후보에서 제외하되 사용자용 literal은 계속 검사한다. Browser QA는 화면 geometry 전에 HTTP response가 성공인지 확인한다.
+- 재발 방지: Verifier는 DOM 의미, network 성공, layout을 별도 신호로 검사하며 한 신호의 부재를 다른 신호의 성공으로 해석하지 않는다.
+
+### 접근성용 route는 overflow로 오판하고 실제 mobile route 가림은 놓침
+
+- 관찰: `run_220f…`는 screen-reader용 `.canonical-routes`를 1px box로 clip했지만 layout QA가 이를 overflow로 오판해 release를 실패시켰다. 해당 오판을 제거한 뒤 screenshot을 확인하니 product rail의 두 번째 route는 390px mobile에서 표시 없는 horizontal scroll 뒤에 가려져 있었다.
+- 원인: 요소의 width와 CSS visibility만으로 보임을 판정해 clip/clip-path를 고려하지 않았고, 반대로 visible link가 ancestor scrollport 안에 실제로 노출되는지는 검사하지 않았다. `width: 100%`인 rail item과 `flex: 0 0 auto` 조합이 각 항목을 viewport 폭으로 만들었다.
+- 교정: Clip된 접근성 요소는 geometry·overflow 검사에서 제외했다. 요청 route별 product navigation link는 viewport와 모든 overflow ancestor의 수평 경계 안에 완전히 노출되는지 별도로 검사한다. `DESIGN.md` 1.10.0은 2–4개 mobile route의 동시 노출과 5개 이상일 때 명시적인 menu/overflow control을 요구한다.
+- 재발 방지: 접근성용 canonical link와 사용자용 product navigation을 같은 selector나 같은 acceptance로 대체하지 않는다. Screenshot 육안 확인과 executable route visibility를 함께 수행한다.
+
+### Interaction state를 source 문자열 존재로만 통과시킴
+
+- 관찰: Release verdict의 `interactionStates: true`는 `confirm`, `running`, `success`에 해당하는 문자열과 event listener가 source에 존재한다는 정적 검사 뒤에 기록됐다. 버튼이 실제로 다음 상태를 만들고 사용자가 완료까지 도달하는지는 확인하지 않았다.
+- 원인: Browser layout 검증을 추가하면서 interaction도 같은 단계에서 검증된 것으로 과도하게 해석했다.
+- 교정: Detail pilot은 정책 폼의 필수값 오류와 정상 제출, 지급 화면의 초기 차단, 발행 검토 요청, 재인증, 확인, `실행 중`, terminal result를 semantic role/label 기반 Playwright action으로 수행한 뒤에만 통과한다.
+- 재발 방지: Verdict field는 그 이름과 같은 observable behavior를 실행한 evidence가 있을 때만 `true`로 기록한다. 정적 source 검사는 public contract preflight로만 분류한다.
+
+### Heavy source 전체 주입으로 model stream이 끊김
+
+- 관찰: 두 화면만 요청했지만 1.45MB/108-screen 원본 spec 전체를 builder가 읽어 성공 run은 약 90만 input token을 사용했고, 후속 두 run은 산출물 작성 직전 model stream이 끊겼다.
+- 원인: 요청 범위는 닫혀 있었지만 model input은 screen scope로 축소하지 않아 source 선택과 전달 경계가 달랐다.
+- 교정: Request 생성기가 요청 screen, 직접 참조 actor/component와 screen interaction만 deterministic source projection으로 만든다. 실행은 projection digest를 고정하고 원본 byte digest를 provenance로 보존한다. 원본 전체가 꼭 필요한 진단에서만 `--full-source`를 사용한다.
+
+### Builder가 독립 verifier를 sandbox 안에서 재실행함
+
+- 관찰: Slim source run의 builder가 release verifier와 QA library를 읽고 localhost server·Playwright를 반복 실행했다. Builder sandbox에서는 listen과 Chromium rendezvous가 거부되어 84개 tool item과 약 160만 input token을 사용했다.
+- 원인: Workflow 지침이 builder에게 verifier 실행까지 요구해 `build-demo`와 독립 `verify-release` node의 책임이 중복됐다.
+- 교정: Builder는 네 artifact 작성, JavaScript 문법과 manifest JSON 확인까지만 수행한다. Verifier 코드·Playwright·localhost·과거 verifier log는 builder 접근 금지이며 release acceptance는 outer `verify-release` node만 수행한다.
 - 재발 방지: 입력 격리 실험은 prompt와 artifact manifest 양쪽에 allowed/forbidden source를 선언하고 verifier가 forbidden field와 문자열을 검사한다.
+
+### Builder의 최소 종료 검사가 명백한 계약 누락을 너무 늦게 발견함
+
+- 관찰: Slim run 하나는 source의 공식 대상 문구를 축약해 release에서 실패했고, 다음 run은 source copy를 모두 보존했지만 `DESIGN.md`의 1280px rail 전환을 860px mobile 전환으로 대체해 다시 실패했다. 이어진 run은 두 canonical ID를 데이터에는 넣었지만 hash route를 `#policy`, `#payout`으로 축약해 `#admin-payout-execution` 검사에서 정책 화면을 렌더링했다. Canonical route를 고친 run은 지급 근거 panel 제목에 구조용 영문 `evidence`를 노출하고 canonical product identity를 일반 관리 콘솔 문구로 바꿨다.
+- 원인: Builder와 독립 verifier의 책임을 분리하면서 builder 종료 검사를 파일 존재·문법·JSON parse로 지나치게 축소했다. 공개 입력에서 결정적으로 확인할 수 있는 계약까지 outer verifier에만 남겼다.
+- 교정: Network와 browser 없이 동작하는 `check-spec-to-demo-artifact.mjs`를 builder completion에 추가했다. 이 검사는 필수 파일, JavaScript parse, manifest schema, 요청 화면의 canonical ID/hash route·exact source copy·canonical product identity·제품 text node의 구조용 label과 `DESIGN.md`에 명시된 static shell token·breakpoint를 검사한다. 실패 시 전체 CSS를 출력하지 않고 누락 계약만 짧게 보고해 repair token을 줄인다.
+- 재발 방지: Builder-owned public checks는 source와 공개 design contract의 결정적 조건만 소유한다. 실제 layout, computed style, overflow, interaction과 release 판정은 계속 독립 Playwright verifier가 소유해 self-review로 대체하지 않는다.
 
 ## Model 호출 시작을 usage 수집 시점으로 기록했다
 

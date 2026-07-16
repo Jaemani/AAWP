@@ -1,6 +1,6 @@
 apiVersion: awf/v1
 id: spec-to-demo
-version: 0.3.0
+version: 0.4.0
 mode: CONTRACT
 artifactSchemas:
   - type: artifact.brief
@@ -13,6 +13,10 @@ artifactSchemas:
     schema:
       type: object
   - type: artifact.verdict
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.findings
     schemaVersion: 1.0.0
     schema:
       type: object
@@ -33,7 +37,7 @@ verifierDefinitions:
 scopePolicy:
   allowedSecrets: []
   allowedNetworkHosts: []
-  maxWorkflowCostUsd: 10
+  maxWorkflowCostUsd: 15
 nodes:
   - id: build-demo
     kind: llm
@@ -58,6 +62,67 @@ nodes:
       tools: [codex]
       secretRefs: []
     budget: { maxAttempts: 1, timeoutSec: 1800, maxCostUsd: 9.5 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers: []
+    retryPolicy: { retryableClasses: [capacity], backoff: fixed }
+  - id: inspect-release
+    kind: judge
+    version: 1.0.0
+    owner: { id: verifier-team, role: verifier }
+    inputs:
+      input: { type: artifact.demo, schemaVersion: 1.0.0, visibility: hidden }
+    outputs:
+      output: { type: artifact.findings, schemaVersion: 1.0.0, visibility: hidden }
+    reads:
+      - DESIGN.md
+      - runs/requests/**
+      - runs/run_*/artifacts/demo/**
+    writes: [runs/run_*/artifacts/verification/initial-findings.json]
+    capabilities:
+      filesystemRead:
+        - DESIGN.md
+        - runs/requests/**
+        - runs/run_*/artifacts/demo/**
+      filesystemWrite: [runs/run_*/artifacts/verification/initial-findings.json]
+      network: []
+      tools: [node]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 120, maxCostUsd: 0 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers: []
+    retryPolicy: { retryableClasses: [], backoff: fixed }
+  - id: repair-demo
+    kind: tool
+    version: 1.0.0
+    owner: { id: repair-team, role: operator }
+    inputs:
+      candidate: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
+      findings: { type: artifact.findings, schemaVersion: 1.0.0, visibility: hidden }
+    outputs:
+      output: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
+    reads:
+      - DESIGN.md
+      - runs/requests/**
+      - runs/run_*/artifacts/demo/**
+      - runs/run_*/artifacts/verification/initial-findings.json
+    writes:
+      - runs/run_*/artifacts/demo/app.js
+      - runs/run_*/artifacts/demo/index.html
+      - runs/run_*/artifacts/demo/styles.css
+    capabilities:
+      filesystemRead:
+        - DESIGN.md
+        - runs/requests/**
+        - runs/run_*/artifacts/demo/**
+        - runs/run_*/artifacts/verification/initial-findings.json
+      filesystemWrite:
+        - runs/run_*/artifacts/demo/app.js
+        - runs/run_*/artifacts/demo/index.html
+        - runs/run_*/artifacts/demo/styles.css
+      network: []
+      tools: [codex, node]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 900, maxCostUsd: 4.5 }
     cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
     verifiers: []
     retryPolicy: { retryableClasses: [capacity], backoff: fixed }
@@ -94,6 +159,12 @@ edges:
   - source: { kind: workflowInput, port: brief }
     target: { kind: nodeInput, nodeId: build-demo, port: input }
   - source: { kind: nodeOutput, nodeId: build-demo, port: output }
+    target: { kind: nodeInput, nodeId: inspect-release, port: input }
+  - source: { kind: nodeOutput, nodeId: inspect-release, port: output }
+    target: { kind: nodeInput, nodeId: repair-demo, port: findings }
+  - source: { kind: nodeOutput, nodeId: build-demo, port: output }
+    target: { kind: nodeInput, nodeId: repair-demo, port: candidate }
+  - source: { kind: nodeOutput, nodeId: repair-demo, port: output }
     target: { kind: nodeInput, nodeId: verify-release, port: input }
   - source: { kind: nodeOutput, nodeId: verify-release, port: output }
     target: { kind: workflowOutput, port: demo }

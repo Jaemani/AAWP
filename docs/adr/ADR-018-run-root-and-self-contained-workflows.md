@@ -37,9 +37,10 @@ Studio instance마다 `.awf/studio-runs.jsonl`, 별도 pilot JSONL과 서로 다
 1. `workflow.wir.yaml`: typed graph, capability, budget와 release policy
 2. `execution.manifest.json`: node별 실제 argv, timeout, token tracking과 output binding
 3. `WORKFLOW.md`: 입력 해석, 허용 지식, 출력 구조와 acceptance 절차
-4. 독립 verifier
+4. Network·browser 없이 공개 계약을 확인하는 builder completion checker
+5. 독립 verifier
 
-`spec-to-demo` 0.3.0은 source spec을 업무 의미에만 사용하고 `DESIGN.md` 1.2.0을 유일한 디자인 입력으로 사용한다. 필요한 presentation token, web/mobile shell, interaction, control geometry와 접근성 규칙을 이 문서에 흡수한다. 기존 presentation contract, visual reference, 이전 demo/CSS와 대화 기억은 builder 입력에서 제외한다. Manifest는 source와 `DESIGN.md` byte digest를 기록하며 금지된 legacy design field를 포함하면 verifier가 실패한다.
+`spec-to-demo` 0.4.0은 source spec을 업무 의미에만 사용하고 versioned `DESIGN.md`를 유일한 디자인 입력으로 사용한다. Portable token은 YAML front matter, intent·restraint·responsive·component decision과 Agent Instructions는 정해진 순서의 prose가 소유한다. 기존 presentation contract, visual reference, 이전 demo/CSS와 대화 기억은 builder 입력에서 제외한다. Manifest는 source와 `DESIGN.md` byte digest를 기록하며 금지된 legacy design field를 포함하면 verifier가 실패한다. Builder completion checker는 exact source copy와 문서에 공개된 static shell 조건만 빠르게 확인하고, 실제 browser layout과 최종 release 판정은 `inspect-release → 제한 repair → verify-release`가 수행한다. 1.10.0부터 요청 route의 product navigation이 viewport와 scroll ancestor 안에 실제 노출되는지도 release acceptance에 포함한다.
 
 ## 결과와 한계
 

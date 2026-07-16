@@ -78,6 +78,12 @@ npm run request:spec-to-demo -- \
 
 생성된 `request.json`에는 source spec과 `DESIGN.md`의 byte SHA-256이 들어간다. Builder는 [workflow WIR](../workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](../workflows/templates/spec-to-demo/execution.manifest.json), [실행 지침](../workflows/templates/spec-to-demo/WORKFLOW.md)만으로 동작한다. 업무 의미는 pinned source spec, 시각 디자인은 `DESIGN.md` 하나만 사용한다. 이전 demo, `presentation-contract.yaml`, `visual-reference-contract.yaml`, 기존 CSS와 대화 기억은 입력에서 제외된다.
 
+기본 request 생성은 heavy source 전체를 model에 전달하지 않는다. 요청한 `screens`와 그 화면이 직접 참조하는 actor, component, interaction만 `source-spec.json` projection으로 고정한다. `request.json`의 `sourceSpec.byteSha256`은 projection을, `sourceSpec.originalByteSha256`은 원본을 추적한다. 전체 source가 필요한 진단 실행만 `--full-source`를 명시한다.
+
+`build-demo`는 artifact 작성 뒤 browserless public checker로 필수 파일, JavaScript/manifest, canonical screen ID/hash route, exact source copy, canonical product identity, 제품 UI의 구조용 label 누출과 `DESIGN.md`의 정적 shell 조건을 확인한다. Builder sandbox에서 Playwright나 release verifier를 실행하지 않는다. Runtime은 `inspect-release → 최대 1회 repair-demo → verify-release`를 별도 process로 실행해 실제 layout, overflow와 interaction을 판정한다. 최종 verifier가 실패하면 candidate를 성공이나 release로 승격하지 않지만, 생성된 파일이 정상적인 static demo라면 `Failed candidate · inspection only` snapshot으로 보존해 Studio iframe과 `Open demo`에서 원인을 확인할 수 있다. 실패 candidate는 onboard할 수 없다.
+
+`DESIGN.md` 문구를 수정했다고 model-backed workflow를 자동 재실행하지 않는다. 우선 기존 artifact에 static/unit/browser verifier를 재사용한다. 실제 생성 결과를 다시 볼 필요가 있고 사용자가 명시적으로 재생성을 요청한 경우에만 고정된 대표 화면 2–3개 cohort를 실행하며, 디자인 검증 때문에 전체 spec이나 화면 집합을 확장하지 않는다.
+
 ### 특정 화면
 
 정확한 screen ID를 안다면 `scopeSelection.screenIds`를 사용한다.
@@ -191,7 +197,7 @@ Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에
 
 필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
 
-`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. 새 `spec-to-demo` 0.3.0은 필요한 token, web/mobile composition, interaction과 접근성 기준을 `DESIGN.md` 1.2.0에 흡수했으며 demo manifest에는 이 파일의 path/version/digest만 기록한다. 1.2.0은 native select와 input의 exact geometry, field/action spacing, text overflow와 Playwright viewport 검증 규칙을 추가했다.
+`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. `spec-to-demo` 0.4.0은 필요한 token, web/mobile composition, interaction과 접근성 기준을 `DESIGN.md`에 흡수했으며 demo manifest에는 이 파일의 path/version/digest만 기록한다. 1.2.0–1.6.0에서 control geometry, compact panel anatomy, product identity, dark authority rail과 executable browser acceptance를 정립했다. 1.7.0은 token-only trap을 피하도록 표준 YAML front matter와 decision prose를 분리했다. 1.8.0은 실제 이전/신규 run 비교에서 드러난 over-boxing과 긴 pill을 막았고, 1.9.0은 financial metric 줄바꿈과 raw schema 이름·추상 authority label 노출을 실행 가능한 금지 규칙으로 닫았다. 1.10.0은 mobile route가 표시 없는 horizontal scroll 뒤에 숨는 회귀를 막고, 작은 route 묶음은 모두 동시에 보이도록 한다.
 
 저장된 pilot의 desktop/mobile geometry와 overflow는 다음처럼 재검사할 수 있다. `--screen`은 반복할 수 있고 screenshot과 JSON report는 기본적으로 `tmp/demo-layout-qa/`에 생성된다.
 
@@ -202,7 +208,7 @@ npm run qa:demo-layout -- \
   --screen admin-payout-execution
 ```
 
-검사는 1440×1100과 390×844에서 한 줄 input/select 높이 차이 1px 미만, 비의도 horizontal overflow 없음, field/action 겹침 없음, form과 action 사이 16px 이상을 요구한다.
+검사는 먼저 모든 화면 URL의 HTTP 성공을 요구한다. 그 뒤 1440×1100과 390×844에서 한 줄 input/select 높이 차이 1px 미만, 비의도 horizontal overflow 없음, field/action 겹침 없음, form과 action 사이 16px 이상을 확인한다. 따라서 `demo_not_found` 같은 JSON 오류 응답은 빈 정상 화면으로 통과하지 않는다.
 
 정확성의 현재 경계도 구분한다. Source screen object, component reference, design token, navigation target과 interaction description은 byte/digest 또는 deep-equality test로 고정된다. 반면 각 component의 모든 prop이 화면 field로 노출되는지와 Figma 수준 pixel geometry는 아직 전수 acceptance가 없다. 따라서 현재 demo는 source-faithful structural prototype이지 22개 화면의 field-by-field 완전 구현이라고 주장하지 않는다. 예시 record도 source authority data가 아니다.
 

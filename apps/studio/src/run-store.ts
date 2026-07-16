@@ -549,7 +549,9 @@ export async function executeStudioProcessRun(input: {
   const nodeById = new Map(input.workflow.nodes.map((node) => [node.id, node]));
   const tokenCoverage = (): "complete" | "partial" | "none" => {
     const trackedNodeIds = input.executor.descriptor.steps
-      .filter((step) => step.tokenTracking !== "none")
+      // Optional telemetry is collected when present but cannot make a run incomplete.
+      // Only nodes declared `required` participate in the coverage gate.
+      .filter((step) => step.tokenTracking === "required")
       .map((step) => step.nodeId);
     const trackedNodesReported = trackedNodeIds.filter((nodeId) => usageNodeIds.has(nodeId)).length;
     return trackedNodeIds.length === 0 || trackedNodesReported === trackedNodeIds.length
@@ -841,6 +843,16 @@ export async function executeStudioProcessRun(input: {
       errorName: (error as Error).name,
       message: (error as Error).message
     });
+    if (input.createDemoSnapshot !== undefined) {
+      const resultBuildStartedAt = monotonicNow();
+      try {
+        demo = await input.createDemoSnapshot(runId);
+      } catch {
+        // Preserve the workflow failure as the primary error when no inspectable candidate exists.
+        demo = undefined;
+      }
+      resultBuildDurationMs = roundMilliseconds(monotonicNow() - resultBuildStartedAt);
+    }
     const record: StudioRunRecord = snapshot({
       schemaVersion: "awf/studio-run/v1",
       runId,
@@ -863,8 +875,8 @@ export async function executeStudioProcessRun(input: {
           ...(actualExecutionMs === undefined ? {} : { actualExecutionMs }),
           resultBuild: {
             kind: "snapshot_materialization",
-            status: "not_applicable",
-            durationMs: 0
+            status: demo === undefined ? "not_applicable" : "measured",
+            durationMs: demo === undefined ? 0 : resultBuildDurationMs
           }
         },
         tokens: {
@@ -892,6 +904,7 @@ export async function executeStudioProcessRun(input: {
               stepCount: Object.values(nodeStates).filter((state) => state === "completed").length
             }
           }),
+      ...(demo === undefined ? {} : { demo }),
       error: { name: (error as Error).name, message: (error as Error).message }
     });
     await input.store.append(record);

@@ -8,7 +8,7 @@
     },
     "designContract": {
       "path": "DESIGN.md",
-      "version": "1.2.0",
+      "version": "1.9.0",
       "byteSha256": "replace-with-design-sha256"
     },
     "requestedScreens": ["screen-id-one", "screen-id-two"],

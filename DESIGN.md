@@ -1,334 +1,213 @@
-# AAWP Demo Design Standard
+---
+name: Gyeonggi Integrated Wallet
+version: 1.10.0
+status: active
+scope: AAWP workflow가 생성하는 web/mobile product demo artifact
+colors:
+  surface: "#f8f9fb"
+  surface-dim: "#d8dadc"
+  surface-bright: "#f8f9fb"
+  surface-container-lowest: "#ffffff"
+  surface-container-low: "#f2f4f6"
+  surface-container: "#eceef0"
+  surface-container-high: "#e6e8ea"
+  surface-container-highest: "#e0e3e5"
+  on-surface: "#191c1e"
+  on-surface-variant: "#424753"
+  outline: "#737785"
+  outline-variant: "#c2c6d6"
+  surface-strong: "#e5e8eb"
+  primary: "#0050b5"
+  on-primary: "#ffffff"
+  primary-container: "#2368d9"
+  on-primary-container: "#edefff"
+  primary-tint: "#eaf2ff"
+  authority-fg: "#0a2540"
+  authority-bg: "#e6edf5"
+  verified-fg: "#00796b"
+  verified-bg: "#e4f7f4"
+  pending-fg: "#9a4d00"
+  pending-bg: "#fff2de"
+  danger-fg: "#c02131"
+  danger-bg: "#ffe8eb"
+  decision-fg: "#4e5968"
+  decision-bg: "#eef1f4"
+  approved-fg: "#0b7a53"
+  approved-bg: "#e7f7ef"
+  convertible-fg: "#174ea6"
+  convertible-bg: "#e8f0fe"
+  high-contrast-focus: "#111827"
+typography:
+  balance-display: { fontFamily: Hanken Grotesk, fontSize: 34px, fontWeight: 700, lineHeight: 1.2 }
+  metric: { fontFamily: Hanken Grotesk, fontSize: 28px, fontWeight: 700, lineHeight: 1.3 }
+  title: { fontFamily: Hanken Grotesk, fontSize: 22px, fontWeight: 700, lineHeight: 1.4 }
+  body: { fontFamily: Hanken Grotesk, fontSize: 16px, fontWeight: 400, lineHeight: 1.5 }
+  label: { fontFamily: Hanken Grotesk, fontSize: 15px, fontWeight: 600, lineHeight: 1 }
+  table-cell: { fontFamily: Hanken Grotesk, fontSize: 14px, fontWeight: 400, lineHeight: 1.4 }
+  caption: { fontFamily: Hanken Grotesk, fontSize: 13px, fontWeight: 400, lineHeight: 1.4 }
+  mono: { fontFamily: JetBrains Mono, fontSize: 13px, fontWeight: 500, lineHeight: 1 }
+rounded: { sm: 4px, default: 8px, md: 12px, lg: 16px, xl: 24px, full: 9999px }
+spacing:
+  base: 4px
+  gutter-mobile: 20px
+  padding-card: 16px
+  height-cta: 56px
+  height-row: 44px
+  padding-col: 12px
+  nav-rail-width: 240px
+  space-xs: 8px
+  space-sm: 12px
+  space-md: 16px
+  space-lg: 24px
+  space-xl: 32px
+---
+
+# Gyeonggi Integrated Wallet Design Standard
+
+## Overview
+
+AAWP demo는 spec을 설명하는 문서 viewer가 아니라 사용자가 실제 제품처럼 탐색하고 핵심 업무를 수행하는 product UI다. 화면 묶음은 navigation collection이며 서로 다른 route의 내용을 한 dashboard에 합치지 않는다.
+
+시각 방향은 **Corporate Minimalism**이다. 공공 금융 서비스의 신뢰성과 fintech의 명료함을 결합하되, 장식·gradient·illustration 없이 flat surface, 낮은 대비의 1px border와 단순한 층위를 사용한다. Admin/Issuer web은 금융 terminal에 가까운 고밀도 governance console이고 Consumer/Merchant mobile은 여백과 읽기 편한 상태 설명을 우선한다.
+
+모든 선택은 “빠른 판단, 권한 인지, 오류 없는 실행”에 기여해야 한다. Token이 허용하더라도 이 목적과 무관한 색, card, badge, shadow 또는 빈 공간을 추가하지 않는다.
+
+## Colors
+
+- `primary-container #2368D9`는 화면에서 가장 중요한 정상 진행 CTA 한 개에 우선 사용한다. 배경 tint, 정보 banner, divider, 장식 또는 여러 동급 CTA에 반복하지 않는다.
+- `authority-fg #0A2540`은 Admin/Issuer rail과 authority context에만 사용한다. 일반 card 배경이나 consumer surface에 확장하지 않는다.
+- 일반 surface는 흰색과 neutral tonal layer를 사용한다. Panel을 구분하려고 임의의 pastel 배경을 만들지 않는다.
+- Status는 반드시 matching foreground/background pair와 text를 함께 쓴다. `verified`, `pending`, `danger`, `decision`, `approved`, `convertible` 의미를 서로 바꾸지 않는다.
+- Error와 부족 상태는 danger pair, 대기·확인 필요는 pending pair를 사용한다. 색만으로 상태를 전달하지 않는다.
+- 일반 text는 `on-surface`, 보조 설명은 `on-surface-variant` 또는 `ink-muted`를 사용한다. WCAG AA 대비를 목표로 한다.
+
+## Typography
+
+- Hanken Grotesk를 기본으로 하고 없으면 system sans로 fallback한다. ID, hash, audit reference와 idempotency key만 JetBrains Mono 계열을 사용한다.
+- Page title만 22–24px/700을 사용한다. Panel title은 18px/1.3, body는 14–16px, field/key label은 13–15px를 사용한다. 모든 text를 16px bold로 만들지 않는다.
+- 금액과 건수는 tabular figures를 사용하며 ellipsis로 자르지 않는다. 좁으면 column을 reflow하거나 metric을 18px 이상 범위에서 축소한다.
+- 긴 한국어 label, badge와 technical ID는 container 안에서 wrap한다. 줄바꿈은 다음 row를 밀어내야 하며 겹치면 안 된다.
+- 대문자 eyebrow는 authority 또는 section label처럼 짧은 보조 정보에만 사용한다.
+
+## Layout
+
+### Source와 화면 경계
+
+- Pinned source spec은 actor, authority, route, copy, state, data와 interaction의 진실원이다. 이 문서는 visual decision만 소유한다.
+- 요청한 screen마다 canonical `#<screenId>` 주소와 독립 product screen을 만든다. 범위 안 target만 연결하고 범위 밖 target은 안내하며 source logic을 임의 수정하지 않는다.
+- Product UI에는 route, screen ID, purpose, dataNeeds, component/prop 이름, feedback 진단과 raw spec prose를 노출하지 않는다.
+
+### Admin/Issuer web shell
+
+- Shell은 정확히 authority rail, governance header, page content의 세 층이다.
+- Desktop rail은 240px, `#0A2540`, viewport 높이로 유지한다. Gyeonggi pilot rail 상단에는 `Gyeonggi Integrated Wallet`과 `관리 콘솔`을 함께 표시한다. `관리 콘솔`만 product brand처럼 쓰지 않는다.
+- Header는 흰색, 최소 72px이며 breadcrumb/title, 한 줄 설명과 compact authority state만 둔다. Title을 별도 hero에서 반복하지 않는다.
+- Page는 20–28px padding, `surface #f8f9fb`, 장식 없는 fluid content를 사용한다. Focused form content는 `min(1180px, 100%)`에 가깝게 제한한다.
+- Product rail은 하나만 둔다. Bundle/screen selector는 preview 바깥에 두며 같은 축에 두 번째 persistent panel을 만들지 않는다.
 
-- 상태: active
-- 버전: 1.2.0
-- 기준일: 2026-07-15
-- 적용 범위: AAWP workflow가 생성하는 web/mobile demo artifact
-- 비적용 범위: AAWP Studio control console 자체
+### Information composition
 
-## 1. 목적
-
-AAWP demo는 spec 내용을 보여주는 문서 viewer가 아니라 사용자가 실제 제품처럼 탐색하고 핵심 업무를 수행할 수 있는 실행 가능한 결과물이어야 한다. 여러 화면을 요청해도 화면 내용을 한 panel에 합치지 않으며, 각 화면의 actor·route·layout·state와 interaction을 보존한다.
-
-현재 web console의 기준 인상은 다음과 같다.
-
-> 신뢰도 높은 공공 금융 서비스의 절제된 시각 언어와, 빠르게 판단하고 실행할 수 있는 고밀도 governance console.
-
-## 2. 진실원과 입력 격리
-
-Demo builder가 읽을 수 있는 디자인 입력은 이 문서 하나다. 충돌 시 아래 순서로 판단한다.
-
-1. Pinned source spec: 화면의 업무 의미, actor, authority, route, copy, state, data와 interaction
-2. 이 문서: 색상, typography, spacing, shell, composition, responsive, interaction과 접근성
-3. Browser 기본 동작: 이 문서가 정의하지 않은 native control의 세부 rendering
-
-Source spec의 layout/component 이름은 필요한 업무 구조를 설명할 뿐 별도 디자인 시스템이 아니다. 다음 자료는 provenance와 과거 결과 비교용이며 demo builder 입력으로 사용하지 않는다.
-
-- 기존 `presentation-contract.yaml`, `visual-reference-contract.yaml`, `design-tokens.css`
-- 이전 run의 HTML, CSS, screenshot과 demo artifact
-- 대화에서만 전달된 디자인 설명이나 에이전트의 기억
-- source spec 밖의 제품 화면과 임의 example dashboard
-
-Spec이 불명확하면 임의 UX로 메우지 않고 demo 밖의 `specFeedback`에 기록한다. Manifest는 `DESIGN.md`의 path, version, SHA-256 digest를 기록하고 다른 디자인 계약 digest를 기록하지 않는다.
-
-## 3. 핵심 원칙
-
-### 3.1 한 화면, 한 업무 맥락
-
-- 서로 다른 route를 한 dashboard panel에 합치지 않는다.
-- 화면 묶음은 navigation collection이지 합성 화면이 아니다.
-- 사용자가 요청한 화면마다 독립 URL과 screen artifact를 제공한다.
-- 연결 대상이 요청 범위 안이면 CTA와 navigation으로 실제 전환한다.
-- 범위 밖이면 범위 밖임을 알리고, 불명확하면 임의 연결하지 않는다.
-
-### 3.2 Authority가 항상 보인다
-
-- Admin/Issuer web은 짙은 authority rail을 사용한다.
-- 현재 역할, 조직 또는 실행 권한을 header나 rail에서 확인할 수 있어야 한다.
-- 일반 status와 authority state를 같은 badge 의미로 섞지 않는다.
-- 위험하거나 되돌리기 어려운 실행은 primary action과 별도 확인 단계를 갖는다.
-
-### 3.3 정보는 조밀하되 층위는 단순하다
-
-- 기본 제품 shell은 rail, governance header, page content의 세 층만 사용한다.
-- 카드 안에 불필요한 카드나 outline을 반복하지 않는다.
-- Metrics는 판단에 필요한 경우에만 사용하고 최대 4개를 기본으로 한다.
-- 표, form, stepper, drawer는 화면의 실제 업무 유형에 따라 선택한다.
-- 긴 설명보다 label, value, status, evidence와 action을 우선한다.
-
-### 3.4 증거와 행동이 함께 보인다
-
-- 실행 화면은 대상, 금액·건수, 현재 상태, 영향과 다음 행동을 한 viewport 안에서 파악할 수 있어야 한다.
-- 승인·발행·지급 같은 단계는 진행 상태와 완료 evidence를 함께 보여준다.
-- 예시 데이터는 `예시` 또는 `PoC`임을 명시하고 권위값처럼 표시하지 않는다.
-- ID, hash, audit reference는 JetBrains Mono 계열로 사람용 정보와 구분한다.
-
-### 3.5 Product UI에 authoring metadata를 노출하지 않는다
-
-다음 정보는 Studio/artifact inspector가 소유하며 제품 화면에 표시하지 않는다.
-
-- route 문자열
-- screen ID
-- purpose, dataNeeds
-- component type이나 prop 이름
-- feedback count와 진단 문구
-- source spec 원문 설명
-
-제품 화면 제목은 source의 사용자용 `copy.title`을 사용한다.
-
-## 4. Web console composition
-
-### 4.1 기본 shell
-
-| 영역                 | 기준                                                           |
-| -------------------- | -------------------------------------------------------------- |
-| Workspace background | `surface #f8f9fb`, 장식 없는 조용한 배경                       |
-| Authority rail       | 240px, `authority #0A2540`, viewport 높이 고정                 |
-| Active navigation    | `primary-container #2368D9`, icon + text                       |
-| Governance header    | 최소 72px, 흰 배경, breadcrumb/title + compact authority state |
-| Page padding         | desktop 24px/28px, mobile 18px/14px                            |
-| Content              | full fluid width, 불필요한 중앙 marketing card 금지            |
-
-제품 rail은 하나만 둔다. Bundle·surface·screen 선택기는 제품 rail 옆에 두 번째 좌측 panel로 배치하지 않고 preview 바깥의 상단 switcher가 소유한다.
-
-### 4.4 Mobile composition
-
-- Consumer/Merchant 화면은 20px side gutter와 16/24px vertical rhythm을 사용한다.
-- Primary CTA는 최소 56px, 모든 touch target은 최소 44×44px다.
-- 핵심 잔액·상태를 먼저 보여주고 ledger 세부 정보는 progressive disclosure로 제공한다.
-- Tablet에서는 독립 card를 최대 2-column으로 전환하되 transaction amount와 상태를 자르지 않는다.
-- Bottom sheet는 상단 20px radius와 명확한 modal elevation을 사용한다.
-- Mobile 화면에 web authority rail을 축소 삽입하지 않는다. Actor와 surface에 맞는 mobile navigation을 사용한다.
-
-### 4.2 Page header
-
-- 왼쪽: 사용자용 제목과 한 줄 설명
-- 오른쪽: 화면의 primary/secondary action
-- 화면 title은 22px 내외, body는 16px 기준을 사용한다.
-- 내부 구현 ID나 route를 subtitle로 사용하지 않는다.
-
-### 4.3 Content patterns
-
-#### List / work queue
-
-- Filter bar → table → 선택 detail drawer 순서를 기본으로 한다.
-- Table row는 최소 44px이며 수치와 status를 잘라내지 않는다.
-- Row 전체 또는 명시적 action으로 detail에 진입한다.
-
-#### Configuration / policy form
-
-- Context/effective version → sectioned form → validation summary → submit 순서로 구성한다.
-- 관련 필드는 한 section에 묶되 label과 value를 별도 panel로 과도하게 분할하지 않는다.
-- 저장과 승인 요청을 구분하고, validation 오류는 해당 field와 summary에 함께 표시한다.
-
-#### Approval / review
-
-- 제출 내용, 변경점, evidence, 결재 계보와 의사결정을 분리한다.
-- 승인/반려는 같은 시각적 무게로 두지 않는다. Primary action은 정상 진행, destructive action은 danger semantic을 사용한다.
-
-#### Execution / payout / issuance
-
-- 실행 전 대상·금액·건수·권한·준비 상태를 요약한다.
-- 실제 실행 action은 확인 단계와 결과 state를 가진다.
-- 성공, 일부 실패, 재처리 가능 상태를 semantic token과 텍스트로 함께 구분한다.
-
-#### Audit / evidence
-
-- 시간순 event, actor, action, reference를 한 행에서 읽을 수 있어야 한다.
-- Technical reference는 mono typography를 사용하고 copy action을 제공할 수 있다.
-
-## 5. Visual language
-
-이 절의 token이 canonical source다. 구현은 CSS custom property로 옮길 수 있지만 이름·값·semantic pairing을 임의 변경하지 않는다.
-
-### 5.1 색상
-
-- Critical primary action: `primary-container #2368D9`
-- Authority surface: `#0A2540`
-- 일반 본문: `on-surface #191C1E`
-- Border: `surface-strong #E5E8EB` 또는 `outline-variant #C2C6D6`
-- 상태는 반드시 matching foreground/background token pair를 사용한다.
-
-상태를 색상만으로 표현하지 않는다. Badge는 icon, text와 semantic pair를 함께 사용한다.
-
-```yaml
-surface: "#f8f9fb"
-surface-dim: "#d8dadc"
-surface-bright: "#f8f9fb"
-surface-container-lowest: "#ffffff"
-surface-container-low: "#f2f4f6"
-surface-container: "#eceef0"
-surface-container-high: "#e6e8ea"
-surface-container-highest: "#e0e3e5"
-on-surface: "#191c1e"
-on-surface-variant: "#424753"
-inverse-surface: "#2d3133"
-inverse-on-surface: "#eff1f3"
-outline: "#737785"
-outline-variant: "#c2c6d6"
-primary: "#0050b5"
-on-primary: "#ffffff"
-primary-container: "#2368d9"
-on-primary-container: "#edefff"
-primary-tint: "#eaf2ff"
-secondary: "#595f69"
-on-secondary: "#ffffff"
-secondary-container: "#dae0ec"
-on-secondary-container: "#5d636e"
-tertiary: "#3f5774"
-on-tertiary: "#ffffff"
-tertiary-container: "#586f8e"
-on-tertiary-container: "#eaf1ff"
-error: "#ba1a1a"
-on-error: "#ffffff"
-error-container: "#ffdad6"
-on-error-container: "#93000a"
-ink-muted: "#566579"
-ink-subtle: "#6b7684"
-surface-strong: "#e5e8eb"
-authority-fg: "#0a2540"
-authority-bg: "#e6edf5"
-high-contrast-focus: "#111827"
-verified-fg: "#00796b"
-verified-bg: "#e4f7f4"
-pending-fg: "#9a4d00"
-pending-bg: "#fff2de"
-danger-fg: "#c02131"
-danger-bg: "#ffe8eb"
-decision-fg: "#4e5968"
-decision-bg: "#eef1f4"
-approved-fg: "#0b7a53"
-approved-bg: "#e7f7ef"
-convertible-fg: "#174ea6"
-convertible-bg: "#e8f0fe"
-```
-
-### 5.2 Typography
-
-- 기본: Hanken Grotesk, 없으면 system sans fallback
-- Technical ID: JetBrains Mono, 없으면 system mono fallback
-- 금액·건수: tabular figures
-- 금융 금액은 ellipsis로 자르지 않는다.
-- 대문자 eyebrow는 authority나 section label처럼 제한된 용도로만 사용한다.
-
-| Role            | Family         | Size | Weight | Line height |
-| --------------- | -------------- | ---: | -----: | ----------: |
-| balance-display | Hanken Grotesk | 34px |    700 |         1.2 |
-| metric          | Hanken Grotesk | 28px |    700 |         1.3 |
-| title           | Hanken Grotesk | 22px |    700 |         1.4 |
-| body            | Hanken Grotesk | 16px |    400 |         1.5 |
-| label           | Hanken Grotesk | 15px |    600 |         1.0 |
-| table-cell      | Hanken Grotesk | 14px |    400 |         1.4 |
-| caption         | Hanken Grotesk | 13px |    400 |         1.4 |
-| mono            | JetBrains Mono | 13px |    500 |         1.0 |
-
-### 5.3 Shape와 depth
-
-- Card/container: 8–12px radius
-- Button/input: 12px radius
-- Badge: pill
-- Web console은 강한 그림자 대신 tonal layer와 낮은 대비 border로 깊이를 표현한다.
-- Modal/sheet/drawer만 주변 panel보다 명확한 elevation을 갖는다.
-
-### 5.4 Spacing
-
-- 4px grid를 사용한다.
-- 주요 간격: 8, 12, 16, 24, 32px
-- Card padding: 16–18px
-- 모든 pointer/touch target: 최소 44×44px
-- Desktop table row: 최소 44px
-
-Canonical spacing token은 `base 4px`, `gutter-mobile 20px`, `padding-card 16px`, `height-cta 56px`, `height-row 44px`, `padding-col 12px`, `nav-rail-width 240px`다. Radius token은 `sm 4px`, `default 8px`, `md 12px`, `lg 16px`, `xl 24px`, `full 9999px`다.
-
-### 5.5 Form control geometry와 overflow
-
-- 같은 form row의 한 줄 `input`과 `select`는 `box-sizing: border-box`, 정확한 48px 높이, 24px line-height와 같은 상하 padding을 사용한다. Browser native select의 intrinsic 높이에 맡기지 않는다.
-- `select`는 `appearance: none`과 로컬 chevron을 사용하며 오른쪽 아이콘 영역을 포함해 최소 42px padding을 확보한다. 텍스트는 화살표 아래로 들어가지 않아야 한다.
-- `textarea`는 최소 96px이고 action 영역과 최소 16px 간격을 둔다. Sticky action을 쓸 경우 어떤 scroll 위치에서도 field, error, help text를 덮지 않아야 하며, 이를 보장하지 못하면 static flow로 둔다.
-- Form field의 label-control 간격은 8px, field 간격은 최소 16px, section content와 action group 간격은 최소 16px다. Button group 내부 간격은 최소 8px이고 mobile vertical action은 12px를 사용한다.
-- Flex/grid 자식에는 필요한 `min-width: 0`과 `overflow-wrap`을 선언한다. 금액·건수는 ellipsis로 자르지 않으며, 한 행에 맞지 않으면 grid를 reflow하거나 metric 글꼴을 18px 이상 범위에서 축소한다.
-- 긴 badge, table value, technical ID와 한국어 문장은 container 경계를 넘어가지 않아야 한다. 줄바꿈으로 높이가 늘어날 때 다음 row나 action을 밀어내고 겹치지 않아야 한다.
-
-## 6. Responsive behavior
-
-- 1280px 미만: 240px rail을 72–76px icon rail로 축소한다.
-- 820px 미만: 2-column grid를 1-column으로 reflow한다.
-- 600px 미만: rail을 상단 horizontal product navigation으로 전환한다.
-- Mobile page gutter는 14–20px 범위를 유지한다.
-- 기능을 숨겨 반응형을 해결하지 않는다. Secondary metadata만 단계적으로 축약한다.
-- 모든 form, table 대안과 primary action은 keyboard와 touch로 사용할 수 있어야 한다.
-
-## 7. Interaction standard
-
-- Rail, tab, breadcrumb와 primary CTA의 현재/hover/focus/disabled 상태를 구현한다.
-- Navigation은 요청 범위 안의 실제 screen으로 이동해야 한다.
-- Form은 값 변경, validation, submit feedback이 동작해야 한다.
-- 실행 action은 confirmation → running → terminal result를 표현한다.
-- Drawer, modal, toast는 닫기와 keyboard focus 경계를 제공한다.
-- 가짜 성공을 기본 상태로 표시하지 않는다. 사용자의 action 뒤에 상태가 전이된다.
-
-## 8. Bundle viewer와 제품 화면 경계
-
-- Viewer: bundle, surface, screen 선택과 viewport control
-- Product shell: actor별 rail, header, 업무 navigation과 screen interaction
-- Viewer와 제품 shell은 동일 축의 persistent navigation을 중복하지 않는다.
-- 독립 화면 URL에서도 제품 shell과 interaction이 유지되어야 한다.
-- Screen 간 이동은 bundle viewer와 standalone URL 양쪽에서 같은 target ID로 해결한다.
-
-## 9. 접근성
-
-- Focus ring: 최소 2px, `high-contrast-focus #111827`
-- 일반 text 대비: WCAG AA 목표
-- Status와 결과는 색상 외 text/icon을 포함한다.
-- Icon-only control은 accessible name을 가진다.
-- Form label과 error는 programmatic association을 갖는다.
-- Keyboard로 rail, filter, table action, drawer와 primary flow를 완료할 수 있어야 한다.
-
-## 10. Demo acceptance checklist
-
-### Source fidelity
-
-- 선택한 screen ID, actor, route와 surface가 source와 일치한다.
-- Panel, copy, state와 action을 다른 화면과 합치지 않았다.
-- Source 밖의 업무 사실과 권위 수치를 추가하지 않았다.
-- Authoring metadata가 제품 DOM에 노출되지 않는다.
-
-### Visual consistency
-
-- Authority rail, white governance header와 단일 shell을 유지한다.
-- `DESIGN.md` 1.1.0 path와 SHA-256 digest를 artifact에 기록한다.
-- Manifest에 legacy presentation/visual reference 입력을 기록하지 않는다.
-- Primary, status, danger와 authority color의 의미가 일관된다.
-- 4px grid, 최소 44px target과 radius 규칙을 지킨다.
-
-### Interaction
-
-- Product navigation과 주요 CTA가 선택 범위 안 화면으로 이어진다.
-- 핵심 form 또는 실행 action이 실제 state transition을 만든다.
-- 범위 밖/불명확 target을 임의 연결하지 않는다.
-- Standalone screen URL에서도 같은 core interaction이 동작한다.
-
-### Responsive and accessibility
-
-- 1440px desktop, 1024px collapsed rail, 390px mobile reflow를 확인한다.
-- Overflow, 잘린 금액, 겹친 panel과 이중 navigation이 없다.
-- Playwright에서 1440px·390px viewport의 visible `input`/`select` bounding box를 비교하고 같은 row의 높이 차이가 1px 미만인지 확인한다.
-- Playwright에서 control 간 겹침, viewport 밖 text와 `scrollWidth > clientWidth`인 비의도 overflow가 없는지 확인한다.
-- Keyboard focus, accessible name, semantic status를 확인한다.
-
-## 11. Pilot pages
-
-이 문서 1.1.0의 첫 검증 화면은 다음 두 개다.
-
-1. `admin-voucher-policy-setup`: configuration/form hierarchy, validation과 submit state
-2. `admin-payout-execution`: authority, execution confirmation, running/result state와 cross-screen navigation
-
-두 화면은 하나의 합성 dashboard가 아니라 같은 제품 shell 안의 독립 screen으로 제공한다. 테스트 결과가 통과한 뒤 이 기준을 다른 policy/roster/issuance/audit 화면으로 확장한다.
-
-## 12. 변경 관리
-
-- 이 문서의 의미·composition 규칙 변경은 문서 version을 올린다.
-- Token 또는 shell/composition 변경은 이 문서 version을 올린다.
-- 한 화면의 source 변경은 spec revision으로 처리하며 디자인 문서에 업무 예외를 추가하지 않는다.
-- Demo artifact는 source spec digest와 design contract path/version/digest를 기록해야 한다.
-- Workflow 실행 manifest는 허용 디자인 입력을 `DESIGN.md` 하나로 선언하고 legacy 디자인 파일 접근을 금지해야 한다.
+- 정보는 조밀하되 rail/header/content, panel head/body/action의 층위를 넘겨 중첩하지 않는다.
+- 일반 key-value 정보는 흰 surface의 flat row와 1px bottom divider가 기본이다. 판단을 돕는 status group이나 metric이 아닌데 각 row를 회색 box로 만들지 않는다.
+- Context는 compact 44px 이상 key-value row를 사용한다. 설명성 값과 일정·연령·상한을 큰 KPI tile로 만들지 않는다.
+- Metric은 실제 비교가 필요한 금액·건수에만 사용하고 최대 4개다. 좁은 한 행에 4개를 밀어 넣지 않는다.
+- `admin-payout-execution`의 네 summary metric은 1440px focused content에서 2×2, mobile에서 1-column이다. 금액 한 개가 두 줄로 갈라지는 4-column row를 사용하지 않는다.
+- 실행 화면은 대상, 금액·건수, 권한, 준비 상태, 영향과 다음 action을 desktop 첫 viewport 안에서 파악할 수 있어야 한다.
+
+### Responsive behavior
+
+- `<1280px`: 240px rail을 72–76px icon rail로 줄인다.
+- `<820px`: 2-column content를 1-column으로 reflow한다.
+- `<600px`: rail을 상단 horizontal product navigation으로 전환한다. Web rail을 축소해 옆에 남기지 않는다.
+- Mobile에서 선택 범위가 2–4개 route라면 모든 항목을 같은 navigation 영역 안에 동시에 보이게 한다. 5개 이상이면 명시적인 menu/overflow control을 제공한다. 표시 없는 horizontal scroll 뒤에 route를 숨기지 않으며 현재 route와 이동 가능한 route를 구분한다.
+- 390px mobile은 14–20px gutter, document width 390px 이하, 44px 이상 touch target과 56px primary CTA를 유지한다.
+- Mobile은 desktop panel을 의미 순서대로 쌓되 같은 정보를 반복하지 않는다. 기능을 숨겨 반응형을 해결하지 않는다.
+- Tablet card는 최대 2-column이며 금액과 status를 자르지 않는다.
+
+## Elevation
+
+- Web panel/card는 기본적으로 `surface-container-lowest`, `surface-strong #E5E8EB` 1px border, 10px radius를 사용한다.
+- Card에 box shadow를 사용하지 않는다. Hierarchy는 tonal layer, border와 spacing으로 만든다.
+- Modal, sheet, drawer와 floating feedback만 주변 panel보다 분명한 shadow를 가질 수 있다.
+- Panel 안에 같은 시각 무게의 card를 반복 중첩하지 않는다. Row가 필요하면 neutral fill과 8px radius를 사용한다.
+
+## Components
+
+### Buttons and status
+
+- Primary button은 solid primary + white text, Secondary는 neutral/white surface + subtle border다. Secondary를 primary와 같은 fill/weight로 만들지 않는다.
+- Button group gap은 desktop 최소 8px, mobile vertical 12px다. Destructive action은 danger semantic을 사용하며 정상 primary 옆에 같은 무게로 두지 않는다.
+- Badge는 pill, label weight와 text를 사용한다. 실제 icon library asset이 있을 때만 icon을 추가한다. Unicode, emoji, 한자, 점 또는 삼각형을 icon placeholder로 쓰지 않는다.
+- Badge는 `확인됨`, `검토 필요`, `실행 중`처럼 짧은 상태 label에만 쓴다. 문장, 금액, 공식, ID 또는 설명 전체를 pill 안에 넣지 않는다.
+
+### Forms and tables
+
+- 한 줄 `input`과 `select`는 `box-sizing: border-box`, 정확히 48px, 24px line-height와 같은 상하 padding을 사용한다.
+- `select`는 `appearance: none`, local chevron과 오른쪽 42px 여유를 사용한다. Text가 화살표 아래로 들어가면 안 된다.
+- Field label-control gap은 8px, field gap은 최소 16px, textarea는 최소 96px다. Action footer는 마지막 field/help/error와 최소 16px 떨어진다.
+- Validation은 field와 summary에 연결한다. Sticky action이 content를 덮을 가능성이 있으면 static flow를 사용한다.
+- Table row는 최소 44px이며 숫자와 status를 자르지 않는다. Filter → table → selected detail 순서를 기본으로 한다.
+
+### Panels and interaction
+
+- Panel은 head/body/optional action footer로 구성하고 각 구역은 16px 안팎 padding과 hairline divider를 사용한다.
+- Rail, tab, button, input에는 current/hover/focus/disabled state를 구현한다. Focus ring은 최소 2px `high-contrast-focus`다.
+- Form은 edit → validation → submit feedback이 동작해야 한다. 실행 action은 confirmation → running → terminal result를 표현한다.
+- Empty state는 원인과 가능한 다음 action을 함께 보여주고, 큰 빈 surface 중앙에 `데이터 없음`만 두지 않는다.
+- Loading/running state는 기존 layout을 유지하고 반복 action을 disable하며 `aria-live` status를 제공한다. Error는 영향을 받은 field/panel 가까이에 복구 action과 함께 표시한다.
+- Drawer/modal/toast는 닫기, keyboard focus 경계와 accessible name을 가진다. 가짜 성공을 기본 상태로 표시하지 않는다.
+
+### Pilot compositions
+
+`admin-voucher-policy-setup`은 정확히 세 panel을 사용한다.
+
+- 왼쪽 위 `정책·회차`, `data-panel-role="context"`: 공식 대상, 데모 회차 대상, 지급 계산, 분기·연간 상한의 네 compact row
+- 왼쪽 아래 `작성 항목`, `data-panel-role="form"`: 사업명, 명부 기준일, 지급 예정일, 지급 방식, 미사용 금액 처리 기준, 근거와 panel footer action
+- 오른쪽 `검토 증거`, `data-panel-role="evidence"`: 명부 기준일, 지급 예정일, 발행 필요 판단, 종료 처리와 review status
+
+`admin-payout-execution`도 정확히 세 panel을 사용한다.
+
+- 왼쪽 위 `지급 요약`, `data-panel-role="summary"`: 대상, 총액, 예산과 판단에 필요한 compact metrics
+- 왼쪽 아래 `준비 gate`, `data-panel-role="gate"`: 준비 상태와 confirmation/실행 action footer
+- 오른쪽 `권한·실행 근거`, `data-panel-role="evidence"`: 권한, 실행 조건, 멱등성·처리 원칙과 terminal evidence
+
+Desktop grid는 `minmax(0, 2fr) minmax(320px, 1fr)`에 가깝다. 왼쪽 두 panel을 세로로 두고 오른쪽 evidence panel 하나를 둔다. 1440px에서 전체 page 1200px 이하, 390px에서 중복 없이 2400px 이하를 목표로 한다.
+
+## Do's and Don'ts
+
+### Do
+
+- Source의 사용자용 copy를 정확히 보존하고 긴 text·금액·ID까지 실제 viewport에서 확인한다.
+- 현재 actor, 조직 또는 실행 권한을 header나 rail에서 항상 확인 가능하게 한다.
+- 하나의 primary action, 조용한 secondary action과 명확한 danger action으로 우선순위를 만든다.
+- `min-width: 0`, `max-width: 100%`, wrap/reflow를 명시해 overflow를 예방한다.
+- 선택 범위 안의 navigation과 CTA를 실제 screen/state로 연결한다.
+- Example/PoC 값은 예시임을 표시하고 authoritative value처럼 보이지 않게 한다.
+
+### Don't
+
+- Gradient, decorative element, illustration, glass effect 또는 card shadow를 추가하지 않는다.
+- Primary blue를 배경 tint, informational banner, divider 또는 여러 CTA에 장식적으로 사용하지 않는다.
+- 모든 section을 card로 만들거나 card 안에 card를 중첩하지 않는다.
+- 모든 key-value row를 회색 rounded box로 만들거나 긴 값을 status pill로 감싸지 않는다.
+- Navigation에 의미 없는 dot, 원, 화살표 문자 또는 임의 CSS icon을 추가하지 않는다. Asset이 없으면 명확한 text-only item을 사용한다.
+- 서로 다른 screen을 한 dashboard에 합치거나 desktop에서 세 panel을 같은 3-column으로 나열하지 않는다.
+- `context`, `form`, `evidence`, `authoritative`, `read-only`, `payoutFormula=`, `needsNewIssuance`, `sameRoundAlreadyStarted` 같은 구조·schema 용어를 visible product copy로 쓰지 않는다.
+- Authority context에는 source의 actor·role·organization을 표시한다. `권위 행위` 같은 추상적인 작성용 label을 제품 badge로 만들지 않는다.
+- AAWP, workflow ID, run ID, screen count 또는 builder metadata를 product shell에 넣지 않는다.
+- Source에 없는 업무 사실, 운영 수치, route 또는 성공 상태를 만들지 않는다.
+- Financial amount를 truncate하거나 좁은 metric tile에 강제로 넣지 않는다.
+- Mobile에서 desktop layout을 축소만 하거나 action을 숨기지 않는다.
+
+## Agent Instructions
+
+1. 디자인 입력은 이 `DESIGN.md` 하나다. 이전 run, screenshot, CSS, presentation/visual contract와 대화 기억을 읽지 않는다.
+2. Source spec은 product meaning에만 사용한다. 불명확한 UX는 제품 화면에 발명하지 말고 manifest `specFeedback`에 기록한다.
+3. 요청된 screen만 만들고 각 screen을 canonical `#<screenId>`로 연다. Screen bundle은 navigation이지 content merge가 아니다.
+4. Static demo는 `index.html`, `app.js`, `styles.css`, `manifest.json` 네 파일로 만들고 모든 URL을 relative로 유지한다.
+5. Manifest는 source와 이 문서의 path/version/digest, 정확한 screen set과 `designInputs: ["DESIGN.md"]`만 기록한다.
+6. 구현 전 Overview와 Don't를 먼저 적용하고, 그다음 token을 사용한다. Token이 intent와 충돌하면 restraint와 명시적 금지 규칙을 우선한다.
+7. 완료 전 public artifact checker를 실행해 canonical route, exact source copy, product identity, visible authoring label과 static contract를 수정한다.
+8. Release verifier는 1440×1100과 390×844에서 panel geometry, page height, overflow, 모든 요청 route의 product navigation 노출, 48px controls, interaction과 accessibility를 독립 판정한다. Verifier를 builder 안에서 실행하거나 수정하지 않는다.
+
+이 문서의 변경은 version을 올린다. 한 화면의 업무 변경은 spec revision이며 여기에 예외를 추가하지 않는다.

@@ -77,6 +77,9 @@ describe("Studio HTML", () => {
     expect(html).toContain("allow-popups allow-popups-to-escape-sandbox");
     expect(html).toContain("Execution timeline");
     expect(html).toContain("monotonic clock");
+    expect(html).toContain("formatSeconds(payload.durationMs)");
+    expect(html).not.toContain("formatMilliseconds");
+    expect(html).toContain("Failed candidate · inspection only");
     expect(html).toContain("End-to-end time");
     expect(html).toContain("Snapshot");
     expect(html).toContain("Tokens");
