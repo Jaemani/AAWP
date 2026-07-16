@@ -44,6 +44,7 @@
 - 실패 run에 정상적인 static demo 파일이 남아 있으면 상태를 바꾸지 않고 `Failed candidate · inspection only` snapshot으로 보존한다. Studio iframe과 `Open demo`에서 볼 수 있지만 onboard는 거부한다.
 - Execution timeline의 event offset과 node duration을 `0.016s`, `4m55.6s`, `1h2m3.4s` 같은 가변 `h/m/s` 단위로 통일했다. Snapshot materialization은 `ms` 대신 `s`로 표시한다.
 - 상단 `End-to-end time` 카드가 별도 formatter 때문에 `465.9 s`로 남던 회귀를 제거하고 execution timeline과 같은 `7m45.9s`, `1h2m3.4s` formatter를 사용하도록 통일했다.
+- `RunCompleted`와 `RunFailed`는 event offset이 이미 전체 실행시간이므로 동일한 `durationMs`를 다시 붙이지 않는다. Timeline 종결 행은 `+7m45.9s · RunFailed`처럼 한 번만 표시한다.
 - `DESIGN.md` 변경만으로 model workflow를 자동 재실행하지 않는 운영 규칙을 추가했다. 명시적 재생성 시에도 고정된 대표 2–3화면 cohort만 사용한다.
 - Token coverage는 `required` node의 보고 여부로 판정하고 `optional` node usage는 있을 때 합산하도록 교정했다. 초기 verifier 통과로 optional repair가 model을 호출하지 않은 run도 실제 build usage를 `measured/complete`로 표시한다.
 
