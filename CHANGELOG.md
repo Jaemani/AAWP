@@ -41,7 +41,7 @@
 - Layout QA가 screen-reader용으로 clip된 canonical route를 1px overflow로 오판하던 문제를 고쳤다. 반대로 실제 product navigation link가 scroll container 밖에 가려지는 경우는 ancestor clip 영역까지 계산해 실패시킨다.
 - Detail pilot release는 정적 `running` 문자열 존재만 보지 않는다. 정책 필수값 오류→정상 상신과 지급의 초기 차단→발행 검토 요청→재인증→확인→실행 중→terminal result를 실제 browser action으로 검증한다.
 - 실패 run에 정상적인 static demo 파일이 남아 있으면 상태를 바꾸지 않고 `Failed candidate · inspection only` snapshot으로 보존한다. Studio iframe과 `Open demo`에서 볼 수 있지만 onboard는 거부한다.
-- Execution timeline의 event offset과 node duration을 모두 초(`s`) 단위로 통일했다. Snapshot materialization도 `ms` 대신 `s`로 표시한다.
+- Execution timeline의 event offset과 node duration을 `0.016s`, `4m55.6s`, `1h2m3.4s` 같은 가변 `h/m/s` 단위로 통일했다. Snapshot materialization은 `ms` 대신 `s`로 표시한다.
 - `DESIGN.md` 변경만으로 model workflow를 자동 재실행하지 않는 운영 규칙을 추가했다. 명시적 재생성 시에도 고정된 대표 2–3화면 cohort만 사용한다.
 - Token coverage는 `required` node의 보고 여부로 판정하고 `optional` node usage는 있을 때 합산하도록 교정했다. 초기 verifier 통과로 optional repair가 model을 호출하지 않은 run도 실제 build usage를 `measured/complete`로 표시한다.
 
