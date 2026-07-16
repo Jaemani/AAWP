@@ -27,10 +27,11 @@ function sha256(content) {
 
 const sourceArgument = value("--source");
 const requestedScreens = values("--screen");
+const entryScreenId = value("--entry-screen");
 const requestText = value("--request");
 if (!sourceArgument || requestedScreens.length === 0 || !requestText) {
   throw new Error(
-    "usage: node scripts/create-spec-to-demo-request.mjs --source <spec.json> --screen <id> [--screen <id>] --request <text> [--id <request-id>]"
+    "usage: node scripts/create-spec-to-demo-request.mjs --source <spec.json> --screen <id> [--screen <id>] [--entry-screen <id>] --request <text> [--id <request-id>]"
   );
 }
 
@@ -62,9 +63,9 @@ const originalSourceDigest = sha256(sourceBytes);
 const useFullSource = process.argv.includes("--full-source");
 const pinnedSource = useFullSource
   ? source
-  : projectSpecToDemoSource(source, requestedScreens, originalSourceDigest);
+  : projectSpecToDemoSource(source, requestedScreens, originalSourceDigest, entryScreenId);
 const selectionContract = useFullSource
-  ? compileSpecToDemoSelection(source, requestedScreens)
+  ? compileSpecToDemoSelection(source, requestedScreens, entryScreenId)
   : pinnedSource.selectionContract;
 const pinnedSourceBytes = Buffer.from(`${JSON.stringify(pinnedSource, null, 2)}\n`);
 await writeFile(pinnedSourcePath, pinnedSourceBytes, { mode: 0o600 });
@@ -78,7 +79,7 @@ const request = {
       originalFilename: basename(sourcePath),
       byteSha256: sha256(pinnedSourceBytes),
       originalByteSha256: originalSourceDigest,
-      projection: useFullSource ? "full" : "requested-screen-closure-v2"
+      projection: useFullSource ? "full" : "requested-screen-closure-v3"
     },
     designContract: {
       path: "DESIGN.md",

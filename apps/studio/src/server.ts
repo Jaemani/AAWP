@@ -539,6 +539,9 @@ export function createStudioServer(options: StudioServerOptions): Server {
               sourcePath:
                 typeof body.launcher.sourcePath === "string" ? body.launcher.sourcePath : "",
               screenIds,
+              ...(typeof body.launcher.entryScreenId === "string"
+                ? { entryScreenId: body.launcher.entryScreenId }
+                : {}),
               requestText:
                 typeof body.launcher.requestText === "string" ? body.launcher.requestText : ""
             } satisfies SpecToDemoLauncherInput

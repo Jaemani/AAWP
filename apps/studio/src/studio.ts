@@ -120,9 +120,16 @@ export function renderStudioHtml(view: StudioViewModel): string {
   const initialScreens = Array.isArray(initialBrief.requestedScreens)
     ? initialBrief.requestedScreens.filter((item): item is string => typeof item === "string")
     : [];
+  const initialSelection =
+    typeof initialBrief.selectionContract === "object" &&
+    initialBrief.selectionContract !== null &&
+    !Array.isArray(initialBrief.selectionContract)
+      ? (initialBrief.selectionContract as Record<string, unknown>)
+      : {};
   const structuredInput = `
         <div class="structured-input" data-input-kind="spec-to-demo">
           <label class="field source-field"><span>Source spec</span><input id="source-spec-path" type="text" value="${escapeHtml(typeof initialSource.path === "string" ? initialSource.path : "")}" placeholder="specs/product-spec.json" autocomplete="off"${executable ? "" : " disabled"}></label>
+          <label class="field source-field"><span>Entry screen ID</span><input id="entry-screen-id" type="text" value="${escapeHtml(typeof initialSelection.entryScreenId === "string" ? initialSelection.entryScreenId : "")}" placeholder="admin-policy-list" autocomplete="off"${executable ? "" : " disabled"}><small>비우면 Spec의 scope.entryScreenId를 사용합니다. 화면 배열의 첫 항목으로 추정하지 않습니다.</small></label>
           <label class="field screens-field"><span>Screen IDs</span><textarea id="screen-ids" rows="3" placeholder="admin-policy-list&#10;admin-policy-detail"${executable ? "" : " disabled"}>${escapeHtml(initialScreens.join("\n"))}</textarea><small>쉼표 또는 줄바꿈으로 구분합니다. 전체 화면은 자동 선택하지 않습니다.</small></label>
           <label class="field request-field"><span>Request</span><textarea id="request-text" rows="3" placeholder="선택한 화면 묶음의 동작 가능한 데모를 만들어줘"${executable ? "" : " disabled"}>${escapeHtml(typeof initialBrief.requestText === "string" ? initialBrief.requestText : "")}</textarea></label>
         </div>`;
@@ -441,6 +448,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const workflowSelect = document.getElementById("workflow-select");
       const runInput = document.getElementById("run-input");
       const sourceSpecPath = document.getElementById("source-spec-path");
+      const entryScreenId = document.getElementById("entry-screen-id");
       const screenIds = document.getElementById("screen-ids");
       const requestText = document.getElementById("request-text");
       const feedbackSourcePath = document.getElementById("feedback-source-path");
@@ -487,7 +495,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const collectRunRequest = () => {
         if (inputKind === "spec-to-demo") {
           const selectedScreens = screenIds.value.split(/[\\n,]/u).map((value) => value.trim()).filter(Boolean);
-          return { workflowId:selectedWorkflowId, launcher:{ kind:"spec-to-demo", sourcePath:sourceSpecPath.value.trim(), screenIds:selectedScreens, requestText:requestText.value.trim() } };
+          const selectedEntryScreen = entryScreenId.value.trim();
+          return { workflowId:selectedWorkflowId, launcher:{ kind:"spec-to-demo", sourcePath:sourceSpecPath.value.trim(), screenIds:selectedScreens, ...(selectedEntryScreen ? {entryScreenId:selectedEntryScreen} : {}), requestText:requestText.value.trim() } };
         }
         if (inputKind === "spec-feedback-to-spec") {
           const baseRunId = feedbackBaseRunId.value.trim();

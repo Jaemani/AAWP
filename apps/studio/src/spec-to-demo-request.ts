@@ -8,6 +8,7 @@ import { projectSpecToDemoSource } from "../../../scripts/spec-to-demo-source-pr
 export interface SpecToDemoLauncherInput {
   sourcePath: string;
   screenIds: string[];
+  entryScreenId?: string;
   requestText: string;
 }
 
@@ -21,7 +22,7 @@ export interface PreparedSpecToDemoRequest {
         originalFilename: string;
         byteSha256: string;
         originalByteSha256: string;
-        projection: "requested-screen-closure-v2";
+        projection: "requested-screen-closure-v3";
       };
       designContract: { path: "DESIGN.md"; version: string; byteSha256: string };
       requestedScreens: string[];
@@ -39,9 +40,13 @@ interface SourceSpec {
 }
 
 interface DemoSelectionContract {
-  schemaVersion: "aawp/demo-selection-contract/v1";
-  status: "ready" | "scope-expansion-required";
+  schemaVersion: "aawp/demo-selection-contract/v2";
+  status: "ready" | "scope-expansion-required" | "selection-conflict";
+  entryScreenId?: string;
+  entrySource: "launcher" | "spec" | "missing";
   requestedScreens: string[];
+  deprecatedScreenIds: string[];
+  conflicts: Array<Record<string, unknown>>;
   requiredScreenIds: string[];
   missingRequiredScreens: string[];
   unknownScreenTargets: string[];
@@ -143,7 +148,8 @@ export async function prepareSpecToDemoRequest(input: {
   const pinnedSource = projectSpecToDemoSource(
     source,
     requestedScreens,
-    originalSourceDigest
+    originalSourceDigest,
+    input.launcher.entryScreenId?.trim() || undefined
   ) as Record<string, unknown> & { selectionContract: DemoSelectionContract };
   const pinnedSourceBytes = Buffer.from(`${JSON.stringify(pinnedSource, null, 2)}\n`);
   const requestId = `spec-to-demo-${new Date()
@@ -166,7 +172,7 @@ export async function prepareSpecToDemoRequest(input: {
           originalFilename: basename(sourcePath),
           byteSha256: sha256(pinnedSourceBytes),
           originalByteSha256: originalSourceDigest,
-          projection: "requested-screen-closure-v2"
+          projection: "requested-screen-closure-v3"
         },
         designContract: {
           path: "DESIGN.md",

@@ -10,13 +10,21 @@ function sha256(content) {
 }
 
 export function validateDemoSelectionContract(contract, requestedScreens) {
-  assert.equal(contract?.schemaVersion, "aawp/demo-selection-contract/v1");
+  assert.equal(contract?.schemaVersion, "aawp/demo-selection-contract/v2");
   assert.ok(
-    contract.status === "ready" || contract.status === "scope-expansion-required",
+    contract.status === "ready" ||
+      contract.status === "scope-expansion-required" ||
+      contract.status === "selection-conflict",
     "selection contract has an invalid status"
   );
   assert.deepEqual(contract.requestedScreens, requestedScreens);
+  assert.ok(
+    typeof contract.entryScreenId === "string" || contract.status === "selection-conflict",
+    "selection contract must declare entryScreenId"
+  );
   for (const key of [
+    "deprecatedScreenIds",
+    "conflicts",
     "requiredScreenIds",
     "missingRequiredScreens",
     "unknownScreenTargets",
@@ -34,14 +42,22 @@ export function validateDemoSelectionContract(contract, requestedScreens) {
     );
   }
   const expectedStatus =
-    contract.missingRequiredScreens.length === 0 && contract.unknownScreenTargets.length === 0
-      ? "ready"
-      : "scope-expansion-required";
+    contract.conflicts.length > 0
+      ? "selection-conflict"
+      : contract.missingRequiredScreens.length === 0 &&
+          contract.unknownScreenTargets.length === 0
+        ? "ready"
+        : "scope-expansion-required";
   assert.equal(contract.status, expectedStatus, "selection contract status is inconsistent");
   return contract;
 }
 
 export function selectionFailureMessage(contract) {
+  if (contract.status === "selection-conflict") {
+    return `selection conflict; ${contract.conflicts
+      .map((conflict) => `${conflict.code}: ${conflict.message}`)
+      .join("; ")}`;
+  }
   const missing = contract.missingRequiredScreens.join(", ") || "none";
   const unknown = contract.unknownScreenTargets.join(", ") || "none";
   return `scope expansion required; add screens: ${missing}; unresolved screen targets: ${unknown}`;

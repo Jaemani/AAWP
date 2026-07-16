@@ -6,7 +6,7 @@
       "path": "runs/requests/example/source-spec.json",
       "byteSha256": "replace-with-source-sha256",
       "originalByteSha256": "replace-with-original-source-sha256",
-      "projection": "requested-screen-closure-v2"
+      "projection": "requested-screen-closure-v3"
     },
     "designContract": {
       "path": "DESIGN.md",
@@ -15,9 +15,13 @@
     },
     "requestedScreens": ["screen-id-one", "screen-id-two"],
     "selectionContract": {
-      "schemaVersion": "aawp/demo-selection-contract/v1",
+      "schemaVersion": "aawp/demo-selection-contract/v2",
       "status": "ready",
+      "entryScreenId": "screen-id-one",
+      "entrySource": "spec",
       "requestedScreens": ["screen-id-one", "screen-id-two"],
+      "deprecatedScreenIds": [],
+      "conflicts": [],
       "requiredScreenIds": ["screen-id-one", "screen-id-two"],
       "missingRequiredScreens": [],
       "unknownScreenTargets": [],

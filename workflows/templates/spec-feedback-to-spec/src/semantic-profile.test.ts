@@ -263,4 +263,56 @@ describe("canonical semantic spec profile", () => {
 
     expect(unresolvedActions).toEqual([]);
   });
+
+  it("blocks deprecated screens and ambiguous legacy journeys from the active Demo projection", () => {
+    const document = fixture();
+    document.scope = {
+      selectedScreensForS1Evidence: ["admin-work-area-entry", "admin-policy-detail"],
+      entryScreenId: "admin-work-area-entry",
+      deprecatedCompatibilityScreens: [
+        { id: "admin-work-area-entry", status: "deprecated" }
+      ]
+    };
+    const screens = document.screens as Array<Record<string, unknown>>;
+    screens.push({
+      id: "admin-work-area-entry",
+      route: "/admin/work-entry",
+      actions: [{ id: "open-policy", targetType: "screen", targetId: "admin-policy-detail" }]
+    });
+    const acceptance = document.acceptance as {
+      scenarios: Array<{ evidenceChecks: Array<Record<string, unknown>> }>;
+    };
+    acceptance.scenarios[0]!.evidenceChecks.push({
+      id: "ACC-LEGACY-ENTRY",
+      kind: "browser",
+      screenId: "admin-work-area-entry",
+      actorId: "policy-editor",
+      actionId: "open-policy",
+      assertions: ["visible", "navigates"]
+    });
+    document.demoStoryboard = [
+      {
+        journeyId: "transport-voucher-legacy",
+        screenId: "admin-work-area-entry"
+      },
+      {
+        journeyId: "youth-basic-income-shared-console",
+        screenId: "admin-policy-detail"
+      }
+    ];
+
+    const codes = compileSemanticSpecProfile(document, "S1").revisionFindings.map(
+      (finding) => finding.code
+    );
+
+    expect(codes).toEqual(
+      expect.arrayContaining([
+        "DEMO_ENTRY_SCREEN_INVALID",
+        "DEPRECATED_SCREEN_SELECTED_FOR_DEMO",
+        "ACCEPTANCE_USES_DEPRECATED_SCREEN",
+        "ACTIVE_STORYBOARD_USES_DEPRECATED_SCREEN",
+        "ACTIVE_DEMO_JOURNEY_AMBIGUOUS"
+      ])
+    );
+  });
 });

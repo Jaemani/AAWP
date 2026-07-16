@@ -15,7 +15,7 @@ This workflow creates an immutable child Spec candidate from exactly two pinned 
 
 1. Read `AAWP_INPUT_PATH`.
 2. Read `artifacts/spec-revision/contract.json` and `feedback.normalized.json` from `AAWP_EXECUTION_DIR`.
-3. Read `source.affected-projection.json`. It contains the exact original array indexes and values needed for affected screen, actor, and interaction patches.
+3. Read `source.affected-projection.json`. It contains the exact original array indexes and values needed for affected screen, actor, interaction, acceptance and storyboard patches, plus the current scope.
 4. If `contract.feedback.repairBase` exists, read its pinned proposal and gap report first. Preserve correct operations and repair only reported gaps. Do not re-derive the whole proposal.
 5. Read the pinned baseline only when a required value is absent from the affected projection. Do not repeatedly scan or print the 1.4MB baseline.
 6. Read the pinned feedback path when normalized feedback does not contain enough context.
@@ -60,6 +60,14 @@ The existing `screens` array is the compatibility projection and canonical scree
 - role differences live in server capabilities, field visibility, record scope, and commands;
 - update the matching `interactionModel` entry so the Demo projection does not contradict the screen;
 - do not use a policy instance such as 청년기본소득 as a navigation item.
+
+When `scope.selectedScreensForS1Evidence` is non-empty, the child must also declare:
+
+- `scope.entryScreenId`: one selected, canonical, non-deprecated screen;
+- `scope.activeDemoJourneyId`: the single active storyboard journey when multiple journey records are preserved;
+- no deprecated screen in selected screens, active acceptance or active storyboard records.
+
+Legacy storyboard records may be preserved only with `status: deprecated`. Canonical shared-screen scope and compatibility roots must not disagree about the default entry, active journey or role-specific routes.
 
 Canonical API commands must reference an authority capability and state transition. Keep policy approval, roster approval, and payout-preparation handoff as separate commands. Commands that mutate state declare resource-version and idempotency requirements. Exact unresolved error codes stay unresolved.
 

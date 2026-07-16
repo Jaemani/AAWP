@@ -303,6 +303,20 @@ async function verifyExecutableAcceptance(url, source, requestedScreens) {
   }
 }
 
+async function verifyDefaultEntryScreen(url, entryScreenId) {
+  assert.equal(typeof entryScreenId, "string", "selection contract has no explicit entry screen");
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    await page.goto(url, { waitUntil: "networkidle" });
+    await page.waitForURL((candidate) => candidate.hash === `#${entryScreenId}`, {
+      timeout: 3_000
+    });
+  } finally {
+    await browser.close();
+  }
+}
+
 async function verifyDetailPilotInteractions(url) {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -404,7 +418,7 @@ assert.match(html, /styles\.css/);
 assert.match(html, /app\.js/);
 assert.equal(manifest.schemaVersion, "aawp/demo-manifest/v1");
 const expectedArtifactWorkflowVersion =
-  process.env.AAWP_REVERIFY_SOURCE_WORKFLOW_VERSION ?? "0.5.3";
+  process.env.AAWP_REVERIFY_SOURCE_WORKFLOW_VERSION ?? "0.6.0";
 assert.deepEqual(manifest.workflow, {
   id: "spec-to-demo",
   version: expectedArtifactWorkflowVersion
@@ -520,6 +534,7 @@ try {
       : {})
   });
   if (isDetailPilot) await verifyDetailPilotInteractions(staticDemo.url);
+  await verifyDefaultEntryScreen(staticDemo.url, brief.selectionContract.entryScreenId);
   await verifyExecutableAcceptance(staticDemo.url, source, expectedScreenIds);
 } finally {
   await staticDemo.close();
@@ -533,7 +548,7 @@ const verdict = {
   workflowId: process.env.AAWP_WORKFLOW_ID,
   verifierNodeId: process.env.AAWP_NODE_ID,
   artifactWorkflow: manifest.workflow,
-  verifierWorkflowVersion: "0.5.3",
+  verifierWorkflowVersion: "0.6.0",
   demoDirectory,
   designContract: brief.designContract,
   designInputs: ["DESIGN.md"],
@@ -550,6 +565,7 @@ const verdict = {
     inputDigests: true,
     mdOnlyDesign: true,
     exactScreenSet: true,
+    explicitEntryScreen: true,
     sourceCopy: true,
     responsiveShell: true,
     browserLayout: true,

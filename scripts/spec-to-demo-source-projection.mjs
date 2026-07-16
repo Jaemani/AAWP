@@ -37,12 +37,65 @@ function apiLists(source) {
   };
 }
 
-export function compileSpecToDemoSelection(source, requestedScreens) {
+export function compileSpecToDemoSelection(source, requestedScreens, explicitEntryScreenId) {
   if (!Array.isArray(source?.screens)) throw new Error("source spec must contain screens[]");
   const requested = [...new Set(requestedScreens)];
   const requestedSet = new Set(requested);
   const allScreens = records(source.screens);
   const byScreenId = new Map(allScreens.map((screen) => [screen.id, screen]));
+  const scope = record(source.scope);
+  const deprecatedCompatibilityScreens = records(scope.deprecatedCompatibilityScreens);
+  const deprecatedScreenIds = new Set(
+    deprecatedCompatibilityScreens
+      .filter((screen) => screen.status === undefined || screen.status === "deprecated")
+      .map((screen) => screen.id)
+      .filter((id) => typeof id === "string" && id.length > 0)
+  );
+  const sourceEntryScreenId =
+    typeof scope.entryScreenId === "string" && scope.entryScreenId.length > 0
+      ? scope.entryScreenId
+      : undefined;
+  const entryScreenId =
+    typeof explicitEntryScreenId === "string" && explicitEntryScreenId.length > 0
+      ? explicitEntryScreenId
+      : sourceEntryScreenId;
+  const activeDemoJourneyId =
+    typeof scope.activeDemoJourneyId === "string" && scope.activeDemoJourneyId.length > 0
+      ? scope.activeDemoJourneyId
+      : undefined;
+  const conflicts = [];
+  if (entryScreenId === undefined) {
+    conflicts.push({
+      code: "ENTRY_SCREEN_NOT_EXPLICIT",
+      message: "Demo entry screen must be declared by the launcher or scope.entryScreenId."
+    });
+  } else if (!byScreenId.has(entryScreenId)) {
+    conflicts.push({
+      code: "ENTRY_SCREEN_UNKNOWN",
+      screenId: entryScreenId,
+      message: `Demo entry screen does not exist: ${entryScreenId}`
+    });
+  } else if (!requestedSet.has(entryScreenId)) {
+    conflicts.push({
+      code: "ENTRY_SCREEN_OUTSIDE_SELECTION",
+      screenId: entryScreenId,
+      message: `Demo entry screen is outside the requested screen set: ${entryScreenId}`
+    });
+  } else if (deprecatedScreenIds.has(entryScreenId)) {
+    conflicts.push({
+      code: "ENTRY_SCREEN_DEPRECATED",
+      screenId: entryScreenId,
+      message: `Demo entry screen is deprecated: ${entryScreenId}`
+    });
+  }
+  for (const screenId of requested) {
+    if (!deprecatedScreenIds.has(screenId)) continue;
+    conflicts.push({
+      code: "DEPRECATED_SCREEN_REQUESTED",
+      screenId,
+      message: `Requested Demo screen is deprecated by canonical scope: ${screenId}`
+    });
+  }
   const selected = requested.map((screenId) => {
     const screen = byScreenId.get(screenId);
     if (screen === undefined) throw new Error(`source spec has no requested screen: ${screenId}`);
@@ -90,6 +143,18 @@ export function compileSpecToDemoSelection(source, requestedScreens) {
   const acceptanceScenarios = Array.isArray(acceptance)
     ? records(acceptance)
     : records(record(acceptance).scenarios);
+  for (const scenario of acceptanceScenarios) {
+    for (const check of records(scenario.evidenceChecks)) {
+      if (typeof check.screenId !== "string" || !deprecatedScreenIds.has(check.screenId))
+        continue;
+      conflicts.push({
+        code: "ACTIVE_ACCEPTANCE_USES_DEPRECATED_SCREEN",
+        screenId: check.screenId,
+        evidenceCheckId: typeof check.id === "string" ? check.id : undefined,
+        message: `Active acceptance uses a deprecated screen: ${check.screenId}`
+      });
+    }
+  }
   for (const scenario of acceptanceScenarios) {
     const checks = records(scenario.evidenceChecks);
     if (!checks.some((check) => requestedSet.has(String(check.screenId)))) continue;
@@ -140,15 +205,67 @@ export function compileSpecToDemoSelection(source, requestedScreens) {
   const outOfScopeNavigationTargets = [...optionalScreenTargets]
     .filter((screenId) => byScreenId.has(screenId) && !requestedSet.has(screenId))
     .sort();
+  const activeStoryboards = records(source.demoStoryboard).filter(
+    (storyboard) => storyboard.status !== "deprecated"
+  );
+  const activeJourneyIds = [
+    ...new Set(
+      activeStoryboards
+        .map((storyboard) => storyboard.journeyId)
+        .filter((id) => typeof id === "string" && id.length > 0)
+    )
+  ];
+  for (const storyboard of activeStoryboards) {
+    if (
+      typeof storyboard.screenId === "string" &&
+      deprecatedScreenIds.has(storyboard.screenId)
+    ) {
+      conflicts.push({
+        code: "ACTIVE_STORYBOARD_USES_DEPRECATED_SCREEN",
+        screenId: storyboard.screenId,
+        journeyId:
+          typeof storyboard.journeyId === "string" ? storyboard.journeyId : undefined,
+        message: `Active Demo storyboard uses a deprecated screen: ${storyboard.screenId}`
+      });
+    }
+  }
+  if (activeDemoJourneyId === undefined && activeJourneyIds.length > 1) {
+    conflicts.push({
+      code: "ACTIVE_DEMO_JOURNEY_AMBIGUOUS",
+      journeyIds: activeJourneyIds.sort(),
+      message: "Multiple active Demo journeys exist without scope.activeDemoJourneyId."
+    });
+  } else if (
+    activeDemoJourneyId !== undefined &&
+    !activeJourneyIds.includes(activeDemoJourneyId)
+  ) {
+    conflicts.push({
+      code: "ACTIVE_DEMO_JOURNEY_UNKNOWN",
+      journeyId: activeDemoJourneyId,
+      message: `scope.activeDemoJourneyId has no active storyboard: ${activeDemoJourneyId}`
+    });
+  }
   const status =
-    missingRequiredScreens.length === 0 && unknownScreenTargets.length === 0
-      ? "ready"
-      : "scope-expansion-required";
+    conflicts.length > 0
+      ? "selection-conflict"
+      : missingRequiredScreens.length === 0 && unknownScreenTargets.length === 0
+        ? "ready"
+        : "scope-expansion-required";
 
-  return {
-    schemaVersion: "aawp/demo-selection-contract/v1",
+  const contract = {
+    schemaVersion: "aawp/demo-selection-contract/v2",
     status,
+    entryScreenId,
+    entrySource:
+      explicitEntryScreenId !== undefined
+        ? "launcher"
+        : sourceEntryScreenId !== undefined
+          ? "spec"
+          : "missing",
+    activeDemoJourneyId,
     requestedScreens: requested,
+    deprecatedScreenIds: [...deprecatedScreenIds].sort(),
+    conflicts,
     requiredScreenIds,
     missingRequiredScreens,
     unknownScreenTargets,
@@ -163,12 +280,24 @@ export function compileSpecToDemoSelection(source, requestedScreens) {
     reason:
       status === "ready"
         ? "Every screen required by selected S1 flows and evidence checks is in scope."
+        : status === "selection-conflict"
+          ? "Canonical scope and the active Demo compatibility projection conflict."
         : "S1 cannot pass until every flow or evidence screen dependency is explicitly selected."
   };
+  return JSON.parse(JSON.stringify(contract));
 }
 
-export function projectSpecToDemoSource(source, requestedScreens, sourceByteSha256) {
-  const selectionContract = compileSpecToDemoSelection(source, requestedScreens);
+export function projectSpecToDemoSource(
+  source,
+  requestedScreens,
+  sourceByteSha256,
+  explicitEntryScreenId
+) {
+  const selectionContract = compileSpecToDemoSelection(
+    source,
+    requestedScreens,
+    explicitEntryScreenId
+  );
   const requestedSet = new Set(selectionContract.requestedScreens);
   const byScreenId = new Map(records(source.screens).map((screen) => [screen.id, screen]));
   const screens = selectionContract.requestedScreens.map((screenId) => byScreenId.get(screenId));
@@ -223,6 +352,7 @@ export function projectSpecToDemoSource(source, requestedScreens, sourceByteSha2
 
   const includedSections = [
     "meta",
+    "scope",
     "actors",
     "components",
     "interactionModel",
@@ -247,15 +377,32 @@ export function projectSpecToDemoSource(source, requestedScreens, sourceByteSha2
       ? { commandContracts: selectedCommands }
       : { commands: selectedCommands })
   };
-  const demoStoryboard = records(source.demoStoryboard).filter((item) =>
-    requestedSet.has(String(item.screenId))
+  const demoStoryboard = records(source.demoStoryboard).filter(
+    (item) =>
+      item.status !== "deprecated" &&
+      requestedSet.has(String(item.screenId)) &&
+      (selectionContract.activeDemoJourneyId === undefined ||
+        item.journeyId === selectionContract.activeDemoJourneyId)
   );
   const mockData = records(source.mockData).filter((item) =>
     resources.has(item.entity ?? item.resource ?? item.resourceType)
   );
+  const sourceAcceptance = source.acceptance;
+  const acceptanceScenarios = Array.isArray(sourceAcceptance)
+    ? records(sourceAcceptance)
+    : records(record(sourceAcceptance).scenarios);
+  const projectedAcceptanceScenarios = acceptanceScenarios.filter((scenario) =>
+    records(scenario.evidenceChecks).some((check) => requestedSet.has(String(check.screenId)))
+  );
+  const projectedAcceptance = Array.isArray(sourceAcceptance)
+    ? projectedAcceptanceScenarios
+    : {
+        ...record(sourceAcceptance),
+        scenarios: projectedAcceptanceScenarios
+      };
 
   return {
-    schemaVersion: "aawp/spec-to-demo-source-projection/v2",
+    schemaVersion: "aawp/spec-to-demo-source-projection/v3",
     projection: {
       sourceByteSha256,
       requestedScreens: selectionContract.requestedScreens,
@@ -268,6 +415,7 @@ export function projectSpecToDemoSource(source, requestedScreens, sourceByteSha2
       chosenDirection: record(source.meta).chosenDirection,
       revision: record(source.meta).revision
     },
+    scope: source.scope ?? null,
     actors: records(source.actors).filter((actor) => actorIds.has(actor.id)),
     components: records(source.components).filter((component) =>
       componentNames.has(component.name)
@@ -283,7 +431,7 @@ export function projectSpecToDemoSource(source, requestedScreens, sourceByteSha2
       capabilities,
       actorCapabilityFixture
     },
-    acceptance: source.acceptance ?? null,
+    acceptance: sourceAcceptance === undefined ? null : projectedAcceptance,
     assumptions: records(source.assumptions),
     openQuestions: records(source.openQuestions),
     demoStoryboard,

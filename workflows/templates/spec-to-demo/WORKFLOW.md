@@ -1,7 +1,7 @@
 # spec-to-demo execution contract
 
 - Status: executable
-- Workflow version: 0.5.3
+- Workflow version: 0.6.0
 - Design contract: repository-root `DESIGN.md` only
 - Run root: repository-root `runs/`
 
@@ -13,12 +13,12 @@ Read the JSON document at `$AAWP_INPUT_PATH`. Its `brief` object must contain:
 
 - `sourceSpec.path` and `sourceSpec.byteSha256`
 - `requestedScreens`: the exact screen ID set to build
-- `selectionContract`: requested screens, flow dependencies and any explicit scope expansion
+- `selectionContract`: explicit entry screen, requested screens, flow dependencies, deprecated-screen conflicts and any explicit scope expansion
 - `requestText`: the user's original selection request
 - `designContract.path`, `designContract.version`, and `designContract.byteSha256`
 - `demoArtifact.relativePath`, relative to `$AAWP_EXECUTION_DIR`
 
-`sourceSpec.path` may point to a deterministic requested-screen projection. When `sourceSpec.projection` is present, that file is the complete source for this run: do not search for or read the heavy original spec. Projection v2 includes the selected screens plus their filtered flow, authority, state-machine, API, binding, acceptance, assumption, storyboard and mock-data dependency closure. `sourceSpec.originalByteSha256` preserves original provenance while `sourceSpec.byteSha256` pins the executable projection.
+`sourceSpec.path` may point to a deterministic requested-screen projection. When `sourceSpec.projection` is present, that file is the complete source for this run: do not search for or read the heavy original spec. Projection v3 includes the selected screens plus their scope, explicit entry, active journey, filtered flow, authority, state-machine, API, binding, acceptance, assumption, storyboard and mock-data dependency closure. `sourceSpec.originalByteSha256` preserves original provenance while `sourceSpec.byteSha256` pins the executable projection.
 
 Resolve repository paths from `$PWD`. Resolve the demo output as:
 
@@ -44,7 +44,9 @@ Generic browser behavior and local icon assets created inside this run are allow
 
 ## 3. Screen selection
 
-- `compile-demo-scope` owns selection validation. If `selectionContract.status` is `scope-expansion-required`, it writes the contract and fails before this model is called.
+- `compile-demo-scope` owns selection validation. If `selectionContract.status` is `scope-expansion-required` or `selection-conflict`, it writes the contract and fails before this model is called.
+- Use `selectionContract.entryScreenId` as the default route and replace the initial empty hash with `#<entryScreenId>`. Never infer the entry from requested-screen array order, actor order or storyboard order.
+- Never render or navigate to a screen listed in `selectionContract.deprecatedScreenIds`.
 - Find every requested screen ID in the pinned source spec.
 - Treat the projected screen and semantic dependency sections as the closed input scope. Do not expand it by reading another source file.
 - Build exactly that set—no missing screen and no unrequested screen.
@@ -74,7 +76,7 @@ All URLs must be relative. `index.html` must run when served at `/runs/<runId>/d
 ```json
 {
   "schemaVersion": "aawp/demo-manifest/v1",
-  "workflow": { "id": "spec-to-demo", "version": "0.5.3" },
+  "workflow": { "id": "spec-to-demo", "version": "0.6.0" },
   "sourceSpec": { "path": "...", "byteSha256": "..." },
   "designContract": {
     "path": "DESIGN.md",

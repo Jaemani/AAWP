@@ -145,6 +145,41 @@ const affectedInteractions = sourceInteractions.flatMap((interaction, index) =>
     ? [{ index, interaction }]
     : []
 );
+const sourceAcceptance = isRecord(sourceDocument.acceptance)
+  ? sourceDocument.acceptance
+  : undefined;
+const sourceAcceptanceScenarios = Array.isArray(sourceDocument.acceptance)
+  ? sourceDocument.acceptance
+  : Array.isArray(sourceAcceptance?.scenarios)
+    ? sourceAcceptance.scenarios
+    : [];
+const affectedAcceptanceScenarios = sourceAcceptanceScenarios.flatMap((scenario, index) => {
+  if (!isRecord(scenario)) return [];
+  const checks = Array.isArray(scenario.evidenceChecks)
+    ? scenario.evidenceChecks.filter(isRecord)
+    : [];
+  const mentioned = [scenario, ...checks].some((item) => {
+    const itemId = typeof item.id === "string" ? item.id : undefined;
+    const screenId = typeof item.screenId === "string" ? item.screenId : undefined;
+    return (
+      (itemId !== undefined && feedbackText.includes(itemId)) ||
+      (screenId !== undefined && affectedScreenIds.includes(screenId))
+    );
+  });
+  return mentioned ? [{ index, scenario }] : [];
+});
+const sourceStoryboards = Array.isArray(sourceDocument.demoStoryboard)
+  ? sourceDocument.demoStoryboard
+  : [];
+const affectedStoryboards = sourceStoryboards.flatMap((storyboard, index) => {
+  if (!isRecord(storyboard)) return [];
+  const screenId = typeof storyboard.screenId === "string" ? storyboard.screenId : undefined;
+  const journeyId = typeof storyboard.journeyId === "string" ? storyboard.journeyId : undefined;
+  return (screenId !== undefined && affectedScreenIds.includes(screenId)) ||
+    (journeyId !== undefined && feedbackText.includes(journeyId))
+    ? [{ index, storyboard }]
+    : [];
+});
 const projection = {
   schemaVersion: "aawp/spec-feedback-source-projection/v1",
   sourceCanonicalDigest: requiredString(sourceRef, "canonicalDigest"),
@@ -153,6 +188,9 @@ const projection = {
   affectedScreens,
   affectedActors,
   affectedInteractions,
+  affectedAcceptanceScenarios,
+  affectedStoryboards,
+  scope: sourceDocument.scope,
   navModel: sourceDocument.navModel,
   roleBasedConsole: sourceDocument.roleBasedConsole,
   componentNames: (Array.isArray(sourceDocument.components) ? sourceDocument.components : [])
@@ -166,7 +204,7 @@ const content = {
   feedback: feedbackRef,
   feedbackItems: feedback,
   revisionContract,
-  compilerVersion: "spec-feedback-compiler/0.2.1",
+  compilerVersion: "spec-feedback-compiler/0.3.0",
   promotionStatus: "candidate"
 };
 const directory = await ensureArtifactDirectory();

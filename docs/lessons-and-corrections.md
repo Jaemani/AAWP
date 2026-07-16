@@ -327,3 +327,17 @@
 - 원인: Browser assertion schema에 화면 전환을 표현하는 `navigates`가 없어 model이 가장 가까운 click assertion을 재사용했고 semantic compiler도 action target type과 assertion을 대조하지 않았다.
 - 교정: `navigates` assertion을 추가하고 screen-target action에는 form/state/persistence/work-item/duplicate/input-error assertion을 금지한다. Verifier는 click 뒤 canonical target hash로 이동했는지 확인한다.
 - 재발 방지: Evidence assertion은 action target type의 semantics와 함께 compile한다. UI 동작을 계측 marker 존재만으로 대체하지 않는다.
+
+## Canonical 공통 화면을 두고 legacy 역할 진입 Demo를 수동으로 고치려 했다
+
+- 관찰: Child Spec의 canonical `scope`는 정책 목록·상세·명부·결재 공통 route와 capability 차이를 선언했지만, compatibility `demoStoryboard`에는 과거 `transport-voucher` 역할 진입 26건이 active 상태로 남았다. `admin-work-area-entry`도 deprecated인데 acceptance가 계속 요구했다. Demo builder는 이 충돌을 통과해 담당자별 진입 화면을 기본 UI로 만들었다.
+- 원인: `spec-feedback-to-spec` verifier가 canonical root 내부 의미만 주로 검사하고 compatibility projection과의 충돌을 compile하지 않았다. `spec-to-demo`도 requested screen 배열 순서를 사실상 entry로 사용했고 active journey를 명시하지 않았다. 결과 화면을 쫓아 수동으로 고치려 한 대응은 workflow 재현성을 무너뜨리는 추가 실수였다.
+- 교정: Demo 파일 수정은 중단하고 `기존 child + stable-ID feedback → 새 child → spec-to-demo`로 되돌렸다. Spec semantic compiler와 Demo scope compiler가 deprecated selected/acceptance/storyboard, ambiguous journey와 invalid entry를 차단한다. Entry와 active journey는 `scope`와 selection contract에 기록하며 independent verifier가 초기 hash route를 실제로 연다.
+- 재발 방지: 제품 의미 오류는 파생 Demo가 아니라 가장 앞선 authoritative artifact와 compiler에서 고친다. Compatibility root를 보존할 때는 `status: deprecated`를 명시하고 active projection에서 제외한다. 실패 proposal과 gap report는 같은 source/feedback의 bounded repair 입력으로만 재사용한다.
+
+## Feedback source projection이 화면만 포함해 acceptance 교정을 놓쳤다
+
+- 관찰: 첫 자동 projection 교정 proposal은 scope와 storyboard를 바꿨지만 `admin-work-area-entry`를 요구하는 acceptance check 한 건을 남겨 semantic verifier에서 실패했다.
+- 원인: `source.affected-projection.json`이 affected screen·actor·interaction만 제공했다. Model은 1.5MB source를 추가로 탐색하지 않으면 관련 acceptance와 storyboard의 원래 index를 알 수 없었다.
+- 교정: Feedback에 언급된 screen/check/journey와 연결된 acceptance scenario·storyboard, 현재 scope를 affected projection에 포함했다.
+- 재발 방지: Cross-root invariant를 고치는 workflow projection은 그 invariant에 참여하는 모든 root의 exact index/value를 함께 제공한다. Verifier 실패를 성공으로 덮지 않고 gap report가 명명한 pointer만 제한 repair한다.

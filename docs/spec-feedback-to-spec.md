@@ -87,6 +87,8 @@ Feedback heading은 Markdown level 2–6과 `FB-EVD-S1-001` 같은 계층형 sta
 
 Semantic compiler는 여러 evidence check 사이의 visibility도 비교한다. 동일한 `screenId + actorId + actionId`가 한 check에서는 `hidden`, 다른 check에서는 visible 또는 click-required이면 `ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED`로 revision을 거부한다. Negative check는 capability가 없는 actor, positive check는 권한 있는 actor를 사용해야 한다.
 
+`scope.selectedScreensForS1Evidence`가 있으면 `scope.entryScreenId`는 그 집합의 canonical non-deprecated screen이어야 한다. 여러 storyboard journey를 보존할 때는 `scope.activeDemoJourneyId`를 명시한다. Deprecated screen이 selected screen, active acceptance 또는 active storyboard에 남으면 revision을 거부한다. Feedback source projection은 관련 acceptance scenario·storyboard와 현재 scope를 함께 제공하므로 model patch가 화면 object만 고치고 실행 projection을 놓치는 것을 줄인다.
+
 Assertion은 action target type과 일치해야 한다. `targetType=screen`은 `navigates`로 target hash 이동을 검사하며 `action-specific-surface`, resource state/persistence, work-item, duplicate, input-error assertion을 함께 사용할 수 없다. Command action만 form surface와 resource 결과를 검증한다.
 
 S2 계약은 candidate에서 결정적으로 컴파일되지만 blocker가 남으면 Preview 환경을 만들지 않는다. 물리 DB 제품·table·PII 저장소와 API transport는 근거가 없으면 `unresolved`다. 상세 경계는 [ADR-020](adr/ADR-020-preview-contracts-gate-environments.md)과 [M10 report](m10-preview-contracts-implementation-report.md)를 따른다.

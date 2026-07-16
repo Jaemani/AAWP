@@ -4,6 +4,14 @@
 
 ## 2026-07-17
 
+### Canonical Demo 진입점과 legacy projection 차단
+
+- `spec-to-demo` 0.6.0 selection contract가 `entryScreenId`, `activeDemoJourneyId`, deprecated screen과 structured conflict를 기록한다. 요청 배열 첫 항목을 기본 route로 간주하지 않는다.
+- Deprecated screen이 requested/selected screen, active acceptance 또는 active storyboard에 남으면 model 호출 전에 `selection-conflict`로 실패한다. 여러 active journey에 선택 ID가 없는 경우도 동일하다.
+- `spec-feedback-to-spec` 0.3.0 semantic compiler가 같은 모순을 child revision 단계에서 Demo blocker로 거부한다. Source projection은 관련 acceptance scenario·storyboard·현재 scope를 포함해 patch model이 legacy 의미를 놓치지 않게 한다.
+- Demo verifier가 hash 없는 run 주소의 실제 초기 route를 열어 `#<entryScreenId>` 진입을 확인한다.
+- 청년기본소득 공통 관리콘솔 교정은 Demo 파일을 직접 수정하지 않고 `기존 child + stable-ID feedback → 새 child → spec-to-demo`로만 수행한다.
+
 ### S1 전체 finding 수집과 Spec/Demo 오류 분리
 
 - Verifier만 바뀐 경우 전체 model build를 반복하지 않도록 immutable Demo reverify 경로를 추가했다. Reverify는 source run status를 바꾸지 않고 Demo/input/verifier/workflow digest와 25개 evidence verdict를 별도 저장한다. Studio는 failed execution과 최신 S1 reverify pass를 함께 표시하고 검증된 snapshot만 onboard할 수 있다.

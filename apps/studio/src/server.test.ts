@@ -169,16 +169,19 @@ describe("Studio local server", () => {
           kind: "spec-to-demo",
           sourcePath: "specs/source.json",
           screenIds: ["admin-policy-list"],
+          entryScreenId: "admin-policy-list",
           requestText: "정책 목록 데모를 만들어줘"
         }
       })
     }).then(async (response) => response.json())) as StudioRunRecord;
-    await waitForTerminalRun(base, started.runId);
+    expect(started.runId, JSON.stringify(started)).toBeDefined();
+    const terminal = await waitForTerminalRun(base, started.runId);
+    expect(terminal.error).toBeUndefined();
     expect(capturedInputs).toMatchObject({
       brief: {
         requestText: "정책 목록 데모를 만들어줘",
         requestedScreens: ["admin-policy-list"],
-        sourceSpec: { projection: "requested-screen-closure-v2" },
+        sourceSpec: { projection: "requested-screen-closure-v3" },
         designContract: { version: "1.0.0" }
       }
     });

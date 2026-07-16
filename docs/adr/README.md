@@ -26,5 +26,6 @@ ADR은 중요한 구조 선택의 맥락, 고려한 대안, 결정과 결과를 
 - [ADR-019](ADR-019-studio-catalog-and-typed-launchers.md): Studio workflow catalog와 domain별 typed launcher를 분리
 - [ADR-020](ADR-020-preview-contracts-gate-environments.md): Data/API 계약과 S2 blocker가 ready일 때만 ephemeral Preview 환경을 생성
 - [ADR-021](ADR-021-demo-semantic-closure-and-executable-s1.md): Demo 의미 dependency closure와 실제 browser evidence로 S1을 판정
+- [ADR-022](ADR-022-canonical-demo-entry-and-projection-consistency.md): Demo 진입점·active journey·deprecated compatibility 충돌을 model 호출 전에 차단
 
 상태가 바뀌면 기존 ADR을 삭제하지 않고 `superseded`로 표시한 뒤 새 ADR을 추가한다.

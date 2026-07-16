@@ -671,6 +671,157 @@ function validateSharedResourceScreens(document: JsonRecord, findings: SemanticF
   }
 }
 
+function validateDemoProjectionConsistency(
+  document: JsonRecord,
+  findings: SemanticFinding[]
+): void {
+  const scope = isRecord(document.scope) ? document.scope : {};
+  const deprecatedScreens = records(scope.deprecatedCompatibilityScreens);
+  const deprecatedScreenIds = new Set(
+    deprecatedScreens
+      .filter((screen) => screen.status === undefined || screen.status === "deprecated")
+      .map(idOf)
+      .filter((id): id is string => id !== undefined)
+  );
+  const selectedScreenIds = strings(scope.selectedScreensForS1Evidence);
+  const screenIds = new Set(
+    records(document.screens)
+      .map(idOf)
+      .filter((id): id is string => id !== undefined)
+  );
+  const entryScreenId =
+    typeof scope.entryScreenId === "string" && scope.entryScreenId.length > 0
+      ? scope.entryScreenId
+      : undefined;
+
+  if (selectedScreenIds.length > 0 && entryScreenId === undefined) {
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "DEMO_ENTRY_SCREEN_MISSING",
+        message: "scope.entryScreenId is required when S1 evidence screens are selected",
+        pointers: ["/scope/entryScreenId"]
+      })
+    );
+  } else if (entryScreenId !== undefined) {
+    const invalidReason = !screenIds.has(entryScreenId)
+      ? "does not resolve to a screen"
+      : deprecatedScreenIds.has(entryScreenId)
+        ? "is deprecated"
+        : selectedScreenIds.length > 0 && !selectedScreenIds.includes(entryScreenId)
+          ? "is outside selectedScreensForS1Evidence"
+          : undefined;
+    if (invalidReason !== undefined) {
+      addFinding(
+        findings,
+        baseFinding("DEMO_BLOCKER", {
+          code: "DEMO_ENTRY_SCREEN_INVALID",
+          message: `scope.entryScreenId ${entryScreenId} ${invalidReason}`,
+          pointers: ["/scope/entryScreenId"],
+          objectIds: [entryScreenId]
+        })
+      );
+    }
+  }
+
+  for (const screenId of selectedScreenIds) {
+    if (!deprecatedScreenIds.has(screenId)) continue;
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "DEPRECATED_SCREEN_SELECTED_FOR_DEMO",
+        message: `deprecated compatibility screen ${screenId} is selected for S1 evidence`,
+        pointers: ["/scope/selectedScreensForS1Evidence"],
+        objectIds: [screenId]
+      })
+    );
+  }
+
+  const acceptance = document.acceptance;
+  const scenarios = Array.isArray(acceptance)
+    ? records(acceptance)
+    : records(isRecord(acceptance) ? acceptance.scenarios : []);
+  scenarios.forEach((scenario, scenarioIndex) => {
+    records(scenario.evidenceChecks).forEach((check, checkIndex) => {
+      if (typeof check.screenId !== "string" || !deprecatedScreenIds.has(check.screenId)) return;
+      addFinding(
+        findings,
+        baseFinding("DEMO_BLOCKER", {
+          code: "ACCEPTANCE_USES_DEPRECATED_SCREEN",
+          message: `active acceptance uses deprecated screen ${check.screenId}`,
+          pointers: [
+            `/acceptance/scenarios/${scenarioIndex}/evidenceChecks/${checkIndex}/screenId`
+          ],
+          objectIds: [
+            check.screenId,
+            ...(typeof check.id === "string" ? [check.id] : [])
+          ]
+        })
+      );
+    });
+  });
+
+  const activeStoryboards = records(document.demoStoryboard).filter(
+    (storyboard) => storyboard.status !== "deprecated"
+  );
+  activeStoryboards.forEach((storyboard, storyboardIndex) => {
+    if (
+      typeof storyboard.screenId !== "string" ||
+      !deprecatedScreenIds.has(storyboard.screenId)
+    ) {
+      return;
+    }
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "ACTIVE_STORYBOARD_USES_DEPRECATED_SCREEN",
+        message: `active Demo storyboard uses deprecated screen ${storyboard.screenId}`,
+        pointers: [`/demoStoryboard/${storyboardIndex}/screenId`],
+        objectIds: [
+          storyboard.screenId,
+          ...(typeof storyboard.journeyId === "string" ? [storyboard.journeyId] : [])
+        ]
+      })
+    );
+  });
+
+  const activeJourneyIds = [
+    ...new Set(
+      activeStoryboards
+        .map((storyboard) => storyboard.journeyId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0)
+    )
+  ];
+  const activeDemoJourneyId =
+    typeof scope.activeDemoJourneyId === "string" && scope.activeDemoJourneyId.length > 0
+      ? scope.activeDemoJourneyId
+      : undefined;
+  if (activeDemoJourneyId === undefined && activeJourneyIds.length > 1) {
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "ACTIVE_DEMO_JOURNEY_AMBIGUOUS",
+        message: `multiple active Demo journeys exist: ${activeJourneyIds.sort().join(", ")}`,
+        pointers: ["/scope/activeDemoJourneyId", "/demoStoryboard"],
+        objectIds: activeJourneyIds
+      })
+    );
+  } else if (
+    activeDemoJourneyId !== undefined &&
+    !activeJourneyIds.includes(activeDemoJourneyId)
+  ) {
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "ACTIVE_DEMO_JOURNEY_UNRESOLVED",
+        message: `scope.activeDemoJourneyId has no active storyboard: ${activeDemoJourneyId}`,
+        pointers: ["/scope/activeDemoJourneyId", "/demoStoryboard"],
+        objectIds: [activeDemoJourneyId]
+      })
+    );
+  }
+}
+
 function traceability(
   document: JsonRecord,
   findings: SemanticFinding[]
@@ -766,6 +917,7 @@ export function compileSemanticSpecProfile(
     validateExecutableAcceptance(document, findings);
     validateApiSemantics(document, findings);
     validateSharedResourceScreens(document, findings);
+    validateDemoProjectionConsistency(document, findings);
   }
   const traceabilityReport = isRecord(document)
     ? traceability(document, findings)

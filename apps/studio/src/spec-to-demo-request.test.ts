@@ -21,6 +21,7 @@ async function fixtureRoot(): Promise<string> {
     join(root, "specs", "source.json"),
     JSON.stringify({
       meta: { scenario: "fixture" },
+      scope: { entryScreenId: "policy-list" },
       actors: [{ id: "admin" }, { id: "merchant" }],
       components: [{ name: "PolicyPanel" }, { name: "Unused" }],
       screens: [
@@ -49,9 +50,13 @@ describe("spec-to-demo Studio request", () => {
       requestedScreens: ["policy-list"],
       sourceSpec: {
         originalFilename: "source.json",
-        projection: "requested-screen-closure-v2"
+        projection: "requested-screen-closure-v3"
       },
-      selectionContract: { status: "ready", missingRequiredScreens: [] },
+      selectionContract: {
+        status: "ready",
+        entryScreenId: "policy-list",
+        missingRequiredScreens: []
+      },
       designContract: { path: "DESIGN.md", version: "1.2.3" }
     });
     expect(prepared.requestPath).toMatch(/^runs\/requests\/spec-to-demo-/);
