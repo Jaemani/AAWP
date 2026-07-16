@@ -90,6 +90,8 @@ describe("Studio HTML", () => {
     expect(html).toContain("reportedDurationNodes.has(payload.nodeId)");
     expect(html).toContain("!terminalRunEvent && !duplicateNodeDuration");
     expect(html).toContain("const nodePresentation = Object.fromEntries");
+    expect(html).toContain("const describedTimelineNodes = new Set()");
+    expect(html).toContain("firstNodeEvent && presentation.description");
     expect(html).toContain("formatTimelineDuration(workflowDuration)");
     expect(html).toContain(
       "formatTimelineDuration(Date.now() - new Date(record.createdAt).getTime())"
