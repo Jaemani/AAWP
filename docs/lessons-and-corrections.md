@@ -1,5 +1,24 @@
 # 오류·교정 기록
 
+## 화면 projection과 문자열 검사가 S1을 잘못 통과시켰다
+
+- 관찰: `run_1a398be8-57e6-453f-af5f-b293ca5fb9f3`은 화면 외형 일부가 맞았지만 정책·명부 결재 종단 흐름과 action별 업무 form이 닫히지 않았는데도 S1 passed였다.
+- 원인: Requested-screen projection이 flow, authority, state machine, binding과 acceptance를 제거했다. Verifier도 공통 `confirm/running/success` 문자열과 layout만 확인했다.
+- 교정: Projection v2가 선택 화면의 semantic dependency closure를 고정한다. `compile-demo-scope`는 필요한 결재·인계 화면이 빠지면 모델 호출 전에 stable screen ID와 함께 `scope-expansion-required`로 실패한다. Prose-only acceptance는 `DEMO_BLOCKER`다.
+- 재발 방지: Builder는 stable actor/action/state marker를 구현하고 verifier가 역할별 visibility, action-specific surface, 상태 변화·지속성·중복 방지를 실제 클릭한다. 14개 S2 Preview blocker는 이 S1 결함과 분리해 그대로 유지한다.
+
+## Verifier가 command를 두 번 실행해 정상 상태 변화도 실패시켰다
+
+- 관찰: `run_242c896e-f714-44fa-a570-9454f20789d7`의 초기·수리 Demo를 검증할 때 verifier가 이미 보이는 command 버튼을 먼저 클릭하고 같은 action surface의 submit을 다시 클릭했다. 첫 클릭에서 상태가 바뀌거나 화면이 이동해 두 번째 검사는 “상태 변화 없음” 또는 detached locator로 실패했다.
+- 원인: Action surface를 여는 trigger와 surface 안의 command submit을 같은 `data-aawp-action-id` click으로 취급했고, submit 탐색도 surface 밖의 같은 ID control까지 허용했다.
+- 교정: 이미 보이는 surface는 열기 click 없이 내부 submit을 정확히 한 번 실행한다. 숨은 surface만 action으로 열고, submit 탐색은 해당 surface subtree로 제한한다. Playwright 회귀 테스트가 실제 click count 1과 외부 중복 control 미선택을 검증한다.
+- 재발 방지: Error trigger는 정상 submit과 별도 control이고, duplicate marker는 두 번째 시도가 거부된 뒤에만 생기며, bounded repair도 verifier source가 아니라 공개된 `WORKFLOW.md` interaction contract를 읽는다. 과거 실패 run은 수정하거나 성공으로 덮어쓰지 않는다.
+
+## Stable feedback ID parser가 정상 계층 ID를 거부했다
+
+- 관찰: 입력 parser가 `### FB-ABC-001`만 허용해 `## FB-EVD-S1-001` 같은 증거 피드백 ID를 찾지 못했다.
+- 교정: Markdown heading 2–6단계와 영숫자 다중 segment stable ID를 launcher와 runtime compiler에서 동일하게 허용하고 회귀 테스트를 추가했다.
+
 ## Exact source copy를 포함했지만 source 밖 product record도 함께 만들었다
 
 - 관찰: 청년기본소득 정책 목록은 필수 source copy를 모두 포함해 release를 통과했지만, builder가 actor note의 과거 문맥을 이용해 `청소년 교통비 2026년 2분기` 행을 하나 더 만들었다. 선택 화면 source에는 이 record가 없었다.
@@ -9,7 +28,7 @@
 
 ## S1 Demo 뒤에 물리 DB/API를 바로 만들려 했다
 
-- 관찰: 새 child Spec은 Demo blocker가 0이지만 권한표, 신청·명부 원천, 데이터 소유권, API 오류·중복 요청과 PII 저장 등 Preview blocker 14건이 남아 있었다.
+- 관찰: 당시 정적 classifier는 Demo blocker 0으로 기록했고, 별개로 권한표, 신청·명부 원천, 데이터 소유권, API 오류·중복 요청과 PII 저장 등 Preview blocker 14건이 남아 있었다. 이후 click 감사로 S1 오판은 별도 교정했다.
 - 원인: “DB 관련 구현”을 곧바로 table과 endpoint 생성으로 해석하면 unresolved product decision이 implementation default로 굳어진다.
 - 교정: Logical Data/API contract, blocker routing과 environment port를 먼저 구현했다. PGlite는 production schema가 아니라 version/idempotency/lease 검증 harness로 제한하고 blocked contract provision을 거부한다.
 - 재발 방지: `spec-to-preview` 승격 조건은 S2 blocker 0, contract digest, authority enforcement 계획과 environment evidence다. Demo가 자연스럽게 보이는 것을 backend readiness로 해석하지 않는다.
@@ -266,3 +285,45 @@
 - 원인: 감사용 executor descriptor와 기본 운영 UI의 정보 위계를 구분하지 않았다.
 - 교정: 기본 표시는 `Project workspace · N local steps`로 바꾸고 절대 cwd와 argv는 접힌 `Technical details`, execution API와 run evidence에 보존했다.
 - 재발 방지: 이식 가능한 logical location을 기본 projection으로 사용하고 host-specific path, secret reference와 command detail은 명시적 기술 상세에서만 공개한다.
+
+## 첫 verifier assertion만 repair에 전달해 뒤의 결함을 숨겼다
+
+- 관찰: 6화면 Demo의 initial inspect는 `processedAt` marker 누락 한 건만 보고했고 bounded repair는 그 한 건만 고쳤다. Final verifier가 다음 결함인 reload persistence에서 다시 실패했으며, 전체 검사를 계속하자 역할별 action, duplicate rejection, work-item 증가와 error input 보존 등 독립 결함이 추가로 드러났다.
+- 원인: Node `assert`의 fail-fast 동작을 verifier 전체의 판정 전략으로 그대로 사용했다. 한 번뿐인 repair round와 fail-fast verifier는 구조적으로 맞지 않았다.
+- 교정: 각 browser evidence check를 clean local state에서 격리 실행하고 check ID와 assertion message를 모두 수집한다. Inspect report는 구조화 marker를 파싱해 모든 finding을 한 번에 bounded repair에 전달한다.
+- 재발 방지: 제한된 repair 횟수를 가진 workflow는 repair 전에 같은 권한 범위의 독립 finding을 완전하게 수집해야 한다. Final verifier는 같은 전체 cohort를 다시 실행한다.
+
+## 서로 다른 evidence check의 visibility 모순을 놓쳤다
+
+- 관찰: child Spec이 같은 `admin-roster-builder + act-roster-operator + act-import-roster-file-poc` 조합을 한 check에서는 `hidden`, 다른 check에서는 clickable로 선언했지만 Spec revision이 통과했다.
+- 원인: Semantic compiler가 한 check 안에서 `hidden`과 click assertion의 동시 사용만 검사하고 check 사이의 actor/action 계약은 비교하지 않았다.
+- 교정: 모든 check를 `screenId + actorId + actionId`로 묶어 hidden과 visible/clickable 요구를 교차 검사한다. 모순은 `ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED` Demo blocker이며 Spec revision 자체를 실패시킨다.
+- 재발 방지: Positive/negative 권한 evidence는 동일 action을 사용하되 서로 다른 authorized/unauthorized actor를 명시한다. Demo가 양쪽을 동시에 만족하도록 임의 해석하지 않는다.
+
+## Artifact workflow에 Demo snapshot을 강제했다
+
+- 관찰: `spec-feedback-to-spec` verifier와 revision verdict가 성공했지만 Studio가 사후에 `artifacts/demo/index.html`을 찾다가 run을 failed로 덮어썼다.
+- 원인: `demoStore` 존재 여부를 workflow output capability로 오인했다. Studio 서비스가 Demo를 제공할 수 있다는 사실과 개별 workflow가 Demo를 출력한다는 사실을 분리하지 않았다.
+- 교정: Catalog 실행에서는 `spec-to-demo`에만 snapshot materialization callback을 전달한다. Artifact-only workflow는 Demo lifecycle 없이 completed 상태와 Spec artifact를 보존한다.
+- 재발 방지: 결과 materializer는 workflow output contract에 따라 선택하며 서버에 설치된 renderer/store 존재만으로 활성화하지 않는다.
+
+## 선택된 역할 허브의 모든 메뉴를 필수 dependency로 확장했다
+
+- 관찰: Acceptance가 요구한 `admin-work-area-entry`를 6화면 선택에 추가하자 scope compiler가 계정·가맹점·정산 등 허브의 다른 메뉴 대상 10개까지 모두 필수 화면으로 요구했다.
+- 원인: Flow/evidence dependency와 일반 screen navigation target을 같은 `directScreenTargets` 집합에 넣었다. 허브의 fan-out은 선택 가능한 경로이지 현재 S1 flow의 실행 전제는 아니다.
+- 교정: Required screen은 선택된 flow의 screen과 관련 executable evidence의 screen으로만 계산한다. 일반 navigation 대상은 `outOfScopeNavigationTargets`에 기록해 builder와 사용자에게 보이되 scope-expansion blocker로 사용하지 않는다.
+- 재발 방지: Dependency closure edge에는 이유와 강도를 둔다. `required-by-flow`, `required-by-evidence`, `optional-navigation`을 같은 downstream edge로 취급하지 않는다.
+
+## 과거 pilot의 범용 상태 문자열 검사가 canonical acceptance를 가렸다
+
+- 관찰: 25개 executable check가 있는 업무 Demo의 inspect가 0.3초 만에 `running|진행 중|실행 중` 문자열 부재로 중단됐다. 현재 선택에는 장시간 실행 action이 없는데도 과거 지급 pilot용 정규식이 모든 Demo에 적용됐다.
+- 원인: 한 fixture의 source 문자열 휴리스틱을 범용 release gate로 남겨 두고, 이후 추가한 Spec-owned executable acceptance보다 먼저 실행했다.
+- 교정: `validation/confirm/running/success` 문자열 존재 검사를 제거했다. 상태, 오류, 확인과 완료 요구는 선택된 Spec의 evidence check가 실제 DOM 행동으로 검증한다.
+- 재발 방지: Fixture-specific heuristic은 해당 fixture guard 안에 두며, canonical contract가 생기면 범용 정규식을 퇴출한다.
+
+## Screen navigation을 command form surface로 검증했다
+
+- 관찰: `act-open-approval-detail`, `act-open-roster-review`, `act-select-demo-role-view`는 `targetType=screen`인데 evidence가 `action-specific-surface`와 resource `state-change`를 요구했다. Demo에 가짜 form marker를 붙여야만 통과할 수 있는 계약이었다.
+- 원인: Browser assertion schema에 화면 전환을 표현하는 `navigates`가 없어 model이 가장 가까운 click assertion을 재사용했고 semantic compiler도 action target type과 assertion을 대조하지 않았다.
+- 교정: `navigates` assertion을 추가하고 screen-target action에는 form/state/persistence/work-item/duplicate/input-error assertion을 금지한다. Verifier는 click 뒤 canonical target hash로 이동했는지 확인한다.
+- 재발 방지: Evidence assertion은 action target type의 semantics와 함께 compile한다. UI 동작을 계측 marker 존재만으로 대체하지 않는다.

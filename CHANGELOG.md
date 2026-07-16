@@ -2,7 +2,34 @@
 
 형식은 사용자·운영자에게 영향을 주는 변경을 중심으로 기록한다. 아직 안정 release 전이므로 날짜별 update note를 사용한다.
 
+## 2026-07-17
+
+### S1 전체 finding 수집과 Spec/Demo 오류 분리
+
+- Verifier만 바뀐 경우 전체 model build를 반복하지 않도록 immutable Demo reverify 경로를 추가했다. Reverify는 source run status를 바꾸지 않고 Demo/input/verifier/workflow digest와 25개 evidence verdict를 별도 저장한다. Studio는 failed execution과 최신 S1 reverify pass를 함께 표시하고 검증된 snapshot만 onboard할 수 있다.
+- `spec-to-demo` 0.5.3은 `input-preserved-on-error` 자체가 action surface를 요구한다는 assertion implication을 verifier에 반영했다. 명시적인 `action-specific-surface` 문자열이 없는 error check도 action을 열고 입력·오류·보존을 검증한다.
+- `spec-to-demo` 0.5.2는 이미 보이는 action surface의 command를 verifier가 먼저 클릭하고 다시 submit하던 이중 실행을 제거했다. Submit 탐색을 surface 내부로 제한하고, 오류 trigger와 정상 submit 분리, action별 입력 소유권, duplicate rejection의 사후 증거, source-screen state 관측을 실행 계약으로 명시했다. Bounded repair도 동일한 workflow 계약을 읽는다.
+- `spec-to-demo` 0.5.1은 browser evidence check를 첫 assertion에서 중단하지 않고 서로 격리해 모두 실행한 뒤 stable check ID별 finding으로 한 번에 보고한다. 한 번뿐인 bounded repair가 첫 결함만 보고 다음 결함에서 다시 실패하던 구조를 제거했다.
+- Demo 역할 control이 button뿐 아니라 stable actor value를 가진 `select`여도 verifier가 실제 역할을 전환한다. 오류 입력 검증은 숨겨진 error message가 아니라 화면에 보이는 deterministic error trigger만 클릭한다.
+- `navigates` browser assertion을 추가하고 screen-target action에 command form/state assertion을 붙이면 Spec revision을 거부한다. Verifier는 계측 marker 대신 click 뒤 canonical target hash로 실제 이동했는지 확인한다.
+- 과거 detail pilot의 범용 `validation/confirm/running/success` 문자열 정규식을 release gate에서 제거했다. 상태 요구는 선택된 Spec의 executable evidence가 실제 행동으로 소유한다.
+- `spec-feedback-to-spec` 0.2.1 semantic compiler가 여러 evidence check 사이의 `screenId + actorId + actionId` visibility 계약도 비교한다. 같은 역할의 같은 action을 한 check에서 `hidden`, 다른 check에서 visible/clickable로 요구하면 `ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED` Demo blocker로 거부한다.
+- 청년기본소득 교정 child Spec은 파일 반입 positive check를 명부 운영자, negative hidden check를 명부 결재자로 분리했다. Spec revision은 통과했지만 실제 Demo evidence 전이므로 `S0 passed / S1 blocked / S2 blocked / S3 out-of-scope`를 유지한다.
+- Scope compiler는 S1 flow/evidence가 요구하는 필수 screen과 선택된 허브가 링크하는 optional navigation target을 분리한다. 역할 진입 화면 하나를 추가했을 때 모든 업무 메뉴 10개가 필수 scope로 연쇄 확장되던 과잉 closure를 막고, out-of-scope navigation은 계약에 별도로 설명한다.
+
+### Artifact workflow와 Demo lifecycle 분리
+
+- Catalog에서 Demo를 출력하지 않는 workflow는 성공 뒤 `artifacts/demo/index.html` snapshot을 요구하지 않는다. `spec-feedback-to-spec`가 valid Spec artifact를 만든 뒤 Demo 파일 부재로 run 전체를 실패 처리하던 Studio 결합 오류를 고쳤다.
+- 회귀 test는 Demo source가 없는 artifact-only workflow가 `completed`, snapshot materialization이 `not_applicable`, `demo` record가 없음으로 끝나는지 검증한다.
+
 ## 2026-07-16
+
+### Spec-to-demo 의미 projection과 S1 click evidence
+
+- Requested-screen projection을 v2로 올려 flow, authority, state machine, Data/API binding, acceptance, assumption, storyboard와 mock-data dependency를 보존한다.
+- `compile-demo-scope` deterministic node가 필요한 결재·인계 화면 누락을 모델 호출 전에 `scope-expansion-required`로 차단하고 selection contract artifact를 남긴다.
+- Prose-only acceptance는 더 이상 S1을 통과하지 않는다. Executable check가 정의돼도 실제 Demo click evidence 전에는 `DEMO_EVIDENCE_PENDING`으로 blocked다.
+- Feedback parser가 `## FB-EVD-S1-001`처럼 heading level과 segment가 확장된 stable ID를 인식하도록 교정했다.
 
 ### Preview Data/API 계약과 fail-closed 임시 DB
 

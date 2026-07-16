@@ -286,6 +286,11 @@ function validateScreenActions(document: JsonRecord, findings: SemanticFinding[]
       ? records(apiContracts.commands)
       : records(apiContracts.commandContracts);
   const commands = new Set(commandRecords.map(idOf).filter((id): id is string => id !== undefined));
+  const queryRecords =
+    records(apiContracts.queries).length > 0
+      ? records(apiContracts.queries)
+      : records(apiContracts.queryContracts);
+  const queries = new Set(queryRecords.map(idOf).filter((id): id is string => id !== undefined));
   const screenIds = new Set(
     records(document.screens)
       .map(idOf)
@@ -312,6 +317,7 @@ function validateScreenActions(document: JsonRecord, findings: SemanticFinding[]
         typeof targetId === "string" &&
         ((targetKind === "flow" && flows.has(targetId)) ||
           (targetKind === "command" && commands.has(targetId)) ||
+          (targetKind === "query" && queries.has(targetId)) ||
           (targetKind === "screen" && screenIds.has(targetId)));
       if (!resolves) {
         addFinding(
@@ -326,6 +332,203 @@ function validateScreenActions(document: JsonRecord, findings: SemanticFinding[]
       }
     });
   });
+}
+
+const BROWSER_ASSERTIONS = new Set([
+  "visible",
+  "hidden",
+  "navigates",
+  "action-specific-surface",
+  "state-change",
+  "persists-after-reload",
+  "work-item-created",
+  "no-duplicate",
+  "input-preserved-on-error",
+  "control-height-consistent",
+  "table-no-overflow"
+]);
+const ACTION_ASSERTIONS = new Set([
+  "visible",
+  "hidden",
+  "navigates",
+  "action-specific-surface",
+  "state-change",
+  "persists-after-reload",
+  "work-item-created",
+  "no-duplicate",
+  "input-preserved-on-error"
+]);
+const STATE_ASSERTIONS = new Set([
+  "state-change",
+  "persists-after-reload",
+  "work-item-created",
+  "no-duplicate"
+]);
+
+function validateExecutableAcceptance(document: JsonRecord, findings: SemanticFinding[]): void {
+  const acceptance = document.acceptance;
+  const scenarios = Array.isArray(acceptance)
+    ? records(acceptance)
+    : records(isRecord(acceptance) ? acceptance.scenarios : []);
+  if (scenarios.length === 0) {
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "ACCEPTANCE_SCENARIOS_MISSING",
+        message: "S1 requires at least one acceptance scenario",
+        pointers: ["/acceptance"]
+      })
+    );
+    return;
+  }
+  let executableContractIsValid = true;
+  const screens = records(document.screens);
+  const screenById = new Map(
+    screens.flatMap((screen) => {
+      const id = idOf(screen);
+      return id === undefined ? [] : [[id, screen] as const];
+    })
+  );
+  const actorIds = new Set(
+    records(document.actors)
+      .map(idOf)
+      .filter((id): id is string => id !== undefined)
+  );
+  const actionVisibility = new Map<
+    string,
+    { hidden: boolean; required: boolean; pointers: string[]; objectIds: string[] }
+  >();
+  scenarios.forEach((scenario, scenarioIndex) => {
+    const scenarioId = idOf(scenario) ?? `scenario-${scenarioIndex}`;
+    const checks = records(scenario.evidenceChecks);
+    if (checks.length === 0) {
+      executableContractIsValid = false;
+      addFinding(
+        findings,
+        baseFinding("DEMO_BLOCKER", {
+          code: "ACCEPTANCE_BROWSER_EVIDENCE_MISSING",
+          message: `${scenarioId} has no executable browser evidence checks`,
+          pointers: [`/acceptance/scenarios/${scenarioIndex}/evidenceChecks`],
+          objectIds: [scenarioId],
+          sourceRefs: sourceReferences(scenario)
+        })
+      );
+      return;
+    }
+    checks.forEach((check, checkIndex) => {
+      const pointer = `/acceptance/scenarios/${scenarioIndex}/evidenceChecks/${checkIndex}`;
+      const screenId = check.screenId;
+      const screen = typeof screenId === "string" ? screenById.get(screenId) : undefined;
+      const screenActions = records(screen?.actions);
+      const actionIds = new Set(screenActions.map((action) => action.id));
+      const action = screenActions.find((candidate) => candidate.id === check.actionId);
+      const targetType = action?.targetType ?? action?.targetKind;
+      const assertions = strings(check.assertions);
+      const invalidAssertions = assertions.filter(
+        (assertion) => !BROWSER_ASSERTIONS.has(assertion)
+      );
+      const contradictoryHidden = assertions.includes("hidden") && assertions.length > 1;
+      const navigationMismatch =
+        (assertions.includes("navigates") && targetType !== "screen") ||
+        (targetType === "screen" &&
+          assertions.some((assertion) =>
+            [
+              "action-specific-surface",
+              "state-change",
+              "persists-after-reload",
+              "work-item-created",
+              "no-duplicate",
+              "input-preserved-on-error"
+            ].includes(assertion)
+          ));
+      const needsAction = assertions.some((assertion) => ACTION_ASSERTIONS.has(assertion));
+      const needsStateKeys = assertions.some((assertion) => STATE_ASSERTIONS.has(assertion));
+      if (
+        typeof screenId === "string" &&
+        typeof check.actorId === "string" &&
+        typeof check.actionId === "string"
+      ) {
+        const signature = `${screenId}\u0000${check.actorId}\u0000${check.actionId}`;
+        const current = actionVisibility.get(signature) ?? {
+          hidden: false,
+          required: false,
+          pointers: [],
+          objectIds: [screenId, check.actorId, check.actionId]
+        };
+        current.hidden ||= assertions.includes("hidden");
+        current.required ||= assertions.some(
+          (assertion) => assertion !== "hidden" && ACTION_ASSERTIONS.has(assertion)
+        );
+        current.pointers.push(pointer);
+        actionVisibility.set(signature, current);
+      }
+      const invalidReasons = [
+        ...(typeof check.id === "string" ? [] : ["stable check id is missing"]),
+        ...(check.kind === "browser" ? [] : ["kind must be browser"]),
+        ...(screen !== undefined ? [] : [`source screen is missing: ${String(screenId)}`]),
+        ...(check.actorId === undefined || actorIds.has(String(check.actorId))
+          ? []
+          : [`actor is unresolved: ${String(check.actorId)}`]),
+        ...(!needsAction || (typeof check.actionId === "string" && actionIds.has(check.actionId))
+          ? []
+          : [`action is not declared on source screen: ${String(check.actionId)}`]),
+        ...(!needsStateKeys || strings(check.stateKeys).length > 0
+          ? []
+          : ["state assertion has no stateKeys"]),
+        ...(assertions.length > 0 ? [] : ["assertions are missing"]),
+        ...(invalidAssertions.length === 0
+          ? []
+          : [`unsupported assertions: ${invalidAssertions.join(", ")}`]),
+        ...(contradictoryHidden ? ["hidden cannot be combined with another assertion"] : []),
+        ...(navigationMismatch
+          ? ["screen-target action must use visible+navigates without command/state assertions"]
+          : [])
+      ];
+      const valid = invalidReasons.length === 0;
+      if (!valid) {
+        executableContractIsValid = false;
+        addFinding(
+          findings,
+          baseFinding("DEMO_BLOCKER", {
+            code: "ACCEPTANCE_BROWSER_EVIDENCE_INVALID",
+            message: `${scenarioId} evidence check ${String(check.id ?? checkIndex)} is not executable: ${invalidReasons.join("; ")}`,
+            pointers: [pointer],
+            objectIds: [
+              scenarioId,
+              ...(typeof check.id === "string" ? [check.id] : []),
+              ...(typeof screenId === "string" ? [screenId] : [])
+            ],
+            sourceRefs: sourceReferences(check)
+          })
+        );
+      }
+    });
+  });
+  for (const contract of actionVisibility.values()) {
+    if (!contract.hidden || !contract.required) continue;
+    executableContractIsValid = false;
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED",
+        message: `${contract.objectIds.join("/")} is both hidden and required for the same actor`,
+        pointers: contract.pointers,
+        objectIds: contract.objectIds
+      })
+    );
+  }
+  if (executableContractIsValid) {
+    addFinding(
+      findings,
+      baseFinding("DEMO_BLOCKER", {
+        code: "DEMO_EVIDENCE_PENDING",
+        message: "S1 browser evidence has not been produced by spec-to-demo",
+        pointers: ["/acceptance"],
+        objectIds: scenarios.map(idOf).filter((id): id is string => id !== undefined),
+        sourceRefs: [...new Set(scenarios.flatMap(sourceReferences))]
+      })
+    );
+  }
 }
 
 function validateApiSemantics(document: JsonRecord, findings: SemanticFinding[]): void {
@@ -560,6 +763,7 @@ export function compileSemanticSpecProfile(
     validateCanonicalRoots(document, findings);
     validateDecisionProvenance(document, findings, counts);
     validateScreenActions(document, findings);
+    validateExecutableAcceptance(document, findings);
     validateApiSemantics(document, findings);
     validateSharedResourceScreens(document, findings);
   }
@@ -604,7 +808,9 @@ export function compileSemanticSpecProfile(
     traceabilityReport,
     decisionStatusCounts: counts,
     revisionFindings: findings
-      .filter((finding) => finding.blocker === "DEMO_BLOCKER")
+      .filter(
+        (finding) => finding.blocker === "DEMO_BLOCKER" && finding.code !== "DEMO_EVIDENCE_PENDING"
+      )
       .map((finding) => ({
         code: finding.code,
         message: finding.message,

@@ -3,7 +3,10 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 import { parseDesignContractVersion } from "./design-contract-lib.mjs";
-import { projectSpecToDemoSource } from "./spec-to-demo-source-projection.mjs";
+import {
+  compileSpecToDemoSelection,
+  projectSpecToDemoSource
+} from "./spec-to-demo-source-projection.mjs";
 
 function values(name) {
   const result = [];
@@ -60,6 +63,9 @@ const useFullSource = process.argv.includes("--full-source");
 const pinnedSource = useFullSource
   ? source
   : projectSpecToDemoSource(source, requestedScreens, originalSourceDigest);
+const selectionContract = useFullSource
+  ? compileSpecToDemoSelection(source, requestedScreens)
+  : pinnedSource.selectionContract;
 const pinnedSourceBytes = Buffer.from(`${JSON.stringify(pinnedSource, null, 2)}\n`);
 await writeFile(pinnedSourcePath, pinnedSourceBytes, { mode: 0o600 });
 
@@ -72,7 +78,7 @@ const request = {
       originalFilename: basename(sourcePath),
       byteSha256: sha256(pinnedSourceBytes),
       originalByteSha256: originalSourceDigest,
-      projection: useFullSource ? "full" : "requested-screen-closure-v1"
+      projection: useFullSource ? "full" : "requested-screen-closure-v2"
     },
     designContract: {
       path: "DESIGN.md",
@@ -80,6 +86,7 @@ const request = {
       byteSha256: sha256(designBytes)
     },
     requestedScreens,
+    selectionContract,
     demoArtifact: { relativePath: "artifacts/demo" }
   }
 };

@@ -71,6 +71,7 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 - Child spec 내부 `meta.revision`에 parent/contract digest, feedback ID, candidate 상태와 단일 실행 입력 경계 내장
 - Studio typed launcher와 production Codex proposal activity
 - S0~S3 maturity, Demo/Preview/Application blocker와 traceability report
+- S1 acceptance의 stable browser `evidenceChecks`와 prose-only acceptance 차단
 - 단일 child Spec과 별도로 logical `data-contract.json`, `api-contract.json`, `preview-blocker-routing.json` 생성
 
 미완료:
@@ -82,9 +83,15 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 
 Baseline 형식, 참조 무결성, typed patch 재적용, semantic maturity와 현재 candidate의 구조 계약을 검증한다. Production model proposal은 연결됐지만 model output 자체가 진실원은 아니다. Independent verification이 통과해도 현재 candidate는 검토 가능한 결과이지 승인된 spec을 의미하지 않는다.
 
+Feedback heading은 Markdown level 2–6과 `FB-EVD-S1-001` 같은 계층형 stable ID를 허용한다. S1 scenario는 설명문만으로 통과하지 않으며 stable screen, actor, action, assertion과 필요한 state key를 가진 `evidenceChecks[]`를 선언해야 한다. 실제 click 실행과 selection별 판정은 `spec-to-demo` verifier가 소유한다.
+
+Semantic compiler는 여러 evidence check 사이의 visibility도 비교한다. 동일한 `screenId + actorId + actionId`가 한 check에서는 `hidden`, 다른 check에서는 visible 또는 click-required이면 `ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED`로 revision을 거부한다. Negative check는 capability가 없는 actor, positive check는 권한 있는 actor를 사용해야 한다.
+
+Assertion은 action target type과 일치해야 한다. `targetType=screen`은 `navigates`로 target hash 이동을 검사하며 `action-specific-surface`, resource state/persistence, work-item, duplicate, input-error assertion을 함께 사용할 수 없다. Command action만 form surface와 resource 결과를 검증한다.
+
 S2 계약은 candidate에서 결정적으로 컴파일되지만 blocker가 남으면 Preview 환경을 만들지 않는다. 물리 DB 제품·table·PII 저장소와 API transport는 근거가 없으면 `unresolved`다. 상세 경계는 [ADR-020](adr/ADR-020-preview-contracts-gate-environments.md)과 [M10 report](m10-preview-contracts-implementation-report.md)를 따른다.
 
-담당자별 화면그룹 피드백에는 현재 에이전트가 구조화한 typed proposal과 child candidate가 추가됐다. 76개 operation으로 기존 10개 화면을 수정하고 새 업무 화면 8개를 추가했으며, 마지막 operation은 완전한 child 문서 안에 revision provenance를 내장한다. 기존 명부 화면 stable ID 하나는 필수 업로드·검증 화면으로 재사용한다. Candidate는 110 screens, 154 components, 26 actors이고 profile verdict는 finding 없이 통과했다. 이는 production model first-pass 품질을 증명하지 않으며 사용자 승인도 아직 없다.
+담당자별 화면그룹 피드백에는 현재 에이전트가 구조화한 typed proposal과 child candidate가 추가됐다. 76개 operation으로 기존 10개 화면을 수정하고 새 업무 화면 8개를 추가했으며, 마지막 operation은 완전한 child 문서 안에 revision provenance를 내장한다. 기존 명부 화면 stable ID 하나는 필수 업로드·검증 화면으로 재사용한다. 구조 profile은 통과했지만 실제 click 감사 뒤 prose-only acceptance 3건이 새 S1 blocker로 재분류됐다. 이는 production model first-pass 품질을 증명하지 않으며 사용자 승인도 아직 없다.
 
 전달·실행 단위는 `refined-production-spec.role-workspaces.candidate.json` 한 파일이다. 원본 전체와 변경 결과가 같은 문서에 있고 `meta.revision.executionInput="this_document"`다. Proposal, summary와 verdict는 patch 재현과 독립 검증을 위한 감사 sidecar이며 runtime이 child를 읽기 위해 필요하지 않다.
 

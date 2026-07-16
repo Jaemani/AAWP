@@ -27,6 +27,7 @@
     "generate:heavy-spec-revision": "tsx scripts/generate-heavy-spec-revision.ts",
     "generate:heavy-spec-role-comparison": "tsx scripts/generate-heavy-spec-role-comparison.ts",
     "request:spec-to-demo": "node scripts/create-spec-to-demo-request.mjs",
+    "reverify:spec-to-demo": "node scripts/reverify-spec-to-demo-run.mjs",
     "studio": "node apps/studio/dist/server.js --catalog workflows/catalog.json --runs runs/history.jsonl --execution-root runs --demo-root runs --demo-source runs/{runId}/artifacts/demo",
     "studio:spec-to-demo": "npm run studio",
     "qa:demo-layout": "node scripts/qa-demo-layout.mjs",

@@ -54,13 +54,32 @@ Every listed root must have exactly one `add` or `replace` operation unless the 
 The existing `screens` array is the compatibility projection and canonical screen registry. For active screens touched by this revision:
 
 - add `canonical: true`, `resourceType`, `resourcePurpose`, shared actors, and structured `actions`;
-- each action targets an existing `flow`, `command`, or `screen`;
+- each action uses canonical `targetType` and `targetId` fields and targets an existing `flow`, `command`, `query`, or `screen`;
+- never substitute `type`/`target`, `commandId` alone, or another alias for `targetType`/`targetId`;
 - one resource is not duplicated into role-specific routes;
 - role differences live in server capabilities, field visibility, record scope, and commands;
 - update the matching `interactionModel` entry so the Demo projection does not contradict the screen;
 - do not use a policy instance such as 청년기본소득 as a navigation item.
 
 Canonical API commands must reference an authority capability and state transition. Keep policy approval, roster approval, and payout-preparation handoff as separate commands. Commands that mutate state declare resource-version and idempotency requirements. Exact unresolved error codes stay unresolved.
+
+S1 acceptance is executable evidence, not prose alone. Every `acceptance.scenarios[]` entry must contain `evidenceChecks[]`. Each check declares:
+
+```json
+{
+  "id": "stable-check-id",
+  "kind": "browser",
+  "screenId": "stable-screen-id",
+  "actorId": "stable-actor-id",
+  "actionId": "stable-action-id",
+  "assertions": ["visible", "action-specific-surface", "state-change"],
+  "stateKeys": ["status", "resourceVersion", "processedAt", "auditCount"]
+}
+```
+
+Supported assertions are `visible`, `hidden`, `navigates`, `action-specific-surface`, `state-change`, `persists-after-reload`, `work-item-created`, `no-duplicate`, `input-preserved-on-error`, `control-height-consistent`, and `table-no-overflow`. `hidden` is a complete negative check and cannot be combined with assertions that require clicking the same action. A screen-target action uses `navigates`; it cannot claim a command form surface, resource state change, persistence, work-item creation, duplicate handling or input-error preservation. For navigation evidence, `screenId` is the source screen where the click starts; the matching screen action's `targetId` is the destination. Do not replace `screenId` with the destination. State assertions also declare non-empty `stateKeys`. Use stable IDs from the same child document. Do not claim S1 passed when a scenario has no browser evidence check or needs a screen outside the declared selection.
+
+Visibility contracts must also be consistent across checks. The same `screenId + actorId + actionId` tuple cannot be `hidden` in one check and visible or clickable in another. A negative `hidden` check must name an actor that does not hold the action capability; a positive check must name the authorized actor.
 
 ## Revision metadata
 

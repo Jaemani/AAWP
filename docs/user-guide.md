@@ -30,7 +30,7 @@ npm run studio -- --port 4173
 
 1. `Workflow`에서 실행할 workflow를 선택한다. Execution manifest가 없는 workflow는 구조를 볼 수 있지만 Run은 비활성화된다.
 2. `spec-to-demo`는 project-relative source spec 경로, screen ID와 요청 원문을 입력한다. Screen ID는 쉼표 또는 줄바꿈으로 구분하며 빈 선택을 전체 화면으로 해석하지 않는다.
-3. `Run <workflow-id>`를 누른다. Studio가 `runs/requests/<requestId>`에 source projection과 `DESIGN.md` digest를 고정한 뒤 등록된 실제 process chain을 시작한다.
+3. `Run <workflow-id>`를 누른다. Studio가 `runs/requests/<requestId>`에 source projection, selection contract와 `DESIGN.md` digest를 고정한 뒤 등록된 실제 process chain을 시작한다.
 4. Workflow strip에서 기능적 작업명, 구현 설명과 node 상태를 확인한다. `displayName`과 `description`이 없는 이전 WIR은 기술 node ID로 fallback한다.
 5. `Runs`에서 선택 workflow의 과거 run을 열고 Result preview, artifact, execution timeline, token과 output을 확인한다.
 
@@ -84,9 +84,19 @@ npm run request:spec-to-demo -- \
 
 생성된 `request.json`에는 source spec과 `DESIGN.md`의 byte SHA-256이 들어간다. Builder는 [workflow WIR](../workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](../workflows/templates/spec-to-demo/execution.manifest.json), [실행 지침](../workflows/templates/spec-to-demo/WORKFLOW.md)만으로 동작한다. 업무 의미는 pinned source spec, 시각 디자인은 `DESIGN.md` 하나만 사용한다. 이전 demo, `presentation-contract.yaml`, `visual-reference-contract.yaml`, 기존 CSS와 대화 기억은 입력에서 제외된다.
 
-기본 request 생성은 heavy source 전체를 model에 전달하지 않는다. 요청한 `screens`와 그 화면이 직접 참조하는 actor, component, interaction만 `source-spec.json` projection으로 고정한다. `request.json`의 `sourceSpec.byteSha256`은 projection을, `sourceSpec.originalByteSha256`은 원본을 추적한다. 전체 source가 필요한 진단 실행만 `--full-source`를 명시한다.
+기본 request 생성은 heavy source 전체를 model에 전달하지 않는다. Projection v2는 요청한 `screens`와 직접 참조 actor/component뿐 아니라 선택 화면에서 도달하는 `flows`, `stateMachines`, `apiContracts`, `dataBindings`, `authority`, `acceptance`, assumption, storyboard와 mock data의 의미 dependency closure를 함께 고정한다. `request.json`의 `sourceSpec.byteSha256`은 projection을, `sourceSpec.originalByteSha256`은 원본을 추적한다. 전체 source가 필요한 진단 실행만 `--full-source`를 명시한다.
 
-`build-demo`는 artifact 작성 뒤 browserless public checker로 필수 파일, JavaScript/manifest, canonical screen ID/hash route, exact source copy, canonical product identity, 제품 UI의 구조용 label 누출과 `DESIGN.md`의 정적 shell 조건을 확인한다. Builder sandbox에서 Playwright나 release verifier를 실행하지 않는다. Runtime은 `inspect-release → 최대 1회 repair-demo → verify-release`를 별도 process로 실행해 실제 layout, overflow와 interaction을 판정한다. 최종 verifier가 실패하면 candidate를 성공이나 release로 승격하지 않지만, 생성된 파일이 정상적인 static demo라면 `Failed candidate · inspection only` snapshot으로 보존해 Studio iframe과 `Open demo`에서 원인을 확인할 수 있다. 실패 candidate는 onboard할 수 없다.
+`selectionContract`는 요청 화면과 flow·acceptance가 요구하는 화면을 비교한다. 필요한 결재·인계 화면이 빠졌으면 `compile-demo-scope`가 `artifacts/selection/selection-contract.json`을 쓰고 `scope-expansion-required`로 모델 호출 전에 중단한다. 플랫폼은 dependency 화면을 몰래 추가하거나 범위 밖 버튼을 그린 뒤 S1을 통과시키지 않는다. 사용자가 제안된 stable screen ID를 선택에 명시적으로 추가해야 한다. 반면 선택된 허브나 메뉴가 링크하는 다른 업무 화면은 `outOfScopeNavigationTargets`로 기록할 뿐 필수 dependency로 연쇄 확장하지 않는다. 필수 scope는 flow와 executable evidence가 결정한다.
+
+`build-demo`는 artifact 작성 뒤 browserless public checker로 필수 파일, JavaScript/manifest, canonical screen ID/hash route, exact source copy, canonical product identity, 제품 UI의 구조용 label 누출과 `DESIGN.md`의 정적 shell 조건을 확인한다. Builder sandbox에서 Playwright나 release verifier를 실행하지 않는다. Runtime은 `compile-demo-scope → build-demo → inspect-release → 최대 1회 repair-demo → verify-release`를 별도 process로 실행한다. Initial inspect는 첫 assertion에서 멈추지 않고 evidence check마다 clean state를 만든 뒤 모든 finding을 stable check ID로 수집해 한 번의 repair에 전달한다. 최종 verifier는 stable actor/action/state instrumentation으로 canonical `acceptance.scenarios[].evidenceChecks`를 실제 클릭하고, 역할별 action visibility, action별 surface, 상태·버전·업무·감사 변경과 재진입 지속성을 검사한다. Check가 Spec에 정의된 것만으로는 `DEMO_EVIDENCE_PENDING`이며, 이 실행이 통과해야만 run별 S1을 passed로 닫는다. 단순히 `confirm`, `running`, `success` 문자열이 존재하는 것은 S1 증거가 아니다. 실패 candidate는 기본적으로 inspection snapshot이며 onboard할 수 없다.
+
+Verifier만 교정됐고 Demo bytes·input·design contract가 바뀌지 않았다면 전체 model build를 반복하지 않는다. 다음 명령은 원 run status와 artifact를 수정하지 않고 Demo tree, input, verifier와 workflow contract digest를 고정한 새 reverify verdict를 `runs/reverifications/<attempt-id>/verdict.json`에 쓴다.
+
+```bash
+npm run reverify:spec-to-demo -- run_<id>
+```
+
+Reverify는 모델 호출 없이 같은 browser evidence cohort를 다시 실행한다. 최신 verdict가 passed이면 Studio 상세에 `FAILED RUN · S1 REVERIFIED`를 함께 표시하고 그 snapshot만 onboard할 수 있다. 원 실행 실패는 성공으로 덮어쓰지 않는다. Demo 구현이나 Spec이 바뀌었다면 reverify가 아니라 새 revision/run을 사용한다.
 
 `DESIGN.md` 문구를 수정했다고 model-backed workflow를 자동 재실행하지 않는다. 우선 기존 artifact에 static/unit/browser verifier를 재사용한다. 실제 생성 결과를 다시 볼 필요가 있고 사용자가 명시적으로 재생성을 요청한 경우에만 고정된 대표 화면 2–3개 cohort를 실행하며, 디자인 검증 때문에 전체 spec이나 화면 집합을 확장하지 않는다.
 
@@ -203,7 +213,7 @@ Bundle, surface와 screen 선택은 preview 위의 단일 horizontal switcher에
 
 필터, 탭, drawer, 단계형 폼과 submit feedback은 demo 안에서 동작한다. 표시되는 record와 금액은 상호작용 검토용 예시 데이터이고, screen 구조·copy·권한 경계의 진실원은 pinned source artifact다.
 
-`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. `spec-to-demo` 0.4.0은 필요한 token, web/mobile composition, interaction과 접근성 기준을 `DESIGN.md`에 흡수했으며 demo manifest에는 이 파일의 path/version/digest만 기록한다. 1.2.0–1.6.0에서 control geometry, compact panel anatomy, product identity, dark authority rail과 executable browser acceptance를 정립했다. 1.7.0은 token-only trap을 피하도록 표준 YAML front matter와 decision prose를 분리했다. 1.8.0은 실제 이전/신규 run 비교에서 드러난 over-boxing과 긴 pill을 막았고, 1.9.0은 financial metric 줄바꿈과 raw schema 이름·추상 authority label 노출을 실행 가능한 금지 규칙으로 닫았다. 1.10.0은 mobile route가 표시 없는 horizontal scroll 뒤에 숨는 회귀를 막고, 작은 route 묶음은 모두 동시에 보이도록 한다. 1.10.1은 mobile header의 neutral surface와 별개로 짧은 brand eyebrow 또는 작은 marker 한 곳에 전용 brand accent를 보장한다.
+`presentation-contract.yaml`, `visual-reference-contract.yaml`과 과거 demo adapter는 기존 fixture의 provenance로만 남는다. `spec-to-demo` 0.5.3은 의미 dependency projection, scope preflight, 전체 browser finding 수집과 executable acceptance를 추가하고 command를 중복 실행하지 않는 verifier, action surface 소유권과 error assertion implication을 명시한다. 시각 기준은 계속 `DESIGN.md` 하나만 사용한다. 1.2.0–1.6.0에서 control geometry, compact panel anatomy, product identity, dark authority rail과 executable browser acceptance를 정립했다. 1.7.0은 token-only trap을 피하도록 표준 YAML front matter와 decision prose를 분리했다. 1.8.0은 실제 이전/신규 run 비교에서 드러난 over-boxing과 긴 pill을 막았고, 1.9.0은 financial metric 줄바꿈과 raw schema 이름·추상 authority label 노출을 실행 가능한 금지 규칙으로 닫았다. 1.10.0은 mobile route가 표시 없는 horizontal scroll 뒤에 숨는 회귀를 막고, 작은 route 묶음은 모두 동시에 보이도록 한다. 1.10.1은 mobile header의 neutral surface와 별개로 짧은 brand eyebrow 또는 작은 marker 한 곳에 전용 brand accent를 보장한다.
 
 저장된 pilot의 desktop/mobile geometry와 overflow는 다음처럼 재검사할 수 있다. `--screen`은 반복할 수 있고 screenshot과 JSON report는 기본적으로 `tmp/demo-layout-qa/`에 생성된다.
 

@@ -10,6 +10,18 @@ it("extracts every independent browser failure without the assertion stack", () 
   ]);
 });
 
+it("extracts all structured browser evidence failures", () => {
+  const failures = [
+    { checkId: "acc-save", message: "state did not persist" },
+    { checkId: "acc-approve", message: "approval action is missing" }
+  ];
+  expect(
+    extractVerifierFailures(
+      `BrowserEvidenceError: AAWP_BROWSER_FINDINGS ${JSON.stringify(failures)}\n    at verifier`
+    )
+  ).toEqual(["acc-save: state did not persist", "acc-approve: approval action is missing"]);
+});
+
 it("turns a failed verifier into bounded product findings", () => {
   const report = createFindingReport({
     runId: "run-a",

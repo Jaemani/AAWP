@@ -509,7 +509,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const renderDemo = (record) => {
         if (!record.demo) { demoResult.hidden = true; openDemo.hidden = true; openDemo.removeAttribute("href"); toggleDemo.hidden = true; deleteDemo.hidden = true; demoFrame.src = "about:blank"; demoOnboarded = false; return; }
         const snapshotAvailable = record.demo.snapshotAvailable === true;
-        const inspectionOnly = record.status !== "completed";
+        const reverified = record.reverification?.status === "passed";
+        const inspectionOnly = record.status !== "completed" && !reverified;
         demoOnboarded = snapshotAvailable && record.demo.onboarded === true;
         demoResult.hidden = false; openDemo.hidden = !snapshotAvailable; toggleDemo.hidden = !snapshotAvailable || inspectionOnly; deleteDemo.hidden = !snapshotAvailable;
         if (snapshotAvailable) openDemo.href = record.demo.previewUrl || "/runs/" + encodeURIComponent(record.runId) + "/demo-preview/"; else openDemo.removeAttribute("href");
@@ -517,8 +518,8 @@ export function renderStudioHtml(view: StudioViewModel): string {
         demoEmpty.hidden = snapshotAvailable; demoFrame.hidden = !snapshotAvailable;
         demoEmpty.textContent = "Demo snapshot이 삭제되었습니다. Input, source와 실행 기록은 보존됩니다.";
         const inspectionUrl = record.demo.previewUrl || "/runs/" + encodeURIComponent(record.runId) + "/demo-preview/";
-        previewLabel.textContent = inspectionOnly ? "Failed candidate · inspection only" : demoOnboarded ? "Onboarded snapshot" : "Stored inspection";
-        demoAddress.textContent = (demoOnboarded ? record.demo.entryUrl : inspectionUrl) + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (inspectionOnly ? "Failed candidate" : demoOnboarded ? "Onboarded" : snapshotAvailable ? "Stored inspection" : "Deleted");
+        previewLabel.textContent = inspectionOnly ? "Failed candidate · inspection only" : reverified ? "S1 reverified snapshot" : demoOnboarded ? "Onboarded snapshot" : "Stored inspection";
+        demoAddress.textContent = (demoOnboarded ? record.demo.entryUrl : inspectionUrl) + " · " + record.demo.contentDigest.slice(0, 12) + " · " + (inspectionOnly ? "Failed candidate" : reverified ? "S1 reverified" : demoOnboarded ? "Onboarded" : snapshotAvailable ? "Stored inspection" : "Deleted");
         demoFrame.src = snapshotAvailable ? (demoOnboarded ? record.demo.entryUrl : inspectionUrl) : "about:blank";
       };
 
@@ -529,7 +530,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         document.getElementById("selected-run-time").textContent = fullDateTime(record.createdAt);
         selectedRunRunning = record.status === "running";
         runButton.disabled = ${String(!executable)} || selectedRunRunning;
-        const status = document.getElementById("selected-status"); status.textContent = statusLabel(record.status); status.className = "status-label" + (record.status === "failed" ? " failed" : record.status === "running" ? " running" : "");
+        const status = document.getElementById("selected-status"); const reverified = record.reverification?.status === "passed"; status.textContent = record.status === "failed" && reverified ? "FAILED RUN · S1 REVERIFIED" : statusLabel(record.status); status.className = "status-label" + (record.status === "failed" && !reverified ? " failed" : record.status === "running" ? " running" : "");
         document.getElementById("selected-mode").textContent = record.executionMode === "LOCAL_PROCESS" ? "Local process · " + (record.executor?.stepCount ?? "?") + " steps" : record.executionMode + " · legacy";
         document.getElementById("selected-events").textContent = String(record.events.length);
         document.getElementById("selected-artifacts").textContent = String(record.artifacts.length);
@@ -557,7 +558,7 @@ export function renderStudioHtml(view: StudioViewModel): string {
         const reportedDurationNodes = new Set();
         const describedTimelineNodes = new Set();
         record.events.forEach((event) => { const payload = event.payload && typeof event.payload === "object" ? event.payload : {}; const row = make("li"); const formattedElapsed = elapsedLabel(event.elapsedMs); const displayElapsed = formattedElapsed === previousTimelineLabel ? "" : formattedElapsed; previousTimelineLabel = formattedElapsed; const timing = make("time", displayElapsed, "time"); timing.dateTime = event.occurredAt; timing.title = event.elapsedMs === undefined ? "기존 기록에는 이벤트별 monotonic timing이 없습니다. " + event.occurredAt : formattedElapsed + " elapsed · " + event.occurredAt; const terminalRunEvent = event.type === "RunCompleted" || event.type === "RunFailed"; const duplicateNodeDuration = event.type === "NodeCompleted" && payload.nodeId && reportedDurationNodes.has(payload.nodeId); const showDuration = payload.durationMs !== undefined && !terminalRunEvent && !duplicateNodeDuration; const duration = showDuration ? " · " + formatTimelineDuration(payload.durationMs) : ""; if (showDuration && payload.nodeId && (event.type === "ModelCompleted" || event.type === "VerifierCompleted" || event.type === "NodeCompleted")) reportedDurationNodes.add(payload.nodeId); const presentation = payload.nodeId ? nodePresentation[payload.nodeId] : undefined; const firstNodeEvent = payload.nodeId && !describedTimelineNodes.has(payload.nodeId); const workName = presentation ? presentation.displayName + (firstNodeEvent && presentation.description ? " — " + presentation.description : "") : payload.nodeId; if (payload.nodeId) describedTimelineNodes.add(payload.nodeId); const summary = make("span", event.type + (workName ? " · " + workName : "") + duration); if (payload.nodeId) summary.title = payload.nodeId; row.appendChild(make("span", "#" + event.sequence, "sequence")); row.appendChild(timing); row.appendChild(summary); timeline.appendChild(row); });
-        document.getElementById("run-output").textContent = JSON.stringify(record.error || record.outputs || {}, null, 2);
+        document.getElementById("run-output").textContent = JSON.stringify(record.reverification ? { executionError: record.error, reverification: record.reverification, outputs: record.outputs } : record.error || record.outputs || {}, null, 2);
       };
 
       const selectRun = async (runId) => {

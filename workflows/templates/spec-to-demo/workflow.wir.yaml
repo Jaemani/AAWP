@@ -1,14 +1,26 @@
 apiVersion: awf/v1
 id: spec-to-demo
-version: 0.4.0
+version: 0.5.3
 mode: CONTRACT
 artifactSchemas:
   - type: artifact.brief
     schemaVersion: 1.0.0
     schema:
       type: object
-      required: [schemaVersion, sourceSpec, designContract, requestedScreens, demoArtifact]
+      required:
+        [
+          schemaVersion,
+          sourceSpec,
+          designContract,
+          requestedScreens,
+          selectionContract,
+          demoArtifact
+        ]
   - type: artifact.demo
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.selection-contract
     schemaVersion: 1.0.0
     schema:
       type: object
@@ -39,6 +51,29 @@ scopePolicy:
   allowedNetworkHosts: []
   maxWorkflowCostUsd: 15
 nodes:
+  - id: compile-demo-scope
+    displayName: 데모 범위·의존성 계약 검사
+    description: 선택 화면과 flow dependency를 고정하고 누락 화면이 있으면 모델 호출 전에 차단
+    kind: deterministic
+    version: 1.0.0
+    owner: { id: compiler-team, role: builder }
+    inputs:
+      input: { type: artifact.brief, schemaVersion: 1.0.0, visibility: public }
+    outputs:
+      selection: { type: artifact.selection-contract, schemaVersion: 1.0.0, visibility: public }
+    reads:
+      - runs/requests/**
+    writes: [runs/run_*/artifacts/selection/selection-contract.json]
+    capabilities:
+      filesystemRead: [runs/requests/**]
+      filesystemWrite: [runs/run_*/artifacts/selection/selection-contract.json]
+      network: []
+      tools: [node]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 30, maxCostUsd: 0 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers: []
+    retryPolicy: { retryableClasses: [], backoff: fixed }
   - id: build-demo
     displayName: 데모 화면 구현
     description: 요청 화면의 HTML·CSS·상호작용 artifact 생성
@@ -47,6 +82,7 @@ nodes:
     owner: { id: builder-team, role: builder }
     inputs:
       input: { type: artifact.brief, schemaVersion: 1.0.0, visibility: public }
+      selection: { type: artifact.selection-contract, schemaVersion: 1.0.0, visibility: public }
     outputs:
       output: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
     reads:
@@ -165,7 +201,11 @@ nodes:
     retryPolicy: { retryableClasses: [], backoff: fixed }
 edges:
   - source: { kind: workflowInput, port: brief }
+    target: { kind: nodeInput, nodeId: compile-demo-scope, port: input }
+  - source: { kind: workflowInput, port: brief }
     target: { kind: nodeInput, nodeId: build-demo, port: input }
+  - source: { kind: nodeOutput, nodeId: compile-demo-scope, port: selection }
+    target: { kind: nodeInput, nodeId: build-demo, port: selection }
   - source: { kind: nodeOutput, nodeId: build-demo, port: output }
     target: { kind: nodeInput, nodeId: inspect-release, port: input }
   - source: { kind: nodeOutput, nodeId: inspect-release, port: output }

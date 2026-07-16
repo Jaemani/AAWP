@@ -30,6 +30,17 @@ function runVerifier() {
 
 export function extractVerifierFailures(stderr) {
   if (typeof stderr !== "string") throw new TypeError("verifier stderr must be a string");
+  const structured = stderr.match(/AAWP_BROWSER_FINDINGS (\[[^\r\n]+\])/u)?.[1];
+  if (structured !== undefined) {
+    const failures = JSON.parse(structured);
+    if (Array.isArray(failures) && failures.length > 0) {
+      return failures.map((failure) =>
+        typeof failure?.checkId === "string" && typeof failure?.message === "string"
+          ? `${failure.checkId}: ${failure.message}`
+          : "Invalid structured browser finding"
+      );
+    }
+  }
   const lines = stderr.split(/\r?\n/u);
   const start = lines.findIndex((line) => line.includes("AssertionError [ERR_ASSERTION]:"));
   if (start < 0) {

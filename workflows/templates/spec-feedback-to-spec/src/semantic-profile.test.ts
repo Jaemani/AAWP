@@ -62,7 +62,32 @@ function fixture(): Record<string, unknown> {
       capabilities: [{ id: "policy.submit" }, { id: "policy.approve" }],
       constraints: [{ id: "no-self-approval" }]
     },
-    acceptance: [{ id: "ACC-SHARED-POLICY" }],
+    acceptance: {
+      scenarios: [
+        {
+          id: "ACC-SHARED-POLICY",
+          evidenceChecks: [
+            {
+              id: "ACC-SHARED-POLICY-submit",
+              kind: "browser",
+              screenId: "admin-policy-detail",
+              actorId: "policy-editor",
+              actionId: "submit",
+              assertions: ["visible", "state-change", "persists-after-reload"],
+              stateKeys: ["status", "resourceVersion"]
+            },
+            {
+              id: "ACC-SHARED-POLICY-approve",
+              kind: "browser",
+              screenId: "admin-policy-detail",
+              actorId: "policy-approver",
+              actionId: "approve",
+              assertions: ["visible", "action-specific-surface"]
+            }
+          ]
+        }
+      ]
+    },
     nonFunctional: [
       {
         id: "NFR-AUDIT",
@@ -103,14 +128,17 @@ function fixture(): Record<string, unknown> {
 }
 
 describe("canonical semantic spec profile", () => {
-  it("allows an S1 demo while preserving unresolved S2 decisions as blockers", () => {
+  it("keeps S1 blocked until browser evidence while preserving unresolved S2 decisions", () => {
     const result = compileSemanticSpecProfile(fixture(), "S2");
 
-    expect(result.maturityVerdict.stages.S1.status).toBe("passed");
+    expect(result.maturityVerdict.stages.S1.status).toBe("blocked");
     expect(result.maturityVerdict.stages.S2.status).toBe("blocked");
-    expect(result.gapReport.counts.DEMO_BLOCKER).toBe(0);
+    expect(result.gapReport.counts.DEMO_BLOCKER).toBe(1);
     expect(result.gapReport.findings).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: "OPEN_DECISION" })])
+      expect.arrayContaining([
+        expect.objectContaining({ code: "DEMO_EVIDENCE_PENDING" }),
+        expect.objectContaining({ code: "OPEN_DECISION" })
+      ])
     );
     expect(result.decisionStatusCounts).toMatchObject({ confirmed: 2, assumed: 1, unresolved: 1 });
     expect(result.traceabilityReport.coverage).toBe(1);
@@ -134,5 +162,105 @@ describe("canonical semantic spec profile", () => {
     );
     expect(codes).toContain("PROBABLE_ROLE_BASED_DUPLICATE");
     expect(codes).toContain("SCREEN_ACTION_TARGET_UNRESOLVED");
+  });
+
+  it("blocks S1 when acceptance is prose without executable click evidence", () => {
+    const document = fixture();
+    document.acceptance = {
+      scenarios: [{ id: "ACC-PROSE-ONLY", steps: ["버튼을 누르면 저장된다"] }]
+    };
+
+    const result = compileSemanticSpecProfile(document, "S1");
+
+    expect(result.maturityVerdict.stages.S1.status).toBe("blocked");
+    expect(result.gapReport.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "ACCEPTANCE_BROWSER_EVIDENCE_MISSING" })
+      ])
+    );
+  });
+
+  it("rejects a hidden action check that also requires clicking the action", () => {
+    const document = fixture();
+    const acceptance = document.acceptance as {
+      scenarios: Array<{ evidenceChecks: Array<Record<string, unknown>> }>;
+    };
+    acceptance.scenarios[0]!.evidenceChecks[0]!.assertions = ["hidden", "action-specific-surface"];
+
+    const codes = compileSemanticSpecProfile(document, "S1").gapReport.findings.map(
+      (finding) => finding.code
+    );
+
+    expect(codes).toContain("ACCEPTANCE_BROWSER_EVIDENCE_INVALID");
+  });
+
+  it("rejects contradictory hidden and required checks across scenarios", () => {
+    const document = fixture();
+    const acceptance = document.acceptance as {
+      scenarios: Array<{ evidenceChecks: Array<Record<string, unknown>> }>;
+    };
+    acceptance.scenarios.push({
+      evidenceChecks: [
+        {
+          id: "ACC-SHARED-POLICY-submit-hidden",
+          kind: "browser",
+          screenId: "admin-policy-detail",
+          actorId: "policy-editor",
+          actionId: "submit",
+          assertions: ["hidden"],
+          stateKeys: []
+        }
+      ]
+    });
+
+    const result = compileSemanticSpecProfile(document, "S1");
+    const codes = result.gapReport.findings.map((finding) => finding.code);
+
+    expect(codes).toContain("ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED");
+    expect(result.revisionFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "ACCEPTANCE_ACTION_VISIBILITY_CONTRADICTED" })
+      ])
+    );
+  });
+
+  it("requires navigation assertions for screen-target actions", () => {
+    const document = fixture();
+    const screens = document.screens as Array<Record<string, unknown>>;
+    const actions = screens[0]!.actions as Array<Record<string, unknown>>;
+    actions.push({ id: "open-detail", targetType: "screen", targetId: "admin-policy-detail" });
+    const acceptance = document.acceptance as {
+      scenarios: Array<{ evidenceChecks: Array<Record<string, unknown>> }>;
+    };
+    acceptance.scenarios[0]!.evidenceChecks.push({
+      id: "ACC-NAV-WRONG-SURFACE",
+      kind: "browser",
+      screenId: "admin-policy-detail",
+      actorId: "policy-editor",
+      actionId: "open-detail",
+      assertions: ["visible", "action-specific-surface"]
+    });
+
+    expect(
+      compileSemanticSpecProfile(document, "S1").revisionFindings.map((finding) => finding.code)
+    ).toContain("ACCEPTANCE_BROWSER_EVIDENCE_INVALID");
+
+    acceptance.scenarios[0]!.evidenceChecks.at(-1)!.assertions = ["visible", "navigates"];
+    expect(
+      compileSemanticSpecProfile(document, "S1").revisionFindings.map((finding) => finding.code)
+    ).not.toContain("ACCEPTANCE_BROWSER_EVIDENCE_INVALID");
+  });
+
+  it("allows a screen action to target a declared query", () => {
+    const document = fixture();
+    const screens = document.screens as Array<Record<string, unknown>>;
+    const actions = screens[0]!.actions as Array<Record<string, unknown>>;
+    actions.push({ id: "refresh", targetType: "query", targetId: "get-policy-detail" });
+
+    const unresolvedActions = compileSemanticSpecProfile(document, "S1").gapReport.findings.filter(
+      (finding) => finding.code === "SCREEN_ACTION_TARGET_UNRESOLVED"
+    );
+
+    expect(unresolvedActions).toEqual([]);
   });
 });

@@ -4,14 +4,29 @@
     "requestText": "정책 설정과 지급 실행 화면을 만들어줘",
     "sourceSpec": {
       "path": "runs/requests/example/source-spec.json",
-      "byteSha256": "replace-with-source-sha256"
+      "byteSha256": "replace-with-source-sha256",
+      "originalByteSha256": "replace-with-original-source-sha256",
+      "projection": "requested-screen-closure-v2"
     },
     "designContract": {
       "path": "DESIGN.md",
-      "version": "1.9.0",
+      "version": "1.10.1",
       "byteSha256": "replace-with-design-sha256"
     },
     "requestedScreens": ["screen-id-one", "screen-id-two"],
+    "selectionContract": {
+      "schemaVersion": "aawp/demo-selection-contract/v1",
+      "status": "ready",
+      "requestedScreens": ["screen-id-one", "screen-id-two"],
+      "requiredScreenIds": ["screen-id-one", "screen-id-two"],
+      "missingRequiredScreens": [],
+      "unknownScreenTargets": [],
+      "flowIds": ["flow-id"],
+      "commandIds": ["command-id"],
+      "queryIds": ["query-id"],
+      "evidenceCheckIds": ["acceptance-check-id"],
+      "reason": "Every declared screen dependency required by the selected S1 flows is in scope."
+    },
     "demoArtifact": { "relativePath": "artifacts/demo" }
   }
 }

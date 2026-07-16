@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
+// @ts-expect-error -- the canonical projection compiler is a repository ESM script.
+import { projectSpecToDemoSource } from "../../../scripts/spec-to-demo-source-projection.mjs";
 
 export interface SpecToDemoLauncherInput {
   sourcePath: string;
@@ -19,10 +21,11 @@ export interface PreparedSpecToDemoRequest {
         originalFilename: string;
         byteSha256: string;
         originalByteSha256: string;
-        projection: "requested-screen-closure-v1";
+        projection: "requested-screen-closure-v2";
       };
       designContract: { path: "DESIGN.md"; version: string; byteSha256: string };
       requestedScreens: string[];
+      selectionContract: DemoSelectionContract;
       demoArtifact: { relativePath: "artifacts/demo" };
     };
   };
@@ -30,24 +33,24 @@ export interface PreparedSpecToDemoRequest {
   requestPath: string;
 }
 
-interface SourceScreen {
-  id?: unknown;
-  actors?: unknown;
-  components?: unknown;
-}
-
 interface SourceSpec {
-  meta?: unknown;
-  actors?: unknown;
-  components?: unknown;
-  interactionModel?: unknown;
   screens?: unknown;
+  [key: string]: unknown;
 }
 
-function record(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+interface DemoSelectionContract {
+  schemaVersion: "aawp/demo-selection-contract/v1";
+  status: "ready" | "scope-expansion-required";
+  requestedScreens: string[];
+  requiredScreenIds: string[];
+  missingRequiredScreens: string[];
+  unknownScreenTargets: string[];
+  outOfScopeNavigationTargets?: string[];
+  flowIds: string[];
+  commandIds: string[];
+  queryIds: string[];
+  evidenceCheckIds: string[];
+  reason: string;
 }
 
 function sha256(content: Uint8Array): string {
@@ -116,71 +119,6 @@ function parseDesignVersion(source: string): string {
   throw new Error("DESIGN.md has no version field");
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
-}
-
-function projectSource(
-  source: SourceSpec,
-  requestedScreens: string[],
-  sourceByteSha256: string
-): Record<string, unknown> {
-  if (!Array.isArray(source.screens)) throw new Error("source spec must contain screens[]");
-  const screens = source.screens as SourceScreen[];
-  const byScreenId = new Map(screens.map((screen) => [screen.id, screen]));
-  const selected = requestedScreens.map((screenId) => {
-    const screen = byScreenId.get(screenId);
-    if (screen === undefined) throw new Error(`Source spec에 screen이 없습니다: ${screenId}`);
-    return screen;
-  });
-  const actorIds = new Set(selected.flatMap((screen) => asStringArray(screen.actors)));
-  const componentNames = new Set(selected.flatMap((screen) => asStringArray(screen.components)));
-  const interactions = Array.isArray(source.interactionModel)
-    ? source.interactionModel.filter(
-        (interaction) =>
-          typeof interaction === "object" &&
-          interaction !== null &&
-          "screenId" in interaction &&
-          requestedScreens.includes(String(interaction.screenId))
-      )
-    : [];
-  return {
-    schemaVersion: "aawp/spec-to-demo-source-projection/v1",
-    projection: {
-      sourceByteSha256,
-      requestedScreens,
-      includedSections: ["meta", "actors", "components", "interactionModel", "screens"]
-    },
-    meta: {
-      scenario: record(source.meta).scenario,
-      stack: record(source.meta).stack,
-      chosenDirection: record(source.meta).chosenDirection
-    },
-    actors: Array.isArray(source.actors)
-      ? source.actors.filter(
-          (actor) =>
-            typeof actor === "object" &&
-            actor !== null &&
-            "id" in actor &&
-            actorIds.has(String(actor.id))
-        )
-      : [],
-    components: Array.isArray(source.components)
-      ? source.components.filter(
-          (component) =>
-            typeof component === "object" &&
-            component !== null &&
-            "name" in component &&
-            componentNames.has(String(component.name))
-        )
-      : [],
-    interactionModel: interactions,
-    screens: selected
-  };
-}
-
 export async function prepareSpecToDemoRequest(input: {
   projectRoot: string;
   launcher: SpecToDemoLauncherInput;
@@ -202,7 +140,11 @@ export async function prepareSpecToDemoRequest(input: {
   const designPath = resolve(projectRoot, "DESIGN.md");
   const designBytes = await readFile(designPath);
   const originalSourceDigest = sha256(sourceBytes);
-  const pinnedSource = projectSource(source, requestedScreens, originalSourceDigest);
+  const pinnedSource = projectSpecToDemoSource(
+    source,
+    requestedScreens,
+    originalSourceDigest
+  ) as Record<string, unknown> & { selectionContract: DemoSelectionContract };
   const pinnedSourceBytes = Buffer.from(`${JSON.stringify(pinnedSource, null, 2)}\n`);
   const requestId = `spec-to-demo-${new Date()
     .toISOString()
@@ -224,7 +166,7 @@ export async function prepareSpecToDemoRequest(input: {
           originalFilename: basename(sourcePath),
           byteSha256: sha256(pinnedSourceBytes),
           originalByteSha256: originalSourceDigest,
-          projection: "requested-screen-closure-v1"
+          projection: "requested-screen-closure-v2"
         },
         designContract: {
           path: "DESIGN.md",
@@ -232,6 +174,7 @@ export async function prepareSpecToDemoRequest(input: {
           byteSha256: sha256(designBytes)
         },
         requestedScreens,
+        selectionContract: pinnedSource.selectionContract,
         demoArtifact: { relativePath: "artifacts/demo" }
       }
     },

@@ -79,7 +79,9 @@ async function resolveContainedFile(projectRoot: string, candidate: string): Pro
 function feedbackIds(source: string): string[] {
   return [
     ...new Set(
-      [...source.matchAll(/^###\s+(FB-[A-Z]+-\d+)\s+—/gmu)].map((match) => String(match[1]))
+      [...source.matchAll(/^#{2,6}\s+(FB-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+)\s+—/gmu)].map((match) =>
+        String(match[1])
+      )
     )
   ];
 }

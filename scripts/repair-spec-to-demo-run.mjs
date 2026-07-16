@@ -74,11 +74,13 @@ export async function repairSpecToDemoRun({ root, executionDirectory, inputPath 
     "Execute one bounded spec-to-demo repair round.",
     `Read the input at ${resolve(inputPath)}.`,
     `Read the design contract at ${resolve(root, "DESIGN.md")}.`,
+    `Read the workflow interaction contract at ${resolve(root, "workflows/templates/spec-to-demo/WORKFLOW.md")}.`,
     `Read the verifier findings at ${reportPath}.`,
     `Repair the current candidate at ${resolve(executionDirectory, "artifacts/demo")}.`,
     `You may modify only these execution-relative files: ${allowedWrites.join(", ")}.`,
     "Do not rebuild the demo, change manifest.json, add screens, read another run, run Playwright, inspect verifier source, or alter repository files.",
     "Preserve exact source copy, canonical screen hashes, working interactions and all behavior not named by a finding.",
+    "Repair observable behavior, not marker-only shortcuts: each action surface must contain its own editable fields, one submit, feedback and state; error triggers are separate from success submit; duplicate evidence appears only after rejection; command state remains observable on the source screen.",
     "Make the smallest changes that close every finding, then stop. Do not merely describe the repair."
   ].join("\n");
   const model = await runCommand({

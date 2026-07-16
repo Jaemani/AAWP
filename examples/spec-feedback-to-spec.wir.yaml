@@ -1,6 +1,6 @@
 apiVersion: awf/v1
 id: spec-feedback-to-spec
-version: 0.2.0
+version: 0.2.1
 mode: CONTRACT
 artifactSchemas:
   - type: artifact.spec

@@ -178,7 +178,7 @@ describe("Studio local server", () => {
       brief: {
         requestText: "정책 목록 데모를 만들어줘",
         requestedScreens: ["admin-policy-list"],
-        sourceSpec: { projection: "requested-screen-closure-v1" },
+        sourceSpec: { projection: "requested-screen-closure-v2" },
         designContract: { version: "1.0.0" }
       }
     });
@@ -235,7 +235,7 @@ describe("Studio local server", () => {
     const executablePage = await fetch(`${base}/?workflow=spec-to-demo`).then(async (response) =>
       response.text()
     );
-    expect(executablePage).toContain("Project workspace · 4 local steps");
+    expect(executablePage).toContain("Project workspace · 5 local steps");
     expect(executablePage).toContain('id="source-spec-path"');
     expect(executablePage).toContain('id="screen-ids"');
     expect(executablePage).toContain('id="request-text"');
@@ -251,6 +251,48 @@ describe("Studio local server", () => {
         response.json()
       )
     ).resolves.toMatchObject({ executable: true, descriptor: { kind: "local-process" } });
+  });
+
+  it("completes a non-demo catalog workflow without requiring a demo snapshot", async () => {
+    directory = await mkdtemp(join(tmpdir(), "awf-studio-non-demo-"));
+    const document = createWorkflowEditorDocument(workflow);
+    server = createStudioServer({
+      document,
+      workflows: [
+        {
+          document,
+          displayName: "Artifact workflow",
+          description: "Produces artifacts but no web demo",
+          inputKind: "json",
+          executor: createExecutor(directory)
+        }
+      ],
+      demoStore: new LocalStudioDemoStore({
+        rootDirectory: join(directory, "results"),
+        sourceDirectory: join(directory, "missing-demo-source")
+      })
+    });
+    await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const base = `http://127.0.0.1:${address.port}`;
+
+    const started = (await fetch(`${base}/api/runs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workflowId: workflow.id, inputs: { input: { message: "hello" } } })
+    }).then(async (response) => response.json())) as StudioRunRecord;
+    const completed = await waitForTerminalRun(base, started.runId);
+
+    expect(completed).toMatchObject({
+      status: "completed",
+      workflowId: workflow.id,
+      metrics: {
+        timing: {
+          resultBuild: { kind: "snapshot_materialization", status: "not_applicable" }
+        }
+      }
+    });
+    expect(completed.demo).toBeUndefined();
   });
 
   it("serves a read-only source and compiler-backed candidate check", async () => {

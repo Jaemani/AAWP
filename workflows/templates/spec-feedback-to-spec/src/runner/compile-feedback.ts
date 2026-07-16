@@ -17,7 +17,9 @@ import {
 } from "./common.js";
 
 function parseFeedback(source: string): FeedbackItem[] {
-  const matches = [...source.matchAll(/^###\s+(FB-[A-Z]+-\d+)\s+—\s+([^\n]+)\n/gmu)];
+  const matches = [
+    ...source.matchAll(/^#{2,6}\s+(FB-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+)\s+—\s+([^\n]+)\n/gmu)
+  ];
   return matches.map((match, index) => {
     const start = (match.index ?? 0) + match[0].length;
     const end = matches[index + 1]?.index ?? source.length;
@@ -164,7 +166,7 @@ const content = {
   feedback: feedbackRef,
   feedbackItems: feedback,
   revisionContract,
-  compilerVersion: "spec-feedback-compiler/0.2.0",
+  compilerVersion: "spec-feedback-compiler/0.2.1",
   promotionStatus: "candidate"
 };
 const directory = await ensureArtifactDirectory();

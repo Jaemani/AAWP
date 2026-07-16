@@ -4,6 +4,20 @@
   "workingDirectory": ".",
   "steps": [
     {
+      "nodeId": "compile-demo-scope",
+      "command": ["node", "scripts/check-spec-to-demo-selection.mjs"],
+      "timeoutSec": 30,
+      "tokenTracking": "none",
+      "outputs": [
+        {
+          "port": "selection",
+          "source": "file",
+          "path": "artifacts/selection/selection-contract.json",
+          "base": "executionDirectory"
+        }
+      ]
+    },
+    {
       "nodeId": "build-demo",
       "command": [
         "codex",

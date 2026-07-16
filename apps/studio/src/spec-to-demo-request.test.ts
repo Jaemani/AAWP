@@ -49,16 +49,22 @@ describe("spec-to-demo Studio request", () => {
       requestedScreens: ["policy-list"],
       sourceSpec: {
         originalFilename: "source.json",
-        projection: "requested-screen-closure-v1"
+        projection: "requested-screen-closure-v2"
       },
+      selectionContract: { status: "ready", missingRequiredScreens: [] },
       designContract: { path: "DESIGN.md", version: "1.2.3" }
     });
     expect(prepared.requestPath).toMatch(/^runs\/requests\/spec-to-demo-/);
     const pinned = JSON.parse(
       await readFile(join(root, prepared.inputs.brief.sourceSpec.path), "utf8")
-    ) as { screens: Array<{ id: string }>; actors: Array<{ id: string }> };
+    ) as {
+      screens: Array<{ id: string }>;
+      actors: Array<{ id: string }>;
+      selectionContract: { status: string };
+    };
     expect(pinned.screens.map((screen) => screen.id)).toEqual(["policy-list"]);
     expect(pinned.actors.map((actor) => actor.id)).toEqual(["admin"]);
+    expect(pinned.selectionContract.status).toBe("ready");
   });
 
   it("rejects absolute, escaping, symlinked and unknown screen inputs", async () => {
@@ -92,6 +98,6 @@ describe("spec-to-demo Studio request", () => {
         projectRoot: root,
         launcher: { ...base, sourcePath: "specs/source.json", screenIds: ["missing"] }
       })
-    ).rejects.toThrow(/screen이 없습니다/);
+    ).rejects.toThrow(/no requested screen/);
   });
 });

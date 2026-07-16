@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -156,17 +156,81 @@ async function projectDemoLifecycle(
   record: StudioRunRecord | StudioRunSummary,
   demoStore: StudioDemoStore | undefined
 ): Promise<unknown> {
-  if (record.demo === undefined) return record;
+  const reverification = await latestDemoReverification(record);
+  const projectedRecord = reverification === undefined ? record : { ...record, reverification };
+  if (record.demo === undefined) return projectedRecord;
   const snapshotAvailable = (await demoStore?.exists(record.runId)) ?? false;
   const onboarded = snapshotAvailable && ((await demoStore?.isOnboarded(record.runId)) ?? false);
   return {
-    ...record,
+    ...projectedRecord,
     demo: {
       ...record.demo,
       snapshotAvailable,
       onboarded,
       previewUrl: `/runs/${encodeURIComponent(record.runId)}/demo-preview/`
     }
+  };
+}
+
+interface DemoReverificationSummary {
+  attemptId: string;
+  status: "passed" | "failed";
+  completedAt: string;
+  durationMs: number;
+  verifierWorkflowVersion: string;
+  evidenceCheckCount: number;
+}
+
+export async function latestDemoReverification(
+  record: StudioRunRecord | StudioRunSummary
+): Promise<DemoReverificationSummary | undefined> {
+  if (!("executor" in record) || record.executor === undefined) return undefined;
+  const root = resolve(record.executor.executionDirectory, "..", "reverifications");
+  let entries;
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if (isRecord(error) && error.code === "ENOENT") return undefined;
+    throw error;
+  }
+  const reports = await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory())
+      .map(async (entry) => {
+        try {
+          return JSON.parse(
+            await readFile(resolve(root, entry.name, "verdict.json"), "utf8")
+          ) as unknown;
+        } catch {
+          return undefined;
+        }
+      })
+  );
+  const matching = reports
+    .filter(
+      (report): report is Record<string, unknown> =>
+        isRecord(report) &&
+        report.sourceRunId === record.runId &&
+        report.inputDigest === record.inputDigest &&
+        report.sourceWorkflowVersion === record.workflowVersion &&
+        (record.demo === undefined || report.snapshotContentDigest === record.demo.contentDigest) &&
+        (report.status === "passed" || report.status === "failed") &&
+        typeof report.completedAt === "string"
+    )
+    .sort((left, right) => String(right.completedAt).localeCompare(String(left.completedAt)));
+  const report = matching[0];
+  if (report === undefined) return undefined;
+  const verdict = isRecord(report.verdict) ? report.verdict : {};
+  const maturity = isRecord(verdict.maturity) ? verdict.maturity : {};
+  return {
+    attemptId: String(report.attemptId),
+    status: report.status as "passed" | "failed",
+    completedAt: String(report.completedAt),
+    durationMs: typeof report.durationMs === "number" ? report.durationMs : 0,
+    verifierWorkflowVersion: String(report.verifierWorkflowVersion ?? "unknown"),
+    evidenceCheckCount: Array.isArray(maturity.evidenceCheckIds)
+      ? maturity.evidenceCheckIds.length
+      : 0
   };
 }
 
@@ -386,10 +450,12 @@ export function createStudioServer(options: StudioServerOptions): Server {
         sendJson(response, 404, { error: "run_not_found" });
         return;
       }
-      if (record.status !== "completed") {
+      const reverification = await latestDemoReverification(record);
+      if (record.status !== "completed" && reverification?.status !== "passed") {
         sendJson(response, 409, {
           error: "demo_not_releasable",
-          message: "실패한 run의 candidate는 inspection만 가능하며 onboard할 수 없습니다."
+          message:
+            "실패한 run의 candidate는 current verifier reverify를 통과하기 전까지 onboard할 수 없습니다."
         });
         return;
       }
@@ -507,6 +573,9 @@ export function createStudioServer(options: StudioServerOptions): Server {
           notifyStarted = resolveStarted;
         });
         activeRunIds.add(runId);
+        const producesDemo =
+          demoStore !== undefined &&
+          (options.workflows === undefined || registration.inputKind === "spec-to-demo");
         const completion = executeStudioProcessRun({
           workflow: registration.document.workflow,
           inputs,
@@ -514,9 +583,9 @@ export function createStudioServer(options: StudioServerOptions): Server {
           executor: registration.executor,
           runId,
           onStarted: notifyStarted,
-          ...(demoStore === undefined
-            ? {}
-            : { createDemoSnapshot: (runId) => demoStore.createSnapshot(runId) })
+          ...(producesDemo
+            ? { createDemoSnapshot: (runId) => demoStore.createSnapshot(runId) }
+            : {})
         });
         void completion.then(
           () => activeRunIds.delete(runId),

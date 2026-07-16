@@ -15,7 +15,7 @@ AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration cat
 
 ## 현재 구현
 
-WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, Preview contract compiler, direct benchmark harness와 local AAWP Studio가 있다. Studio는 versioned workflow catalog를 읽고 execution manifest로 WIR node마다 실제 local process가 등록된 workflow만 실행한다. `spec-to-demo`는 source spec, 명시적 screen 집합과 요청 원문을 pinned request로 만든 뒤 `codex exec → inspect → bounded repair → verify`를 실행한다. `spec-feedback-to-spec`은 baseline/feedback digest를 고정하고 model proposal, deterministic materialization, structural·semantic verification을 거쳐 단일 immutable child Spec candidate를 만든다. 두 경로 모두 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. Studio diff/사람 승인·promotion UI, production hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, Preview contract compiler, direct benchmark harness와 local AAWP Studio가 있다. Studio는 versioned workflow catalog를 읽고 execution manifest로 WIR node마다 실제 local process가 등록된 workflow만 실행한다. `spec-to-demo`는 source spec과 명시적 screen 집합을 semantic dependency projection으로 고정하고 scope preflight 뒤 `codex exec → inspect → bounded repair → executable browser evidence verify`를 실행한다. Inspect는 독립 evidence check 전체를 수집한 뒤 한 번의 제한 repair에 전달하며, 필수 flow/evidence screen과 허브의 optional navigation을 구분한다. `spec-feedback-to-spec`은 baseline/feedback digest를 고정하고 model proposal, deterministic materialization, structural·semantic verification을 거쳐 단일 immutable child Spec candidate를 만든다. 두 경로 모두 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. Studio diff/사람 승인·promotion UI, production hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
 
 S2 Preview 기반은 logical `DataContract`·`ApiContract`, blocker routing과 `PreviewEnvironmentPort`로 분리돼 있다. 미확정 DB/API 결정을 구현값으로 꾸미지 않으며 blocker가 0인 계약만 PGlite local ephemeral harness에 provision한다. 이는 production DB/API가 아니라 resource version·idempotency·lease 경계를 검증하는 adapter다. `spec-to-preview`는 아직 catalog executable이 아니다.
 
@@ -42,9 +42,11 @@ npm run studio
 
 실행 정의는 [workflow catalog](workflows/catalog.json), [WIR](workflows/templates/spec-to-demo/workflow.wir.yaml), [execution manifest](workflows/templates/spec-to-demo/execution.manifest.json), [자급식 실행 지침](workflows/templates/spec-to-demo/WORKFLOW.md), browserless public artifact checker와 독립 release verifier로 구성된다. Demo의 유일한 디자인 입력은 [DESIGN.md](DESIGN.md)다. 이 문서는 YAML token과 intent·금지 규칙·responsive decision을 함께 제공하며 이전 demo, presentation contract나 대화 기억을 사용하지 않는다.
 
-Request 생성기는 기본적으로 요청 화면과 직접 참조 정의만 deterministic projection으로 고정해 heavy source 전체를 model context에 넣지 않는다. Projection과 원본 digest를 모두 보존하며 전체 source 실행은 진단용 `--full-source`에서만 명시한다.
+Request 생성기는 요청 화면에서 도달 가능한 flow, authority, state, Data/API binding과 acceptance만 deterministic projection으로 고정해 heavy source 전체를 model context에 넣지 않는다. 필요한 dependency screen이 빠졌으면 모델 호출 전에 stable ID를 반환하고 범위 확장을 요구한다. Projection과 원본 digest를 모두 보존하며 전체 source 실행은 진단용 `--full-source`에서만 명시한다.
 
 모든 실행은 `runs/history.jsonl`과 `runs/<runId>/`에 저장된다. 실행 manifest가 없으면 Studio는 해당 workflow의 Run을 비활성화하고 simulation 성공 기록을 대신 만들지 않는다. 모델 node는 Codex JSONL 또는 `AAWP_EVENT` usage evidence가 없으면 실패한다. Token summary는 K/M으로 압축하지만 정확한 input/cached/output/reasoning 값은 run record와 tooltip에 남는다. 모델 호출 없는 dry-run은 Studio Run이 아니라 위의 명시적 `awf simulate` 명령으로만 실행한다.
+
+Verifier 변경만 검증할 때는 `npm run reverify:spec-to-demo -- run_<id>`를 사용한다. 이 명령은 Demo를 재생성하거나 원 failed status를 덮어쓰지 않고, content/input/verifier/workflow digest가 있는 별도 verdict를 남긴다. Studio는 최신 reverify pass와 원 실행 결과를 함께 보여준다.
 
 담당자별 원본/feedback candidate 비교 demo는 `examples/heavy-spec-role-comparison`에 있다. Candidate 실행 입력은 부모 내용을 모두 포함한 child JSON 한 파일이며 proposal·verdict는 감사 sidecar다.
 
