@@ -281,7 +281,9 @@ npm run validate:heavy-spec -- refined-production-spec.json
 
 담당자별 화면그룹 피드백은 `examples/heavy-spec-feedback-revision/feedback-intent.json`의 13개 stable ID로 컴파일됐다. `npm run generate:heavy-spec-revision`은 76개 typed operation, 110-screen 단일 child spec, summary와 verdict를 `generated/`에 재현한다. 원본, `designTokens`, `extendedDesign`과 관련 없는 소비자·가맹점 화면은 변경하지 않는다. Child의 `meta.revision.executionInput`은 `this_document`이며 sidecar가 없어도 부모와 feedback 계보를 식별할 수 있다.
 
-Child candidate는 profile verifier를 통과했지만 승인되지 않았다. `generated/revision-summary.json`의 status가 `candidate`인지 확인하고 diff를 검토한 뒤에만 별도 approval로 promotion해야 한다. Production model activity와 Studio diff/approval UI는 아직 연결되지 않았으므로 현재 결과를 자동 교정 workflow의 완성으로 보아서는 안 된다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
+Child candidate는 verifier를 통과해도 승인되지 않았다. 결과 directory의 `verification-summary.json`과 `revision-verdict.json`에서 candidate 상태, digest, maturity와 blocker를 확인하고 diff를 검토한 뒤에만 별도 approval로 promotion해야 한다. Production model proposal은 Studio에서 실행되지만 Studio diff/approval UI는 아직 없다. 현재 결과를 사람 승인까지 끝난 자동 교정으로 보아서는 안 된다. 상세 경계는 [`spec-feedback-to-spec` 가이드](spec-feedback-to-spec.md)를 참고한다.
+
+S2 결과에는 `data-contract.json`, `api-contract.json`, `preview-blocker-routing.json`이 추가된다. 이 계약은 logical entity/query/command와 source digest를 고정하며 DB table이나 HTTP endpoint를 자동 생성하지 않는다. `status=blocked`이면 blocker owner와 question을 해결해야 하며 Preview 환경은 생성되지 않는다. `status=ready`인 fixture만 local PGlite harness에서 resource version, idempotency와 lease를 검증할 수 있다. 이 harness를 production DB로 사용하지 않는다.
 
 ## 5. Spec version과 revision
 

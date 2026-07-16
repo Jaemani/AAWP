@@ -202,7 +202,7 @@ describe("Studio local server", () => {
     });
   });
 
-  it("serves a workflow catalog and keeps unfinished workflows non-executable", async () => {
+  it("serves executable workflow catalog entries with typed launchers", async () => {
     directory = await mkdtemp(join(tmpdir(), "awf-studio-catalog-"));
     const workflows = await loadStudioWorkflowCatalog({
       path: "workflows/catalog.json",
@@ -213,7 +213,7 @@ describe("Studio local server", () => {
       "spec-feedback-to-spec"
     ]);
     expect(workflows[0]?.executor).toBeDefined();
-    expect(workflows[1]?.executor).toBeUndefined();
+    expect(workflows[1]?.executor).toBeDefined();
 
     server = createStudioServer({ document: workflows[0]!.document, workflows });
     await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
@@ -225,7 +225,11 @@ describe("Studio local server", () => {
     ).resolves.toMatchObject({
       workflows: [
         { id: "spec-to-demo", inputKind: "spec-to-demo", executable: true },
-        { id: "spec-feedback-to-spec", inputKind: "json", executable: false }
+        {
+          id: "spec-feedback-to-spec",
+          inputKind: "spec-feedback-to-spec",
+          executable: true
+        }
       ]
     });
     const executablePage = await fetch(`${base}/?workflow=spec-to-demo`).then(async (response) =>
@@ -235,16 +239,18 @@ describe("Studio local server", () => {
     expect(executablePage).toContain('id="source-spec-path"');
     expect(executablePage).toContain('id="screen-ids"');
     expect(executablePage).toContain('id="request-text"');
-    const plannedPage = await fetch(`${base}/?workflow=spec-feedback-to-spec`).then(
+    const feedbackPage = await fetch(`${base}/?workflow=spec-feedback-to-spec`).then(
       async (response) => response.text()
     );
-    expect(plannedPage).toContain("실행 bundle은 아직 준비 중입니다");
-    expect(plannedPage).toContain('id="run-workflow" class="run-button" type="button" disabled');
+    expect(feedbackPage).toContain('id="feedback-source-path"');
+    expect(feedbackPage).toContain('id="feedback-document-path"');
+    expect(feedbackPage).toContain('id="target-maturity"');
+    expect(feedbackPage).toContain('id="run-workflow" class="run-button" type="button"');
     await expect(
       fetch(`${base}/api/execution?workflow=spec-feedback-to-spec`).then(async (response) =>
         response.json()
       )
-    ).resolves.toMatchObject({ executable: false, reason: "NO_EXECUTION_MANIFEST" });
+    ).resolves.toMatchObject({ executable: true, descriptor: { kind: "local-process" } });
   });
 
   it("serves a read-only source and compiler-backed candidate check", async () => {

@@ -4,6 +4,7 @@ import {
   findMissingCanonicalHashRoutes,
   findMissingSourceCopy,
   findForbiddenVisibleAuthoringLabels,
+  findUnbackedPeriodCopy,
   findUnregisteredScreens,
   validateSpecToDemoArtifactText
 } from "./check-spec-to-demo-artifact.mjs";
@@ -99,6 +100,24 @@ it("rejects structural authoring labels only when rendered as visible text", () 
       </main>\`;
     `)
   ).toEqual([]);
+});
+
+it("rejects period-specific product records not backed by selected screen copy", () => {
+  expect(
+    findUnbackedPeriodCopy({
+      source: {
+        screens: [
+          {
+            id: "policy",
+            copy: [{ key: "policyName", text: "2026년 3분기 경기도 청년기본소득" }]
+          }
+        ]
+      },
+      requestedScreens: ["policy"],
+      requestText: "청년기본소득 정책을 보여주세요.",
+      app: 'const requested = "2026년 3분기 경기도 청년기본소득"; const invented = "청소년 교통비 2026년 2분기";'
+    })
+  ).toEqual(["2026년 2분기"]);
 });
 
 it("checks the public static portion of the design contract", () => {

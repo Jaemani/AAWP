@@ -89,6 +89,28 @@ export function findForbiddenVisibleAuthoringLabels(app) {
   );
 }
 
+export function findUnbackedPeriodCopy({ source, requestedScreens, requestText, app }) {
+  assert.ok(Array.isArray(source?.screens), "source spec must contain screens[]");
+  assert.ok(Array.isArray(requestedScreens) && requestedScreens.length > 0);
+  assert.equal(typeof app, "string");
+  const requested = new Set(requestedScreens);
+  const allowed = [
+    typeof requestText === "string" ? requestText : "",
+    ...source.screens
+      .filter((screen) => requested.has(screen?.id))
+      .flatMap((screen) => (Array.isArray(screen?.copy) ? screen.copy : []))
+      .map((copy) => copy?.text)
+      .filter((text) => typeof text === "string")
+  ].join("\n");
+  const literals = [...app.matchAll(/>([^<>]+)</gu), ...app.matchAll(/(["'`])([^"'`\n]*)\1/gu)].map(
+    (match) => match[2] ?? match[1] ?? ""
+  );
+  const phrases = literals.flatMap((literal) =>
+    [...literal.matchAll(/20\d{2}년\s*(?:[1-4]분기|상반기|하반기)/gu)].map((match) => match[0])
+  );
+  return [...new Set(phrases.filter((phrase) => !allowed.includes(phrase)))].sort();
+}
+
 export function validateSpecToDemoArtifactText({ html, app, styles, manifest, productName }) {
   requiredMatch(html, /styles\.css/, "index.html must load styles.css");
   requiredMatch(html, /app\.js/, "index.html must load app.js");
@@ -157,6 +179,12 @@ export async function checkSpecToDemoArtifact({ inputPath, executionDirectory })
     requestedScreens: brief.requestedScreens
   });
   const forbiddenVisibleLabels = findForbiddenVisibleAuthoringLabels(app);
+  const unbackedPeriodCopy = findUnbackedPeriodCopy({
+    source,
+    requestedScreens: brief.requestedScreens,
+    requestText: brief.requestText,
+    app
+  });
 
   assert.equal(
     unregistered.length,
@@ -172,6 +200,11 @@ export async function checkSpecToDemoArtifact({ inputPath, executionDirectory })
     forbiddenVisibleLabels.length,
     0,
     `product UI exposes authoring labels: ${forbiddenVisibleLabels.join(", ")}`
+  );
+  assert.equal(
+    unbackedPeriodCopy.length,
+    0,
+    `product UI invents period-specific records outside selected screen copy: ${unbackedPeriodCopy.join(", ")}`
   );
 
   assert.equal(

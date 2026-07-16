@@ -4,9 +4,24 @@
 
 ## 2026-07-16
 
+### Preview Data/API 계약과 fail-closed 임시 DB
+
+- `@awf/preview-contracts`를 추가해 canonical Spec의 logical entity, query, command와 screen binding을 source digest에 고정하는 `DataContract`·`ApiContract`를 만든다.
+- S2 finding을 `data`, `api`, `authority`, `environment`, `product-decision`으로 routing하고 owner/question을 보존한다.
+- `PreviewEnvironmentPort`와 PGlite local adapter를 추가했다. Ready 계약에서만 contract registry, append-only resource version, idempotency replay와 lease expiry를 검증한다.
+- Blocked 계약은 environment provision을 거부한다. DB 제품·물리 table·PII 저장소와 API transport/status code는 근거가 없으면 `unresolved`로 남는다.
+- `spec-feedback-to-spec` verification output에 `data-contract.json`, `api-contract.json`, `preview-blocker-routing.json`을 연결했다.
+- 청년기본소득 child Spec은 14 entities, 8 queries, 12 commands, 8 bindings으로 컴파일됐지만 S2 blocker 14건 때문에 Preview 환경을 만들지 않았다.
+
+### Demo source 외 기간별 record 차단
+
+- 3화면 청년기본소득 Demo에서 selected screen copy에 없는 `청소년 교통비 2026년 2분기` 행이 임의 생성됐음을 재검증으로 발견했다.
+- Public checker와 independent verifier가 selected screen copy/request에 없는 `20XX년 N분기` product record를 차단하도록 보강했다.
+- 완료된 결함 run은 수정하지 않고 offboard inspection evidence로 보존한다.
+
 ### Workflow catalog와 실제 웹 실행 입력
 
-- `workflows/catalog.json`과 `GET /api/workflows`를 추가해 Studio에서 workflow를 선택할 수 있게 했다. `spec-to-demo`는 실행 가능하고, 실행 bundle이 미완성인 `spec-feedback-to-spec`은 상태와 이유를 표시하되 Run을 비활성화한다.
+- `workflows/catalog.json`과 `GET /api/workflows`를 추가해 Studio에서 workflow를 선택할 수 있게 했다. `spec-to-demo`와 `spec-feedback-to-spec`은 각각 typed launcher와 execution manifest가 있을 때만 실행되며, manifest가 없는 workflow는 상태와 이유를 표시하고 Run을 비활성화한다.
 - `spec-to-demo`의 raw JSON 입력을 source spec 상대경로, screen ID 집합과 요청 원문으로 구성된 typed launcher로 교체했다. Run 버튼은 새 pinned request를 만든 뒤 등록된 `codex exec → inspect → bounded repair → verify` local process를 실제 실행한다.
 - Source path는 project workspace 내부 상대경로만 허용하고 `..`, 절대경로와 workspace 밖 symlink를 거부한다. 선택 screen projection, 원본 digest와 현재 `DESIGN.md` version/digest는 `runs/requests/<requestId>`에 보존한다.
 - Run history를 workflow별로 필터링하고 `/?run=<runId>`가 해당 run의 workflow graph를 자동 복원하도록 했다.

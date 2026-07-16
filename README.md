@@ -15,7 +15,9 @@ AAWP는 범용 connector 중심 자동화 제품과 경쟁하는 integration cat
 
 ## 현재 구현
 
-WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, direct benchmark harness와 local AAWP Studio가 있다. Studio는 versioned workflow catalog를 읽고 execution manifest로 WIR node마다 실제 local process가 등록된 workflow만 실행한다. `spec-to-demo`는 웹의 typed launcher가 source spec, 명시적 screen 집합과 요청 원문을 pinned request로 만든 뒤 `codex exec → inspect → bounded repair → verify`를 시작한다. 이 경로는 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. `spec-feedback-to-spec`의 production model activity와 Studio diff/approval UI, 실제 hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았으므로 catalog에서 실행 불가로 표시한다.
+WIR·compiler, artifact/event plane, Temporal runtime adapter, model/tool/verifier gateway, revision impact engine, value router, platform-owned demo bundle, `spec-to-demo`, `spec-feedback-to-spec`, Preview contract compiler, direct benchmark harness와 local AAWP Studio가 있다. Studio는 versioned workflow catalog를 읽고 execution manifest로 WIR node마다 실제 local process가 등록된 workflow만 실행한다. `spec-to-demo`는 source spec, 명시적 screen 집합과 요청 원문을 pinned request로 만든 뒤 `codex exec → inspect → bounded repair → verify`를 실행한다. `spec-feedback-to-spec`은 baseline/feedback digest를 고정하고 model proposal, deterministic materialization, structural·semantic verification을 거쳐 단일 immutable child Spec candidate를 만든다. 두 경로 모두 end-to-end 시간, node 로그, 실제 artifact와 provider token usage를 프로젝트 루트 `runs/<runId>/`에 보존한다. Studio diff/사람 승인·promotion UI, production hidden verifier image 운영과 반복 cohort 우위 증명은 아직 완료되지 않았다.
+
+S2 Preview 기반은 logical `DataContract`·`ApiContract`, blocker routing과 `PreviewEnvironmentPort`로 분리돼 있다. 미확정 DB/API 결정을 구현값으로 꾸미지 않으며 blocker가 0인 계약만 PGlite local ephemeral harness에 provision한다. 이는 production DB/API가 아니라 resource version·idempotency·lease 경계를 검증하는 adapter다. `spec-to-preview`는 아직 catalog executable이 아니다.
 
 ## 시작하기
 
@@ -53,6 +55,7 @@ Request 생성기는 기본적으로 요청 화면과 직접 참조 정의만 de
 - [핵심 개념과 구조](docs/core-concepts.md): 다른 workflow 방식과의 차이, 구조와 선택 이유
 - [`spec-feedback-to-spec` 가이드](docs/spec-feedback-to-spec.md): feedback contract, patch, 검증과 승인 경계
 - [`spec-feedback-to-spec` 구현 결과](docs/spec-feedback-to-spec-implementation-report.md): 완료 범위, test와 미증명 경계
+- [Preview 계약 구현 결과](docs/m10-preview-contracts-implementation-report.md): Data/API 계약, blocker routing과 임시 DB 경계
 - [Architecture decisions](docs/adr/README.md): 대안, 결정과 trade-off
 - [변경 기록](CHANGELOG.md): 사용자·운영자 관점의 update notes
 - [오류·교정 기록](docs/lessons-and-corrections.md): 유의미한 실수, 영향과 재발 방지

@@ -3,17 +3,23 @@ import { describe, expect, it } from "vitest";
 import { createHeavyProductionSpecValidator } from "./heavy-production-spec-profile.js";
 
 const source = JSON.parse(
-  await readFile(new URL("../../../../refined-production-spec.json", import.meta.url), "utf8")
+  await readFile(
+    new URL(
+      "../../../../examples/heavy-spec-feedback-revision/generated/refined-production-spec.role-workspaces.candidate.json",
+      import.meta.url
+    ),
+    "utf8"
+  )
 ) as Record<string, unknown>;
 
 describe("heavy production spec profile", () => {
-  it("accepts the pinned 102-screen source before feedback is applied", () => {
+  it("accepts the self-contained pinned heavy candidate fixture", () => {
     const findings = createHeavyProductionSpecValidator(source)(source);
 
     expect(findings).toEqual([]);
-    expect(source.screens).toHaveLength(102);
-    expect(source.components).toHaveLength(140);
-    expect(source.actors).toHaveLength(24);
+    expect(source.screens).toHaveLength(110);
+    expect(source.components).toHaveLength(154);
+    expect(source.actors).toHaveLength(26);
   });
 
   it("detects broken references, duplicate routes, authority collapse, and removed baseline screens", () => {

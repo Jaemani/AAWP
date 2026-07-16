@@ -16,7 +16,7 @@ export interface StudioViewModel {
   document: WorkflowEditorDocument;
   graph: ReturnType<typeof projectWorkflowGraph>;
   initialInputJson: string;
-  inputKind: "json" | "spec-to-demo";
+  inputKind: "json" | "spec-to-demo" | "spec-feedback-to-spec";
   displayName: string;
   description: string;
   unavailableReason?: string;
@@ -27,7 +27,7 @@ export interface StudioViewModel {
 export function createStudioView(input: {
   document: WorkflowEditorDocument;
   initialInputs?: unknown;
-  inputKind?: "json" | "spec-to-demo";
+  inputKind?: "json" | "spec-to-demo" | "spec-feedback-to-spec";
   displayName?: string;
   description?: string;
   unavailableReason?: string;
@@ -126,10 +126,28 @@ export function renderStudioHtml(view: StudioViewModel): string {
           <label class="field screens-field"><span>Screen IDs</span><textarea id="screen-ids" rows="3" placeholder="admin-policy-list&#10;admin-policy-detail"${executable ? "" : " disabled"}>${escapeHtml(initialScreens.join("\n"))}</textarea><small>쉼표 또는 줄바꿈으로 구분합니다. 전체 화면은 자동 선택하지 않습니다.</small></label>
           <label class="field request-field"><span>Request</span><textarea id="request-text" rows="3" placeholder="선택한 화면 묶음의 동작 가능한 데모를 만들어줘"${executable ? "" : " disabled"}>${escapeHtml(typeof initialBrief.requestText === "string" ? initialBrief.requestText : "")}</textarea></label>
         </div>`;
+  const feedbackSource =
+    typeof initialInputs.source === "object" && initialInputs.source !== null
+      ? (initialInputs.source as Record<string, unknown>)
+      : {};
+  const feedbackInput =
+    typeof initialInputs.feedback === "object" && initialInputs.feedback !== null
+      ? (initialInputs.feedback as Record<string, unknown>)
+      : {};
+  const feedbackStructuredInput = `
+        <div class="structured-input" data-input-kind="spec-feedback-to-spec">
+          <label class="field source-field"><span>Baseline spec</span><input id="feedback-source-path" type="text" value="${escapeHtml(typeof feedbackSource.path === "string" ? feedbackSource.path : "")}" placeholder="specs/baseline.json" autocomplete="off"${executable ? "" : " disabled"}></label>
+          <label class="field source-field"><span>Feedback</span><input id="feedback-document-path" type="text" value="${escapeHtml(typeof feedbackInput.path === "string" ? feedbackInput.path : "")}" placeholder="specs/feedback.md" autocomplete="off"${executable ? "" : " disabled"}></label>
+          <label class="field screens-field"><span>Target maturity</span><select id="target-maturity"${executable ? "" : " disabled"}><option value="S1"${feedbackInput.targetMaturity === "S2" ? "" : " selected"}>S1 · Demo-ready</option><option value="S2"${feedbackInput.targetMaturity === "S2" ? " selected" : ""}>S2 · Preview-ready</option></select><small>미확정 downstream 계약은 자동으로 채우지 않고 blocker로 남깁니다.</small></label>
+          <label class="field source-field"><span>Repair base run <small>(optional)</small></span><input id="feedback-base-run-id" type="text" value="" placeholder="run_..." autocomplete="off"${executable ? "" : " disabled"}></label>
+          <label class="field request-field"><span>Revision request</span><textarea id="feedback-request-text" rows="5" placeholder="원본을 고정하고 피드백을 적용한 immutable child Spec candidate를 만들어줘"${executable ? "" : " disabled"}>${escapeHtml(typeof feedbackInput.requestText === "string" ? feedbackInput.requestText : "")}</textarea></label>
+        </div>`;
   const runInput =
     view.inputKind === "spec-to-demo"
       ? structuredInput
-      : `<details class="input"><summary>Run input</summary><textarea id="run-input" aria-label="Workflow run input" spellcheck="false"${executable ? "" : " disabled"}>${escapeHtml(view.initialInputJson)}</textarea></details>`;
+      : view.inputKind === "spec-feedback-to-spec"
+        ? feedbackStructuredInput
+        : `<details class="input"><summary>Run input</summary><textarea id="run-input" aria-label="Workflow run input" spellcheck="false"${executable ? "" : " disabled"}>${escapeHtml(view.initialInputJson)}</textarea></details>`;
   const graphNodeById = new Map(view.graph.nodes.map((node) => [node.id, node]));
   const orderedGraphNodes = view.document.workflow.nodes.map((node) => graphNodeById.get(node.id)!);
   const graphNodes = orderedGraphNodes
@@ -198,9 +216,9 @@ export function renderStudioHtml(view: StudioViewModel): string {
     .toolbar-copy p { max-width:640px; margin:7px 0 0; color:var(--muted); font-size:12px; line-height:1.55; }
     .workflow-picker { margin-top:18px; }
     .workflow-picker label,.field span { display:block; margin-bottom:7px; color:var(--muted); font-size:9px; font-weight:720; letter-spacing:.06em; text-transform:uppercase; }
-    .workflow-picker select,.field input,.field textarea { width:100%; border:1px solid #cfd6df; border-radius:9px; color:#344054; background:#fff; }
-    .workflow-picker select,.field input { height:42px; min-height:42px; padding:0 12px; }
-    .workflow-picker select { appearance:none; padding-right:38px; background-image:linear-gradient(45deg,transparent 50%,#667085 50%),linear-gradient(135deg,#667085 50%,transparent 50%); background-position:calc(100% - 17px) 18px,calc(100% - 12px) 18px; background-repeat:no-repeat; background-size:5px 5px,5px 5px; cursor:pointer; }
+    .workflow-picker select,.field input,.field select,.field textarea { width:100%; border:1px solid #cfd6df; border-radius:9px; color:#344054; background:#fff; }
+    .workflow-picker select,.field input,.field select { height:42px; min-height:42px; padding:0 12px; }
+    .workflow-picker select,.field select { appearance:none; padding-right:38px; background-image:linear-gradient(45deg,transparent 50%,#667085 50%),linear-gradient(135deg,#667085 50%,transparent 50%); background-position:calc(100% - 17px) 18px,calc(100% - 12px) 18px; background-repeat:no-repeat; background-size:5px 5px,5px 5px; cursor:pointer; }
     .workflow-picker small,.field small { display:block; margin-top:6px; color:var(--subtle); font-size:9px; line-height:1.45; }
     .run-control { display:flex; min-width:0; flex-direction:column; align-items:stretch; gap:14px; }
     .structured-input { display:grid; min-width:0; grid-template-columns:minmax(180px,.8fr) minmax(220px,1fr) minmax(220px,1fr); gap:12px; }
@@ -425,6 +443,11 @@ export function renderStudioHtml(view: StudioViewModel): string {
       const sourceSpecPath = document.getElementById("source-spec-path");
       const screenIds = document.getElementById("screen-ids");
       const requestText = document.getElementById("request-text");
+      const feedbackSourcePath = document.getElementById("feedback-source-path");
+      const feedbackDocumentPath = document.getElementById("feedback-document-path");
+      const feedbackRequestText = document.getElementById("feedback-request-text");
+      const targetMaturity = document.getElementById("target-maturity");
+      const feedbackBaseRunId = document.getElementById("feedback-base-run-id");
       const message = document.getElementById("run-message");
       const historyList = document.getElementById("run-history");
       const runCount = document.getElementById("run-count");
@@ -465,6 +488,10 @@ export function renderStudioHtml(view: StudioViewModel): string {
         if (inputKind === "spec-to-demo") {
           const selectedScreens = screenIds.value.split(/[\\n,]/u).map((value) => value.trim()).filter(Boolean);
           return { workflowId:selectedWorkflowId, launcher:{ kind:"spec-to-demo", sourcePath:sourceSpecPath.value.trim(), screenIds:selectedScreens, requestText:requestText.value.trim() } };
+        }
+        if (inputKind === "spec-feedback-to-spec") {
+          const baseRunId = feedbackBaseRunId.value.trim();
+          return { workflowId:selectedWorkflowId, launcher:{ kind:"spec-feedback-to-spec", sourcePath:feedbackSourcePath.value.trim(), feedbackPath:feedbackDocumentPath.value.trim(), requestText:feedbackRequestText.value.trim(), targetMaturity:targetMaturity.value, ...(baseRunId ? {baseRunId} : {}) } };
         }
         return { workflowId:selectedWorkflowId, inputs:JSON.parse(runInput.value) };
       };

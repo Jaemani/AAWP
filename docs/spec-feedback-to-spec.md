@@ -69,16 +69,20 @@ DIRECT여도 pinned source, typed patch, diff, validation과 immutable child art
 - 기존 screen/actor/component 삭제와 admin/issuer authority root 결합 방지
 - 담당자별 화면그룹 76-operation typed proposal, 110-screen immutable child candidate와 profile verdict
 - Child spec 내부 `meta.revision`에 parent/contract digest, feedback ID, candidate 상태와 단일 실행 입력 경계 내장
+- Studio typed launcher와 production Codex proposal activity
+- S0~S3 maturity, Demo/Preview/Application blocker와 traceability report
+- 단일 child Spec과 별도로 logical `data-contract.json`, `api-contract.json`, `preview-blocker-routing.json` 생성
 
 미완료:
 
-- Production model provider를 사용하는 patch proposal activity
 - Studio diff, finding과 approval inbox UI
 - Approved artifact의 external repository write adapter
 - Heavy spec의 행정·법적 domain enum 전체와 자연어 논리 일관성 verifier
 - 담당자별 화면그룹 child candidate의 사용자 승인과 promotion
 
-Baseline 형식, 참조 무결성, typed patch 재적용과 현재 candidate의 구조 계약은 검증할 수 있지만, 자연어 피드백을 올바른 patch로 바꾸는 production model activity는 아직 없다. 따라서 현재 candidate는 검토 가능한 결과이지 자동 논리 교정 완료나 승인된 spec을 의미하지 않는다.
+Baseline 형식, 참조 무결성, typed patch 재적용, semantic maturity와 현재 candidate의 구조 계약을 검증한다. Production model proposal은 연결됐지만 model output 자체가 진실원은 아니다. Independent verification이 통과해도 현재 candidate는 검토 가능한 결과이지 승인된 spec을 의미하지 않는다.
+
+S2 계약은 candidate에서 결정적으로 컴파일되지만 blocker가 남으면 Preview 환경을 만들지 않는다. 물리 DB 제품·table·PII 저장소와 API transport는 근거가 없으면 `unresolved`다. 상세 경계는 [ADR-020](adr/ADR-020-preview-contracts-gate-environments.md)과 [M10 report](m10-preview-contracts-implementation-report.md)를 따른다.
 
 담당자별 화면그룹 피드백에는 현재 에이전트가 구조화한 typed proposal과 child candidate가 추가됐다. 76개 operation으로 기존 10개 화면을 수정하고 새 업무 화면 8개를 추가했으며, 마지막 operation은 완전한 child 문서 안에 revision provenance를 내장한다. 기존 명부 화면 stable ID 하나는 필수 업로드·검증 화면으로 재사용한다. Candidate는 110 screens, 154 components, 26 actors이고 profile verdict는 finding 없이 통과했다. 이는 production model first-pass 품질을 증명하지 않으며 사용자 승인도 아직 없다.
 

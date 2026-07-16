@@ -26,6 +26,11 @@ export {
   type SpecToDemoLauncherInput
 } from "./spec-to-demo-request.js";
 export {
+  prepareSpecFeedbackRequest,
+  type PreparedSpecFeedbackRequest,
+  type SpecFeedbackLauncherInput
+} from "./spec-feedback-request.js";
+export {
   executeStudioProcessRun,
   executeStudioRun,
   InMemoryStudioRunStore,

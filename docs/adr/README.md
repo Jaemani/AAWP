@@ -24,5 +24,6 @@ ADR은 중요한 구조 선택의 맥락, 고려한 대안, 결정과 결과를 
 - [ADR-017](ADR-017-studio-runs-require-executable-bindings.md): Studio Run을 실제 node binding·wall clock·usage evidence에만 연결
 - [ADR-018](ADR-018-run-root-and-self-contained-workflows.md): local run을 단일 root에 보존하고 workflow를 대화 비의존 실행 bundle로 고정
 - [ADR-019](ADR-019-studio-catalog-and-typed-launchers.md): Studio workflow catalog와 domain별 typed launcher를 분리
+- [ADR-020](ADR-020-preview-contracts-gate-environments.md): Data/API 계약과 S2 blocker가 ready일 때만 ephemeral Preview 환경을 생성
 
 상태가 바뀌면 기존 ADR을 삭제하지 않고 `superseded`로 표시한 뒤 새 ADR을 추가한다.

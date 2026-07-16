@@ -1,5 +1,5 @@
 {
-  "name": "@awf/spec-feedback-to-spec",
+  "name": "@awf/preview-runtime",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -9,10 +9,8 @@
     }
   },
   "dependencies": {
-    "@awf/ir": "0.1.0",
     "@awf/preview-contracts": "0.1.0",
-    "@sinclair/typebox": "0.34.52",
-    "ajv": "8.20.0"
+    "@electric-sql/pglite": "0.5.4"
   },
   "scripts": {
     "build": "tsc -b",

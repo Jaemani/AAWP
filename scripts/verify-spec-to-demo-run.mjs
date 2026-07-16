@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { chromium } from "playwright";
+import { findUnbackedPeriodCopy } from "./check-spec-to-demo-artifact.mjs";
 import { parseDesignContractVersion } from "./design-contract-lib.mjs";
 import { runDemoLayoutQa, startStaticDemoServer } from "./demo-layout-qa-lib.mjs";
 
@@ -146,6 +147,17 @@ for (const screenId of expectedScreenIds) {
     assert.ok(app.includes(copy.text), `${screenId} is missing source copy: ${copy.key}`);
   }
 }
+const unbackedPeriodCopy = findUnbackedPeriodCopy({
+  source,
+  requestedScreens: expectedScreenIds,
+  requestText: brief.requestText,
+  app
+});
+assert.deepEqual(
+  unbackedPeriodCopy,
+  [],
+  `product UI invents period-specific records outside selected screen copy: ${unbackedPeriodCopy.join(", ")}`
+);
 
 const combined = `${html}\n${app}\n${styles}\n${JSON.stringify(manifest)}`;
 for (const forbidden of [

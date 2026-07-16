@@ -28,3 +28,11 @@ export {
   type SpecPatchOperation,
   type SpecPatchProposal
 } from "./schema.js";
+export {
+  compileSemanticSpecProfile,
+  type MaturityStage,
+  type MaturityStageVerdict,
+  type SemanticBlockerKind,
+  type SemanticCompilation,
+  type SemanticFinding
+} from "./semantic-profile.js";

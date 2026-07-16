@@ -27,8 +27,12 @@ import {
   type StudioWorkflowExecutor
 } from "./executor.js";
 import { prepareSpecToDemoRequest, type SpecToDemoLauncherInput } from "./spec-to-demo-request.js";
+import {
+  prepareSpecFeedbackRequest,
+  type SpecFeedbackLauncherInput
+} from "./spec-feedback-request.js";
 
-export type StudioInputKind = "json" | "spec-to-demo";
+export type StudioInputKind = "json" | "spec-to-demo" | "spec-feedback-to-spec";
 
 export interface StudioWorkflowRegistration {
   document: WorkflowEditorDocument;
@@ -118,7 +122,7 @@ export async function loadStudioWorkflowCatalog(input: {
       (entry.executionManifestPath !== undefined &&
         typeof entry.executionManifestPath !== "string") ||
       (entry.unavailableReason !== undefined && typeof entry.unavailableReason !== "string") ||
-      !["json", "spec-to-demo"].includes(String(entry.inputKind))
+      !["json", "spec-to-demo", "spec-feedback-to-spec"].includes(String(entry.inputKind))
     ) {
       throw new Error(`invalid Studio workflow catalog entry ${index}`);
     }
@@ -472,6 +476,26 @@ export function createStudioServer(options: StudioServerOptions): Server {
               requestText:
                 typeof body.launcher.requestText === "string" ? body.launcher.requestText : ""
             } satisfies SpecToDemoLauncherInput
+          });
+          inputs = prepared.inputs;
+        } else if (registration.inputKind === "spec-feedback-to-spec") {
+          if (!isRecord(body) || !("launcher" in body) || !isRecord(body.launcher)) {
+            throw new Error("spec-feedback-to-spec는 구조화 launcher input이 필요합니다.");
+          }
+          const prepared = await prepareSpecFeedbackRequest({
+            projectRoot: registration.projectRoot ?? ".",
+            launcher: {
+              sourcePath:
+                typeof body.launcher.sourcePath === "string" ? body.launcher.sourcePath : "",
+              feedbackPath:
+                typeof body.launcher.feedbackPath === "string" ? body.launcher.feedbackPath : "",
+              requestText:
+                typeof body.launcher.requestText === "string" ? body.launcher.requestText : "",
+              targetMaturity: body.launcher.targetMaturity === "S2" ? "S2" : "S1",
+              ...(typeof body.launcher.baseRunId === "string"
+                ? { baseRunId: body.launcher.baseRunId }
+                : {})
+            } satisfies SpecFeedbackLauncherInput
           });
           inputs = prepared.inputs;
         } else {

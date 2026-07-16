@@ -89,6 +89,7 @@ The manifest must not contain `visualReference`, `presentationContract`, `presen
 ## 5. Interaction and fidelity
 
 - Preserve source user-facing copy. Do not render route, internal component type, purpose, `dataNeeds`, raw spec prose or feedback diagnostics in the product UI.
+- Do not invent product records, periods, departments, people, amounts or domain-specific labels that are absent from the selected screen copy or explicit selected mock data. Generic UI labels are allowed. A list with one sourced record must not be padded with an unrelated record from actor notes or surrounding prose.
 - Product navigation and primary CTA must work for targets inside the selected set.
 - Forms require editable state, validation and submit feedback.
 - Execution actions require confirmation, running and terminal states.

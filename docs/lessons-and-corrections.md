@@ -1,5 +1,19 @@
 # 오류·교정 기록
 
+## Exact source copy를 포함했지만 source 밖 product record도 함께 만들었다
+
+- 관찰: 청년기본소득 정책 목록은 필수 source copy를 모두 포함해 release를 통과했지만, builder가 actor note의 과거 문맥을 이용해 `청소년 교통비 2026년 2분기` 행을 하나 더 만들었다. 선택 화면 source에는 이 record가 없었다.
+- 원인: Verifier는 필수 copy의 존재와 화면 집합만 확인했고, source 밖 product-specific copy의 추가를 검사하지 않았다. “필수값 포함”을 “허용된 값만 사용”과 혼동했다.
+- 교정: Builder 계약에 선택 copy/명시 mock 밖의 product record·기간·부서·금액 발명 금지를 추가했다. Public checker와 independent verifier는 요청/선택 copy에 없는 `20XX년 N분기` record를 fail-closed한다.
+- 재발 방지: Completed run을 사후 수정하지 않고 offboard evidence로 보존한다. 구현 결함은 Spec 변경으로 자동 전환하지 않으며, 새 verifier를 통과하는 artifact revision이나 새 run에서만 승격한다.
+
+## S1 Demo 뒤에 물리 DB/API를 바로 만들려 했다
+
+- 관찰: 새 child Spec은 Demo blocker가 0이지만 권한표, 신청·명부 원천, 데이터 소유권, API 오류·중복 요청과 PII 저장 등 Preview blocker 14건이 남아 있었다.
+- 원인: “DB 관련 구현”을 곧바로 table과 endpoint 생성으로 해석하면 unresolved product decision이 implementation default로 굳어진다.
+- 교정: Logical Data/API contract, blocker routing과 environment port를 먼저 구현했다. PGlite는 production schema가 아니라 version/idempotency/lease 검증 harness로 제한하고 blocked contract provision을 거부한다.
+- 재발 방지: `spec-to-preview` 승격 조건은 S2 blocker 0, contract digest, authority enforcement 계획과 environment evidence다. Demo가 자연스럽게 보이는 것을 backend readiness로 해석하지 않는다.
+
 실패를 숨기지 않고 사용자 영향, 원인, 교정과 재발 방지를 기록한다. 단순 typo나 테스트 중 의도된 failure는 제외한다.
 
 ## Studio가 기능을 많이 노출해 핵심 작업이 보이지 않았다

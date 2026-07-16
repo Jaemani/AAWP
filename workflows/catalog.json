@@ -10,10 +10,10 @@
     },
     {
       "workflowPath": "examples/spec-feedback-to-spec.wir.yaml",
+      "executionManifestPath": "workflows/templates/spec-feedback-to-spec/execution.manifest.json",
       "displayName": "Spec feedback to spec",
-      "description": "기존 spec과 구조화 feedback으로 검토 가능한 새 spec revision을 생성합니다.",
-      "inputKind": "json",
-      "unavailableReason": "WIR과 deterministic revision core는 있으나 model activity, 독립 verifier, 승인 UI를 포함한 실행 bundle은 아직 준비 중입니다."
+      "description": "기준 Spec과 stable-ID 피드백을 고정하고 검토 가능한 immutable child Spec candidate와 성숙도 보고서를 생성합니다.",
+      "inputKind": "spec-feedback-to-spec"
     }
   ]
 }
