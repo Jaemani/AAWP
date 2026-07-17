@@ -110,7 +110,7 @@ export async function reverifySpecToDemoRun({ root, runId }) {
     sourceRunId: runId,
     sourceRunStatus: run.status,
     sourceWorkflowVersion: run.workflowVersion,
-    verifierWorkflowVersion: "0.6.0",
+    verifierWorkflowVersion: "0.7.3",
     inputDigest: run.inputDigest,
     snapshotContentDigest: run.demo?.contentDigest ?? null,
     demoDigest,

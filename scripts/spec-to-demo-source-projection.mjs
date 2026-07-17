@@ -145,8 +145,7 @@ export function compileSpecToDemoSelection(source, requestedScreens, explicitEnt
     : records(record(acceptance).scenarios);
   for (const scenario of acceptanceScenarios) {
     for (const check of records(scenario.evidenceChecks)) {
-      if (typeof check.screenId !== "string" || !deprecatedScreenIds.has(check.screenId))
-        continue;
+      if (typeof check.screenId !== "string" || !deprecatedScreenIds.has(check.screenId)) continue;
       conflicts.push({
         code: "ACTIVE_ACCEPTANCE_USES_DEPRECATED_SCREEN",
         screenId: check.screenId,
@@ -216,15 +215,11 @@ export function compileSpecToDemoSelection(source, requestedScreens, explicitEnt
     )
   ];
   for (const storyboard of activeStoryboards) {
-    if (
-      typeof storyboard.screenId === "string" &&
-      deprecatedScreenIds.has(storyboard.screenId)
-    ) {
+    if (typeof storyboard.screenId === "string" && deprecatedScreenIds.has(storyboard.screenId)) {
       conflicts.push({
         code: "ACTIVE_STORYBOARD_USES_DEPRECATED_SCREEN",
         screenId: storyboard.screenId,
-        journeyId:
-          typeof storyboard.journeyId === "string" ? storyboard.journeyId : undefined,
+        journeyId: typeof storyboard.journeyId === "string" ? storyboard.journeyId : undefined,
         message: `Active Demo storyboard uses a deprecated screen: ${storyboard.screenId}`
       });
     }
@@ -235,10 +230,7 @@ export function compileSpecToDemoSelection(source, requestedScreens, explicitEnt
       journeyIds: activeJourneyIds.sort(),
       message: "Multiple active Demo journeys exist without scope.activeDemoJourneyId."
     });
-  } else if (
-    activeDemoJourneyId !== undefined &&
-    !activeJourneyIds.includes(activeDemoJourneyId)
-  ) {
+  } else if (activeDemoJourneyId !== undefined && !activeJourneyIds.includes(activeDemoJourneyId)) {
     conflicts.push({
       code: "ACTIVE_DEMO_JOURNEY_UNKNOWN",
       journeyId: activeDemoJourneyId,
@@ -282,7 +274,7 @@ export function compileSpecToDemoSelection(source, requestedScreens, explicitEnt
         ? "Every screen required by selected S1 flows and evidence checks is in scope."
         : status === "selection-conflict"
           ? "Canonical scope and the active Demo compatibility projection conflict."
-        : "S1 cannot pass until every flow or evidence screen dependency is explicitly selected."
+          : "S1 cannot pass until every flow or evidence screen dependency is explicitly selected."
   };
   return JSON.parse(JSON.stringify(contract));
 }

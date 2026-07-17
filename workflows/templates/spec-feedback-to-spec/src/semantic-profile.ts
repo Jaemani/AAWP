@@ -752,10 +752,7 @@ function validateDemoProjectionConsistency(
           pointers: [
             `/acceptance/scenarios/${scenarioIndex}/evidenceChecks/${checkIndex}/screenId`
           ],
-          objectIds: [
-            check.screenId,
-            ...(typeof check.id === "string" ? [check.id] : [])
-          ]
+          objectIds: [check.screenId, ...(typeof check.id === "string" ? [check.id] : [])]
         })
       );
     });
@@ -765,10 +762,7 @@ function validateDemoProjectionConsistency(
     (storyboard) => storyboard.status !== "deprecated"
   );
   activeStoryboards.forEach((storyboard, storyboardIndex) => {
-    if (
-      typeof storyboard.screenId !== "string" ||
-      !deprecatedScreenIds.has(storyboard.screenId)
-    ) {
+    if (typeof storyboard.screenId !== "string" || !deprecatedScreenIds.has(storyboard.screenId)) {
       return;
     }
     addFinding(
@@ -806,10 +800,7 @@ function validateDemoProjectionConsistency(
         objectIds: activeJourneyIds
       })
     );
-  } else if (
-    activeDemoJourneyId !== undefined &&
-    !activeJourneyIds.includes(activeDemoJourneyId)
-  ) {
+  } else if (activeDemoJourneyId !== undefined && !activeJourneyIds.includes(activeDemoJourneyId)) {
     addFinding(
       findings,
       baseFinding("DEMO_BLOCKER", {

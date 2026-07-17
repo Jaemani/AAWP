@@ -1,7 +1,7 @@
 # spec-to-demo execution contract
 
 - Status: executable
-- Workflow version: 0.6.0
+- Workflow version: 0.7.3
 - Design contract: repository-root `DESIGN.md` only
 - Run root: repository-root `runs/`
 
@@ -9,7 +9,23 @@ This file is the complete operating instruction for the registered `spec-to-demo
 
 ## 1. Inputs
 
-Read the JSON document at `$AAWP_INPUT_PATH`. Its `brief` object must contain:
+The deterministic `compile-demo-scope` node reads `$AAWP_INPUT_PATH`, verifies the pinned
+source digest and writes these two run artifacts before this builder starts:
+
+```text
+$AAWP_EXECUTION_DIR/artifacts/selection/selection-contract.json
+$AAWP_EXECUTION_DIR/artifacts/selection/demo-execution-contract.json
+```
+
+Read `demo-execution-contract.json` completely. It is the only product input for the builder and
+contains the selected screen, flow, state-machine, API, binding, authority, acceptance, storyboard,
+fixture and unresolved-question closure. It also contains the pinned `sourceSpec` provenance and
+the exact `selectionContract`.
+
+Do not open `sourceSpec.path` from this node. The compiler has already verified and projected the
+heavy source Spec. Re-reading it is both outside this node's authority and a timeout risk.
+
+The original brief contains:
 
 - `sourceSpec.path` and `sourceSpec.byteSha256`
 - `requestedScreens`: the exact screen ID set to build
@@ -18,7 +34,8 @@ Read the JSON document at `$AAWP_INPUT_PATH`. Its `brief` object must contain:
 - `designContract.path`, `designContract.version`, and `designContract.byteSha256`
 - `demoArtifact.relativePath`, relative to `$AAWP_EXECUTION_DIR`
 
-`sourceSpec.path` may point to a deterministic requested-screen projection. When `sourceSpec.projection` is present, that file is the complete source for this run: do not search for or read the heavy original spec. Projection v3 includes the selected screens plus their scope, explicit entry, active journey, filtered flow, authority, state-machine, API, binding, acceptance, assumption, storyboard and mock-data dependency closure. `sourceSpec.originalByteSha256` preserves original provenance while `sourceSpec.byteSha256` pins the executable projection.
+`sourceSpec.path` points to a deterministic requested-screen projection used by the compiler and
+verifier. The builder consumes only the smaller compiled execution contract.
 
 Resolve repository paths from `$PWD`. Resolve the demo output as:
 
@@ -26,11 +43,13 @@ Resolve repository paths from `$PWD`. Resolve the demo output as:
 $AAWP_EXECUTION_DIR/<brief.demoArtifact.relativePath>
 ```
 
-Verify both declared SHA-256 values before implementation. Fail instead of silently accepting changed inputs.
+Digest verification belongs to `compile-demo-scope`. Do not repeat it in the model builder.
 
 ## 2. Allowed knowledge
 
-Use the source spec only for product meaning: actor, authority, route, copy, panels, state, data and interaction. Use `DESIGN.md` only for visual design: tokens, shell, layout, density, responsive behavior, interaction presentation and accessibility.
+Use the compiled Demo execution contract only for product meaning: actor, authority, route, copy,
+panels, state, data and interaction. Use `DESIGN.md` only for visual design: tokens, shell, layout,
+density, responsive behavior, interaction presentation and accessibility.
 
 Do not inspect or use:
 
@@ -38,6 +57,7 @@ Do not inspect or use:
 - `visual-reference-contract.yaml`
 - `design-tokens.css`
 - previous run directories, demos, screenshots, HTML or CSS
+- the pinned `sourceSpec.path` or any uncompiled source Spec
 - design details remembered from chat or another agent
 
 Generic browser behavior and local icon assets created inside this run are allowed. Do not copy assets from an earlier demo.
@@ -76,7 +96,7 @@ All URLs must be relative. `index.html` must run when served at `/runs/<runId>/d
 ```json
 {
   "schemaVersion": "aawp/demo-manifest/v1",
-  "workflow": { "id": "spec-to-demo", "version": "0.6.0" },
+  "workflow": { "id": "spec-to-demo", "version": "0.7.3" },
   "sourceSpec": { "path": "...", "byteSha256": "..." },
   "designContract": {
     "path": "DESIGN.md",
@@ -114,12 +134,15 @@ The manifest must not contain `visualReference`, `presentationContract`, `presen
 
 The registered `verify-release` node owns Playwright and release acceptance outside the builder sandbox. The `build-demo` node must not read, inspect, modify or execute `scripts/verify-spec-to-demo-run.mjs`, `scripts/demo-layout-qa-lib.mjs`, Playwright, localhost servers or previous verifier logs. Do not spend model work reverse-engineering acceptance implementation.
 
+Write the four required files immediately after reading `WORKFLOW.md`, `DESIGN.md` and the compiled
+execution contract. Do not narrate an implementation plan or create another projection first.
+
 Before finishing, the builder must perform these local artifact checks, which require no network or browser:
 
 - `node --check` for `app.js`
 - JSON parse for `manifest.json`
 - confirm the four required files exist in the output directory
-- run `node scripts/check-spec-to-demo-artifact.mjs` with the existing `AAWP_INPUT_PATH` and `AAWP_EXECUTION_DIR`; fix every reported canonical screen-ID/hash route, exact source-copy, visible authoring-label or public static design-contract failure and run it again until it passes
+- run `node scripts/check-spec-to-demo-artifact.mjs` with the existing `AAWP_INPUT_PATH` and `AAWP_EXECUTION_DIR`; fix every reported canonical screen-ID/hash route, stable action instrumentation, exact source-copy, visible authoring-label or public static design-contract failure and run it again until it passes. The checker reports all missing stable actions together so no declared action may be deferred to bounded repair.
 
 Return after writing the artifact. Do not attempt browser repair inside `build-demo`.
 
@@ -128,8 +151,9 @@ Return after writing the artifact. Do not attempt browser repair inside `build-d
 After the builder returns, the runtime owns this fixed sequence:
 
 1. `inspect-release` runs the independent verifier and writes a hidden structured finding report. A product finding is evidence, not a process crash.
-2. `repair-demo` is a no-op when the initial report passed. When blocking findings exist, it may run exactly one model repair round and may write only `app.js`, `index.html` and `styles.css` inside the current candidate.
-3. The repair must preserve `manifest.json`, source copy, screen set, canonical routes and behavior outside named findings. It may not read another run or verifier implementation.
-4. `verify-release` runs the independent verifier again. Any remaining blocking finding fails the run; there is no second repair or full regeneration fallback.
+2. `repair-demo` is a no-op when the initial report passed. When blocking findings exist, it may run one model repair round and may write only `app.js`, `index.html` and `styles.css` inside the current candidate.
+3. `inspect-repair` reruns the complete independent verifier. If the first finding ID repeats or blocking finding count does not decrease, the workflow fails without another model call.
+4. `repair-demo-2` is the optional second and final round. It runs only for a disjoint, smaller finding set exposed after the first repair. It has the same write boundary and must preserve `manifest.json`, source copy, screen set, canonical routes and behavior outside named findings.
+5. `verify-release` runs the independent verifier again. Any remaining blocking finding fails the run; there is no third repair or full regeneration fallback.
 
 All shell commands must follow repository `AGENTS.md`.

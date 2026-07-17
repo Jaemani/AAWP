@@ -59,20 +59,23 @@ export function extractVerifierFailures(stderr) {
 
 export function createFindingReport({ runId, workflowId, exitCode, stdout, stderr }) {
   const failures = exitCode === 0 ? [] : extractVerifierFailures(stderr);
-  const findings = failures.map((message) => ({
-    id: `finding_${createHash("sha256").update(message).digest("hex").slice(0, 16)}`,
-    class: "product_defect",
-    severity: "blocking",
-    reasonCode: "RELEASE_ACCEPTANCE",
-    message,
-    affectedPaths: ["artifacts/demo/app.js", "artifacts/demo/styles.css"],
-    allowedRepairWrites: [
-      "artifacts/demo/app.js",
-      "artifacts/demo/index.html",
-      "artifacts/demo/styles.css"
-    ],
-    status: "open"
-  }));
+  const findings = failures.map((message) => {
+    const layoutOnly = /^(?:desktop|tablet|mobile):/u.test(message);
+    return {
+      id: `finding_${createHash("sha256").update(message).digest("hex").slice(0, 16)}`,
+      class: "product_defect",
+      severity: "blocking",
+      reasonCode: "RELEASE_ACCEPTANCE",
+      message,
+      affectedPaths: layoutOnly
+        ? ["artifacts/demo/styles.css"]
+        : ["artifacts/demo/app.js", "artifacts/demo/styles.css"],
+      allowedRepairWrites: layoutOnly
+        ? ["artifacts/demo/styles.css"]
+        : ["artifacts/demo/app.js", "artifacts/demo/index.html", "artifacts/demo/styles.css"],
+      status: "open"
+    };
+  });
   return {
     schemaVersion: "aawp/spec-to-demo-findings/v1",
     runId,
@@ -85,13 +88,21 @@ export function createFindingReport({ runId, workflowId, exitCode, stdout, stder
   };
 }
 
-export async function inspectSpecToDemoRun({ executionDirectory, runId, workflowId }) {
+export async function inspectSpecToDemoRun({
+  executionDirectory,
+  runId,
+  workflowId,
+  outputFilename = "initial-findings.json"
+}) {
   if (!executionDirectory) throw new Error("AAWP_EXECUTION_DIR is required");
+  if (!/^[a-z0-9][a-z0-9.-]*\.json$/u.test(outputFilename)) {
+    throw new Error(`invalid findings filename: ${outputFilename}`);
+  }
   const result = await runVerifier();
   const report = createFindingReport({ runId, workflowId, ...result });
   const outputDirectory = resolve(executionDirectory, "artifacts", "verification");
   await mkdir(outputDirectory, { recursive: true });
-  const outputPath = resolve(outputDirectory, "initial-findings.json");
+  const outputPath = resolve(outputDirectory, outputFilename);
   await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
   return { report, outputPath };
 }
@@ -100,7 +111,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const { report, outputPath } = await inspectSpecToDemoRun({
     executionDirectory: process.env.AAWP_EXECUTION_DIR,
     runId: process.env.AAWP_RUN_ID,
-    workflowId: process.env.AAWP_WORKFLOW_ID
+    workflowId: process.env.AAWP_WORKFLOW_ID,
+    outputFilename: process.argv[2] ?? "initial-findings.json"
   });
   process.stdout.write(
     `${JSON.stringify({ schemaVersion: report.schemaVersion, status: report.status, findingCount: report.findings.length, outputPath })}\n`

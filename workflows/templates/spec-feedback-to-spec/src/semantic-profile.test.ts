@@ -269,9 +269,7 @@ describe("canonical semantic spec profile", () => {
     document.scope = {
       selectedScreensForS1Evidence: ["admin-work-area-entry", "admin-policy-detail"],
       entryScreenId: "admin-work-area-entry",
-      deprecatedCompatibilityScreens: [
-        { id: "admin-work-area-entry", status: "deprecated" }
-      ]
+      deprecatedCompatibilityScreens: [{ id: "admin-work-area-entry", status: "deprecated" }]
     };
     const screens = document.screens as Array<Record<string, unknown>>;
     screens.push({

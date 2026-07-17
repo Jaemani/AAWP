@@ -17,6 +17,10 @@ export async function locatorByAttribute(page, attribute, value) {
   return undefined;
 }
 
+export async function hasAttributeValue(page, attribute, value) {
+  return (await locatorByAttribute(page, attribute, value)) !== undefined;
+}
+
 export async function stateSnapshot(page, keys) {
   const entries = await page.locator("[data-aawp-state-key]").evaluateAll((items) =>
     items.map((item) => {

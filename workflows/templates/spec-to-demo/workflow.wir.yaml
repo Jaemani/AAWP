@@ -1,6 +1,6 @@
 apiVersion: awf/v1
 id: spec-to-demo
-version: 0.6.0
+version: 0.7.3
 mode: CONTRACT
 artifactSchemas:
   - type: artifact.brief
@@ -21,6 +21,10 @@ artifactSchemas:
     schema:
       type: object
   - type: artifact.selection-contract
+    schemaVersion: 1.0.0
+    schema:
+      type: object
+  - type: artifact.demo-execution-contract
     schemaVersion: 1.0.0
     schema:
       type: object
@@ -49,7 +53,7 @@ verifierDefinitions:
 scopePolicy:
   allowedSecrets: []
   allowedNetworkHosts: []
-  maxWorkflowCostUsd: 15
+  maxWorkflowCostUsd: 20
 nodes:
   - id: compile-demo-scope
     displayName: 데모 범위·의존성 계약 검사
@@ -61,12 +65,18 @@ nodes:
       input: { type: artifact.brief, schemaVersion: 1.0.0, visibility: public }
     outputs:
       selection: { type: artifact.selection-contract, schemaVersion: 1.0.0, visibility: public }
+      execution:
+        { type: artifact.demo-execution-contract, schemaVersion: 1.0.0, visibility: public }
     reads:
       - runs/requests/**
-    writes: [runs/run_*/artifacts/selection/selection-contract.json]
+    writes:
+      - runs/run_*/artifacts/selection/selection-contract.json
+      - runs/run_*/artifacts/selection/demo-execution-contract.json
     capabilities:
       filesystemRead: [runs/requests/**]
-      filesystemWrite: [runs/run_*/artifacts/selection/selection-contract.json]
+      filesystemWrite:
+        - runs/run_*/artifacts/selection/selection-contract.json
+        - runs/run_*/artifacts/selection/demo-execution-contract.json
       network: []
       tools: [node]
       secretRefs: []
@@ -83,18 +93,20 @@ nodes:
     inputs:
       input: { type: artifact.brief, schemaVersion: 1.0.0, visibility: public }
       selection: { type: artifact.selection-contract, schemaVersion: 1.0.0, visibility: public }
+      execution:
+        { type: artifact.demo-execution-contract, schemaVersion: 1.0.0, visibility: public }
     outputs:
       output: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
     reads:
       - DESIGN.md
       - workflows/templates/spec-to-demo/WORKFLOW.md
-      - runs/requests/**
+      - runs/run_*/artifacts/selection/demo-execution-contract.json
     writes: [runs/run_*/artifacts/demo/**]
     capabilities:
       filesystemRead:
         - DESIGN.md
         - workflows/templates/spec-to-demo/WORKFLOW.md
-        - runs/requests/**
+        - runs/run_*/artifacts/selection/demo-execution-contract.json
       filesystemWrite: [runs/run_*/artifacts/demo/**]
       network: []
       tools: [codex]
@@ -168,6 +180,73 @@ nodes:
     cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
     verifiers: []
     retryPolicy: { retryableClasses: [capacity], backoff: fixed }
+  - id: inspect-repair
+    displayName: 수정 결과 재검사
+    description: 첫 수정 뒤 남은 finding을 전체 acceptance로 다시 수집하고 단조 개선 여부를 판정
+    kind: judge
+    version: 1.0.0
+    owner: { id: verifier-team, role: verifier }
+    inputs:
+      input: { type: artifact.demo, schemaVersion: 1.0.0, visibility: hidden }
+    outputs:
+      output: { type: artifact.findings, schemaVersion: 1.0.0, visibility: hidden }
+    reads:
+      - DESIGN.md
+      - runs/requests/**
+      - runs/run_*/artifacts/demo/**
+    writes: [runs/run_*/artifacts/verification/post-repair-findings.json]
+    capabilities:
+      filesystemRead:
+        - DESIGN.md
+        - runs/requests/**
+        - runs/run_*/artifacts/demo/**
+      filesystemWrite: [runs/run_*/artifacts/verification/post-repair-findings.json]
+      network: []
+      tools: [node]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 120, maxCostUsd: 0 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers: []
+    retryPolicy: { retryableClasses: [], backoff: fixed }
+  - id: repair-demo-2
+    displayName: 단조 개선 제한 수정
+    description: 첫 finding이 반복되지 않고 blocking finding 수가 감소한 경우에만 두 번째이자 마지막 수정 수행
+    kind: tool
+    version: 1.0.0
+    owner: { id: repair-team, role: operator }
+    inputs:
+      candidate: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
+      findings: { type: artifact.findings, schemaVersion: 1.0.0, visibility: hidden }
+    outputs:
+      output: { type: artifact.demo, schemaVersion: 1.0.0, visibility: public }
+    reads:
+      - DESIGN.md
+      - runs/requests/**
+      - runs/run_*/artifacts/demo/**
+      - runs/run_*/artifacts/verification/initial-findings.json
+      - runs/run_*/artifacts/verification/post-repair-findings.json
+    writes:
+      - runs/run_*/artifacts/demo/app.js
+      - runs/run_*/artifacts/demo/index.html
+      - runs/run_*/artifacts/demo/styles.css
+    capabilities:
+      filesystemRead:
+        - DESIGN.md
+        - runs/requests/**
+        - runs/run_*/artifacts/demo/**
+        - runs/run_*/artifacts/verification/initial-findings.json
+        - runs/run_*/artifacts/verification/post-repair-findings.json
+      filesystemWrite:
+        - runs/run_*/artifacts/demo/app.js
+        - runs/run_*/artifacts/demo/index.html
+        - runs/run_*/artifacts/demo/styles.css
+      network: []
+      tools: [codex, node]
+      secretRefs: []
+    budget: { maxAttempts: 1, timeoutSec: 900, maxCostUsd: 4.5 }
+    cache: { mode: disabled, includeModelRevision: true, includeEnvironmentDigest: true }
+    verifiers: []
+    retryPolicy: { retryableClasses: [capacity], backoff: fixed }
   - id: verify-release
     displayName: 최종 릴리스 검증
     description: 수정 candidate를 동일 acceptance로 재검증
@@ -206,6 +285,8 @@ edges:
     target: { kind: nodeInput, nodeId: build-demo, port: input }
   - source: { kind: nodeOutput, nodeId: compile-demo-scope, port: selection }
     target: { kind: nodeInput, nodeId: build-demo, port: selection }
+  - source: { kind: nodeOutput, nodeId: compile-demo-scope, port: execution }
+    target: { kind: nodeInput, nodeId: build-demo, port: execution }
   - source: { kind: nodeOutput, nodeId: build-demo, port: output }
     target: { kind: nodeInput, nodeId: inspect-release, port: input }
   - source: { kind: nodeOutput, nodeId: inspect-release, port: output }
@@ -213,6 +294,12 @@ edges:
   - source: { kind: nodeOutput, nodeId: build-demo, port: output }
     target: { kind: nodeInput, nodeId: repair-demo, port: candidate }
   - source: { kind: nodeOutput, nodeId: repair-demo, port: output }
+    target: { kind: nodeInput, nodeId: inspect-repair, port: input }
+  - source: { kind: nodeOutput, nodeId: inspect-repair, port: output }
+    target: { kind: nodeInput, nodeId: repair-demo-2, port: findings }
+  - source: { kind: nodeOutput, nodeId: repair-demo, port: output }
+    target: { kind: nodeInput, nodeId: repair-demo-2, port: candidate }
+  - source: { kind: nodeOutput, nodeId: repair-demo-2, port: output }
     target: { kind: nodeInput, nodeId: verify-release, port: input }
   - source: { kind: nodeOutput, nodeId: verify-release, port: output }
     target: { kind: workflowOutput, port: demo }

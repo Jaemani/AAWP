@@ -15,7 +15,7 @@ This workflow creates an immutable child Spec candidate from exactly two pinned 
 
 1. Read `AAWP_INPUT_PATH`.
 2. Read `artifacts/spec-revision/contract.json` and `feedback.normalized.json` from `AAWP_EXECUTION_DIR`.
-3. Read `source.affected-projection.json`. It contains the exact original array indexes and values needed for affected screen, actor, interaction, acceptance and storyboard patches, plus the current scope.
+3. Read `source.affected-projection.json`. It contains the exact original array indexes and values needed for affected screen, actor, interaction, acceptance and storyboard patches, plus the current scope. Current S1 acceptance and the active journey are included even when new feedback names only the screens being added.
 4. If `contract.feedback.repairBase` exists, read its pinned proposal and gap report first. Preserve correct operations and repair only reported gaps. Do not re-derive the whole proposal.
 5. Read the pinned baseline only when a required value is absent from the affected projection. Do not repeatedly scan or print the 1.4MB baseline.
 6. Read the pinned feedback path when normalized feedback does not contain enough context.

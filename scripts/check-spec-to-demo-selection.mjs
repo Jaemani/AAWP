@@ -9,6 +9,162 @@ function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
 }
 
+function record(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+}
+
+function records(value) {
+  return Array.isArray(value) ? value.filter((item) => Object.keys(record(item)).length > 0) : [];
+}
+
+function strings(value) {
+  return Array.isArray(value)
+    ? value.filter((item) => typeof item === "string" && item.length > 0)
+    : [];
+}
+
+function pick(source, keys) {
+  const result = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) result[key] = source[key];
+  }
+  return result;
+}
+
+function stripFeedbackIds(value) {
+  if (Array.isArray(value)) return value.map(stripFeedbackIds);
+  if (typeof value !== "object" || value === null) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => key !== "feedbackIds")
+      .map(([key, item]) => [key, stripFeedbackIds(item)])
+  );
+}
+
+export function compileDemoExecutionContract({ source, selectionContract, sourceSpec, runId }) {
+  const requestedSet = new Set(selectionContract.requestedScreens);
+  const screens = records(source.screens)
+    .filter((screen) => requestedSet.has(screen.id))
+    .map((screen) =>
+      stripFeedbackIds(
+        pick(screen, [
+          "id",
+          "title",
+          "route",
+          "surface",
+          "layout",
+          "components",
+          "copy",
+          "actors",
+          "sharedActors",
+          "rolePresentation",
+          "actions",
+          "dataNeeds",
+          "resourceType",
+          "policyInstanceBoundary",
+          "evidenceCorrection",
+          "fileImportPocStages",
+          "tableContract",
+          "contextContract"
+        ])
+      )
+    );
+  const actorIds = new Set(
+    screens.flatMap((screen) => [...strings(screen.actors), ...strings(screen.sharedActors)])
+  );
+  const componentNames = new Set(screens.flatMap((screen) => strings(screen.components)));
+  const flowIds = new Set(selectionContract.flowIds);
+  const scope = record(source.scope);
+  const meta = record(source.meta);
+  const authority = record(source.authority);
+  const apiContracts = record(source.apiContracts);
+  const sourceAcceptance = source.acceptance;
+  const acceptanceScenarios = Array.isArray(sourceAcceptance)
+    ? records(sourceAcceptance)
+    : records(record(sourceAcceptance).scenarios);
+  const evidenceCheckIds = new Set(selectionContract.evidenceCheckIds);
+  const selectedAcceptance = acceptanceScenarios
+    .map((scenario) => ({
+      ...scenario,
+      evidenceChecks: records(scenario.evidenceChecks).filter((check) =>
+        evidenceCheckIds.has(check.id)
+      )
+    }))
+    .filter((scenario) => scenario.evidenceChecks.length > 0);
+
+  return stripFeedbackIds({
+    schemaVersion: "aawp/demo-execution-contract/v1",
+    runId,
+    sourceSpec,
+    selectionContract,
+    productContext: {
+      ...pick(meta, ["scenario", "chosenDirection", "revision"]),
+      ...pick(scope, [
+        "activeDemoJourneyId",
+        "entryScreenId",
+        "productSurface",
+        "navigationPrinciples"
+      ])
+    },
+    actors: records(source.actors)
+      .filter((actor) => actorIds.has(actor.id))
+      .map((actor) => ({
+        ...pick(actor, [
+          "id",
+          "role",
+          "jurisdiction",
+          "surface",
+          "authorityScope",
+          "separationFrom"
+        ]),
+        canOperate: strings(actor.canOperate).filter((screenId) => requestedSet.has(screenId))
+      })),
+    components: records(source.components)
+      .filter((component) => componentNames.has(component.name))
+      .map((component) => pick(component, ["name", "purpose", "props", "states", "variants"])),
+    screens,
+    flows: records(source.flows).filter((flow) => flowIds.has(flow.id ?? flow.flowId)),
+    stateMachines: records(source.stateMachines),
+    apiContracts: pick(apiContracts, [
+      "status",
+      "blocks",
+      "queryContracts",
+      "queries",
+      "commandContracts",
+      "commands",
+      "unresolvedContracts"
+    ]),
+    dataBindings: records(source.dataBindings).filter((binding) =>
+      requestedSet.has(binding.screenId)
+    ),
+    authority: pick(authority, [
+      "status",
+      "model",
+      "serverEnforcement",
+      "capabilities",
+      "actorCapabilityFixture"
+    ]),
+    acceptance: Array.isArray(sourceAcceptance)
+      ? selectedAcceptance
+      : {
+          ...pick(record(sourceAcceptance), ["status", "maturityTarget", "note"]),
+          scenarios: selectedAcceptance
+        },
+    demoStoryboard: records(source.demoStoryboard).filter(
+      (item) =>
+        requestedSet.has(item.screenId) &&
+        item.status !== "deprecated" &&
+        (selectionContract.activeDemoJourneyId === undefined ||
+          item.journeyId === selectionContract.activeDemoJourneyId)
+    ),
+    mockData: records(source.mockData),
+    unresolved: {
+      assumptions: records(source.assumptions),
+      openQuestions: records(source.openQuestions)
+    }
+  });
+}
+
 export function validateDemoSelectionContract(contract, requestedScreens) {
   assert.equal(contract?.schemaVersion, "aawp/demo-selection-contract/v2");
   assert.ok(
@@ -44,8 +200,7 @@ export function validateDemoSelectionContract(contract, requestedScreens) {
   const expectedStatus =
     contract.conflicts.length > 0
       ? "selection-conflict"
-      : contract.missingRequiredScreens.length === 0 &&
-          contract.unknownScreenTargets.length === 0
+      : contract.missingRequiredScreens.length === 0 && contract.unknownScreenTargets.length === 0
         ? "ready"
         : "scope-expansion-required";
   assert.equal(contract.status, expectedStatus, "selection contract status is inconsistent");
@@ -96,17 +251,34 @@ export async function checkSpecToDemoSelection({ inputPath, executionDirectory, 
   await mkdir(outputDirectory, { recursive: true });
   const outputPath = resolve(outputDirectory, "selection-contract.json");
   await writeFile(outputPath, `${JSON.stringify(artifact, null, 2)}\n`, { mode: 0o600 });
+  const executionContract = compileDemoExecutionContract({
+    source,
+    selectionContract: contract,
+    sourceSpec: artifact.sourceSpec,
+    runId
+  });
+  const executionContractPath = resolve(outputDirectory, "demo-execution-contract.json");
+  // This artifact is model-facing and may contain dozens of screens. Keep it canonical and compact;
+  // the heavy source Spec remains the human-readable provenance artifact.
+  await writeFile(executionContractPath, `${JSON.stringify(executionContract)}\n`, {
+    mode: 0o600
+  });
   if (contract.status !== "ready") throw new Error(selectionFailureMessage(contract));
-  return { artifact, outputPath };
+  return { artifact, executionContract, executionContractPath, outputPath };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const { artifact, outputPath } = await checkSpecToDemoSelection({
+  const { artifact, executionContractPath, outputPath } = await checkSpecToDemoSelection({
     inputPath: process.env.AAWP_INPUT_PATH,
     executionDirectory: process.env.AAWP_EXECUTION_DIR,
     runId: process.env.AAWP_RUN_ID
   });
   process.stdout.write(
-    `${JSON.stringify({ schemaVersion: artifact.schemaVersion, status: artifact.status, outputPath })}\n`
+    `${JSON.stringify({
+      schemaVersion: artifact.schemaVersion,
+      status: artifact.status,
+      outputPath,
+      executionContractPath
+    })}\n`
   );
 }

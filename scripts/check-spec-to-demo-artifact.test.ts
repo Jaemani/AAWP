@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import {
   findMissingCanonicalHashRoutes,
   findMissingSourceCopy,
+  findMissingStableActions,
   findForbiddenVisibleAuthoringLabels,
   findUnbackedPeriodCopy,
   findUnregisteredScreens,
@@ -13,6 +14,7 @@ const source = {
   screens: [
     {
       id: "policy",
+      actions: [{ id: "save-policy" }, { id: "submit-policy" }],
       copy: [
         { key: "title", text: "정책 작성" },
         { key: "officialTarget", text: "공식 대상: 경기도 거주 6~18세" }
@@ -68,6 +70,30 @@ it("requires a direct canonical hash route for every requested screen", () => {
       requestedScreens: ["admin-policy", "admin-payout-execution"]
     })
   ).toEqual(["admin-payout-execution"]);
+});
+
+it("reports every missing stable action in one scan", () => {
+  expect(
+    findMissingStableActions({
+      source,
+      requestedScreens: ["policy"],
+      artifactText: 'const actionAttribute = "data-aawp-action-id"; const save = "save-policy";'
+    })
+  ).toEqual([{ screenId: "policy", actionId: "submit-policy" }]);
+
+  expect(
+    findMissingStableActions({
+      source: {
+        screens: [...source.screens, { id: "roster", actions: [{ id: "approve-roster" }] }]
+      },
+      requestedScreens: ["policy", "roster"],
+      artifactText: "const noInstrumentation = true;"
+    })
+  ).toEqual([
+    { screenId: "policy", actionId: "save-policy" },
+    { screenId: "policy", actionId: "submit-policy" },
+    { screenId: "roster", actionId: "approve-roster" }
+  ]);
 });
 
 it("rejects structural authoring labels only when rendered as visible text", () => {

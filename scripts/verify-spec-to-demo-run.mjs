@@ -3,13 +3,18 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { chromium } from "playwright";
-import { findUnbackedPeriodCopy } from "./check-spec-to-demo-artifact.mjs";
+import {
+  findMissingStableActions,
+  findUnbackedPeriodCopy
+} from "./check-spec-to-demo-artifact.mjs";
 import { parseDesignContractVersion } from "./design-contract-lib.mjs";
 import { runDemoLayoutQa, startStaticDemoServer } from "./demo-layout-qa-lib.mjs";
+import { activateActor } from "./spec-to-demo-actor-control.mjs";
 import {
   actionSurface,
   executeAction,
   fillSurface,
+  hasAttributeValue,
   locatorByAttribute,
   requiresActionSurface,
   stateSnapshot,
@@ -18,6 +23,12 @@ import {
 
 function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
+}
+
+function traceVerifierPhase(phase) {
+  if (process.env.AAWP_VERIFIER_TRACE === "1") {
+    process.stderr.write(`AAWP_VERIFIER_PHASE ${phase}\n`);
+  }
 }
 
 function within(root, relativePath) {
@@ -91,31 +102,6 @@ async function actionLocator(page, actionId, actorId) {
   return best;
 }
 
-async function activateActor(page, actorId) {
-  const candidates = page.locator("[data-aawp-actor-id]");
-  for (let index = 0; index < (await candidates.count()); index += 1) {
-    const candidate = candidates.nth(index);
-    const tag = await candidate.evaluate((element) => element.tagName.toLowerCase());
-    if (tag === "select") {
-      const hasOption = await candidate
-        .locator("option")
-        .evaluateAll(
-          (options, expected) => options.some((option) => option.value === expected),
-          actorId
-        );
-      if (hasOption) {
-        await candidate.selectOption(actorId);
-        return;
-      }
-    }
-    if ((await candidate.getAttribute("data-aawp-actor-id")) === actorId) {
-      await candidate.click();
-      return;
-    }
-  }
-  assert.fail(`actor control is missing: ${actorId}`);
-}
-
 async function waitForStateChange(page, keys, before) {
   const deadline = Date.now() + 3_000;
   while (Date.now() < deadline) {
@@ -139,26 +125,29 @@ async function verifyExecutableAcceptance(url, source, requestedScreens) {
     `acceptance needs screens outside selection: ${[...new Set(outOfScope)].join(", ")}`
   );
 
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
-    page.setDefaultTimeout(5_000);
-    const failures = [];
-    for (const check of checks) {
+  const failures = [];
+  for (const check of checks) {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
+      const page = await context.newPage();
+      page.setDefaultTimeout(5_000);
+      traceVerifierPhase(`acceptance:check:start:${String(check.id ?? "unknown-check")}`);
       try {
         assert.equal(check.kind, "browser", `${String(check.id)} is not a browser check`);
         assert.equal(typeof check.screenId, "string", `${String(check.id)} has no screenId`);
         assert.ok(Array.isArray(check.assertions), `${String(check.id)} has no assertions`);
-        await page.goto(url, { waitUntil: "networkidle" });
-        await page.evaluate(() => localStorage.clear());
-        await page.reload({ waitUntil: "networkidle" });
+        // A fresh browser context gives every evidence check an isolated storage and session state.
+        // One direct canonical navigation is sufficient and avoids accumulating reload resources.
         await page.goto(new URL(`#${check.screenId}`, url).href, { waitUntil: "networkidle" });
         if (typeof check.actorId === "string") await activateActor(page, check.actorId);
+        traceVerifierPhase(`acceptance:check:actor:${String(check.id ?? "unknown-check")}`);
 
         if (check.assertions.includes("control-height-consistent")) continue;
         if (check.assertions.includes("table-no-overflow")) continue;
         assert.equal(typeof check.actionId, "string", `${String(check.id)} has no actionId`);
         const action = await actionLocator(page, check.actionId, check.actorId);
+        traceVerifierPhase(`acceptance:check:action:${String(check.id ?? "unknown-check")}`);
         const isVisible = action !== undefined && (await action.isVisible());
         if (check.assertions.includes("hidden")) {
           assert.equal(isVisible, false, `${check.actionId} must be hidden for ${check.actorId}`);
@@ -170,6 +159,7 @@ async function verifyExecutableAcceptance(url, source, requestedScreens) {
 
         const stateKeys = Array.isArray(check.stateKeys) ? check.stateKeys : [];
         const before = stateKeys.length > 0 ? await stateSnapshot(page, stateKeys) : {};
+        traceVerifierPhase(`acceptance:check:state-before:${String(check.id ?? "unknown-check")}`);
         if (check.assertions.includes("navigates")) {
           await action.click();
           const sourceScreen = records(source.screens).find(
@@ -199,6 +189,7 @@ async function verifyExecutableAcceptance(url, source, requestedScreens) {
             surface = await actionSurface(page, action, check.actionId);
           }
         }
+        traceVerifierPhase(`acceptance:check:surface:${String(check.id ?? "unknown-check")}`);
         if (check.assertions.includes("action-specific-surface")) {
           assert.ok(surface, `${check.actionId} has no action-specific surface`);
           assert.equal(await surface.isVisible(), true, `${check.actionId} surface is not visible`);
@@ -239,17 +230,30 @@ async function verifyExecutableAcceptance(url, source, requestedScreens) {
         if (stateAssertions.length === 0) continue;
         assert.ok(stateKeys.length > 0, `${check.actionId} state assertion has no stateKeys`);
         if (check.assertions.includes("no-duplicate")) {
+          traceVerifierPhase(
+            `acceptance:check:duplicate-before:${String(check.id ?? "unknown-check")}`
+          );
+          const preexistingDuplicate = await hasAttributeValue(
+            page,
+            "data-aawp-duplicate-blocked",
+            check.actionId
+          );
           assert.equal(
-            await locatorByAttribute(page, "data-aawp-duplicate-blocked", check.actionId),
-            undefined,
+            preexistingDuplicate,
+            false,
             `${check.actionId} exposes duplicate rejection evidence before a duplicate attempt`
           );
         }
+        traceVerifierPhase(`acceptance:check:execute:${String(check.id ?? "unknown-check")}`);
         await executeAction(action, check.actionId, surface);
+        traceVerifierPhase(`acceptance:check:executed:${String(check.id ?? "unknown-check")}`);
         const after = await waitForStateChange(page, stateKeys, before);
         if (check.assertions.includes("work-item-created")) {
-          const key = stateKeys.find((candidate) => /workitemcount/iu.test(candidate));
-          assert.ok(key, `${check.actionId} work-item check has no workItemCount state key`);
+          const key = stateKeys.find((candidate) => /(?:workitem|handoff)count/iu.test(candidate));
+          assert.ok(
+            key,
+            `${check.actionId} creation check has no workItemCount or handoffCount state key`
+          );
           assert.ok(
             Number(after[key]) > Number(before[key]),
             `${check.actionId} created no work item`
@@ -291,15 +295,18 @@ async function verifyExecutableAcceptance(url, source, requestedScreens) {
           checkId: String(check.id ?? "unknown-check"),
           message: error instanceof Error ? error.message : String(error)
         });
+      } finally {
+        await context.close();
+        traceVerifierPhase(`acceptance:check:complete:${String(check.id ?? "unknown-check")}`);
       }
+    } finally {
+      await browser.close();
     }
-    if (failures.length > 0) {
-      const error = new Error(`AAWP_BROWSER_FINDINGS ${JSON.stringify(failures)}`);
-      error.name = "BrowserEvidenceError";
-      throw error;
-    }
-  } finally {
-    await browser.close();
+  }
+  if (failures.length > 0) {
+    const error = new Error(`AAWP_BROWSER_FINDINGS ${JSON.stringify(failures)}`);
+    error.name = "BrowserEvidenceError";
+    throw error;
   }
 }
 
@@ -418,7 +425,7 @@ assert.match(html, /styles\.css/);
 assert.match(html, /app\.js/);
 assert.equal(manifest.schemaVersion, "aawp/demo-manifest/v1");
 const expectedArtifactWorkflowVersion =
-  process.env.AAWP_REVERIFY_SOURCE_WORKFLOW_VERSION ?? "0.6.0";
+  process.env.AAWP_REVERIFY_SOURCE_WORKFLOW_VERSION ?? "0.7.3";
 assert.deepEqual(manifest.workflow, {
   id: "spec-to-demo",
   version: expectedArtifactWorkflowVersion
@@ -457,13 +464,19 @@ for (const screenId of expectedScreenIds) {
   for (const copy of Array.isArray(screen.copy) ? screen.copy : []) {
     assert.ok(app.includes(copy.text), `${screenId} is missing source copy: ${copy.key}`);
   }
-  for (const action of records(screen.actions)) {
-    assert.ok(
-      combined.includes(`data-aawp-action-id`) && combined.includes(String(action.id)),
-      `${screenId} does not instrument stable action: ${String(action.id)}`
-    );
-  }
 }
+const missingStableActions = findMissingStableActions({
+  source,
+  requestedScreens: expectedScreenIds,
+  artifactText: combined
+});
+assert.deepEqual(
+  missingStableActions,
+  [],
+  `demo does not instrument stable actions: ${missingStableActions
+    .map(({ screenId, actionId }) => `${screenId}.${actionId}`)
+    .join(", ")}`
+);
 const unbackedPeriodCopy = findUnbackedPeriodCopy({
   source,
   requestedScreens: expectedScreenIds,
@@ -506,6 +519,7 @@ const isDetailPilot = expectedScreenIds.every((screenId) =>
 const staticDemo = await startStaticDemoServer(demoDirectory);
 let layoutQa;
 try {
+  traceVerifierPhase("layout:start");
   layoutQa = await runDemoLayoutQa({
     url: staticDemo.url,
     screens: expectedScreenIds,
@@ -533,9 +547,14 @@ try {
         }
       : {})
   });
+  traceVerifierPhase("layout:complete");
   if (isDetailPilot) await verifyDetailPilotInteractions(staticDemo.url);
+  traceVerifierPhase("entry:start");
   await verifyDefaultEntryScreen(staticDemo.url, brief.selectionContract.entryScreenId);
+  traceVerifierPhase("entry:complete");
+  traceVerifierPhase("acceptance:start");
   await verifyExecutableAcceptance(staticDemo.url, source, expectedScreenIds);
+  traceVerifierPhase("acceptance:complete");
 } finally {
   await staticDemo.close();
 }
@@ -548,7 +567,7 @@ const verdict = {
   workflowId: process.env.AAWP_WORKFLOW_ID,
   verifierNodeId: process.env.AAWP_NODE_ID,
   artifactWorkflow: manifest.workflow,
-  verifierWorkflowVersion: "0.6.0",
+  verifierWorkflowVersion: "0.7.3",
   demoDirectory,
   designContract: brief.designContract,
   designInputs: ["DESIGN.md"],

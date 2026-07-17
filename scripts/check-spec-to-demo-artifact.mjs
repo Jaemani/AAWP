@@ -56,6 +56,29 @@ export function findMissingCanonicalHashRoutes({ app, requestedScreens }) {
   return requestedScreens.filter((screenId) => !app.includes(`#${screenId}`));
 }
 
+export function findMissingStableActions({ source, requestedScreens, artifactText }) {
+  assert.ok(Array.isArray(source?.screens), "source spec must contain screens[]");
+  assert.ok(Array.isArray(requestedScreens) && requestedScreens.length > 0);
+  assert.equal(typeof artifactText, "string");
+
+  const sourceScreens = new Map(source.screens.map((screen) => [screen?.id, screen]));
+  const hasActionInstrumentation = artifactText.includes("data-aawp-action-id");
+  const missing = [];
+
+  for (const screenId of requestedScreens) {
+    const screen = sourceScreens.get(screenId);
+    assert.ok(screen, `source screen is missing: ${screenId}`);
+    for (const action of Array.isArray(screen.actions) ? screen.actions : []) {
+      const actionId = String(action?.id ?? "");
+      if (!hasActionInstrumentation || actionId.length === 0 || !artifactText.includes(actionId)) {
+        missing.push({ screenId, actionId });
+      }
+    }
+  }
+
+  return missing;
+}
+
 export function findForbiddenVisibleAuthoringLabels(app) {
   assert.equal(typeof app, "string");
   const forbidden = [
@@ -178,6 +201,11 @@ export async function checkSpecToDemoArtifact({ inputPath, executionDirectory })
     app,
     requestedScreens: brief.requestedScreens
   });
+  const missingStableActions = findMissingStableActions({
+    source,
+    requestedScreens: brief.requestedScreens,
+    artifactText: `${html}\n${app}\n${styles}\n${JSON.stringify(manifest)}`
+  });
   const forbiddenVisibleLabels = findForbiddenVisibleAuthoringLabels(app);
   const unbackedPeriodCopy = findUnbackedPeriodCopy({
     source,
@@ -195,6 +223,13 @@ export async function checkSpecToDemoArtifact({ inputPath, executionDirectory })
     missingHashRoutes.length,
     0,
     `app does not expose canonical hash routes: ${missingHashRoutes.join(", ")}`
+  );
+  assert.equal(
+    missingStableActions.length,
+    0,
+    `demo does not instrument stable actions: ${missingStableActions
+      .map(({ screenId, actionId }) => `${screenId}.${actionId}`)
+      .join(", ")}`
   );
   assert.equal(
     forbiddenVisibleLabels.length,

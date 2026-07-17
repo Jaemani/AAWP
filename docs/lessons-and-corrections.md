@@ -1,5 +1,33 @@
 # 오류·교정 기록
 
+## Heavy Spec을 builder가 직접 탐색해 시간과 token을 소모했다
+
+- 관찰: `spec-to-demo` 0.7.0은 약 1.45MB Spec을 모델이 반복 탐색하다 30분 timeout으로 Demo를 만들지 못했다. 0.7.1도 생성에는 성공했지만 3.27M tokens를 사용했다.
+- 원인: Scope 선택과 semantic dependency closure를 deterministic compiler가 책임지지 않고 builder prompt에 원본 Spec 탐색 책임까지 넘겼다.
+- 교정: `compile-demo-scope`가 screen, flow, command, authority, state, binding과 acceptance만 담은 `demo-execution-contract.json`을 만든다. Builder는 이 계약만 제품 입력으로 읽고 원본 Spec 경로를 열 수 없다.
+- 재발 방지: Execution contract에 source/design digest와 selection conflict를 고정한다. Builder 비용은 2.68M tokens까지 줄었지만 여전히 크므로 deterministic shell/runtime과 model-generated view data/action definition 분리를 다음 단계로 둔다.
+
+## Browser verifier 결함이 제품 finding과 process failure를 만들었다
+
+- 관찰: `run_8e5225b6-b3cc-4a5e-b12c-725d6281de9a`은 actor `<select>`의 option을 직접 클릭해 19개 동일 timeout을 만들었고, Playwright Locator 객체를 assertion message로 직렬화하면서 signal 9로 종료됐다. Check마다 페이지를 반복 reset/navigation해 검사도 120초 가까이 걸렸다.
+- 원인: Browser control의 실제 HTML semantics와 assertion payload의 serialization cost를 verifier가 지키지 않았다. Check isolation과 navigation isolation도 같은 것으로 취급했다.
+- 교정: `<select>`는 stable actor value로 `selectOption`하고, assertion message에는 serializable observed value만 남긴다. Evidence check별 독립 Chromium으로 state를 격리하되 check 내부 navigation은 한 번만 수행한다.
+- 재발 방지: Verifier failure는 product finding과 구분해 보존하고, selector·serialization·timeout 회귀 테스트를 실행한다. 현재 19개 check 전체 수집은 약 27초다.
+
+## 한 번의 repair로 모든 유형의 결함을 닫으려 했다
+
+- 관찰: `run_0fe057dd-99a9-4387-9b5e-e36fe5c2c189`에서 첫 repair는 blocking finding을 3건에서 1건으로 줄였지만, 두 번째 수정이 source copy를 줄여 public contract를 위반했고 candidate가 손상될 수 있었다.
+- 원인: Repair 횟수, 개선 기준, write authority와 실패 rollback이 하나의 정책으로 묶여 있지 않았다.
+- 교정: 최대 2회 bounded repair를 허용하되 두 번째는 이전 finding ID가 반복되지 않고 blocking finding 수가 감소한 경우에만 실행한다. Layout finding은 `styles.css`만 수정할 수 있고, 모든 repair 직전 Demo snapshot을 저장한다.
+- 재발 방지: 모델 실패, write-set 이탈 또는 public contract 실패 시 snapshot을 복원한다. 세 번째 repair와 자동 전체 재생성은 금지하며 미수렴 run은 실패 evidence로 남긴다.
+
+## Spec revision의 S1 pending과 Demo release의 S1 pass를 혼동할 수 있다
+
+- 관찰: `run_6e28c7e1-7855-4de9-8354-6c677ca62fed`의 immutable child Spec은 실제 browser evidence 전이므로 S1 blocked이고, 후속 Demo run은 19개 evidence를 통과해 S1 passed다.
+- 원인: Spec artifact의 시점별 maturity와 후속 workflow의 release verdict를 같은 값을 덮어쓰는 상태로 보면 과거 evidence가 변조된다.
+- 교정: Child Spec의 `maturity-verdict.json`은 그대로 보존하고 Demo release verdict가 `DEMO_EVIDENCE_PENDING`을 닫았다는 별도 evidence를 기록한다.
+- 재발 방지: S1 pass는 S2를 자동 승격하지 않는다. 권한표, 데이터 소유권, PII 저장, 실제 명부 원천과 API 오류/idempotency 계약은 gap report에서 Preview blocker로 유지한다.
+
 ## 화면 projection과 문자열 검사가 S1을 잘못 통과시켰다
 
 - 관찰: `run_1a398be8-57e6-453f-af5f-b293ca5fb9f3`은 화면 외형 일부가 맞았지만 정책·명부 결재 종단 흐름과 action별 업무 form이 닫히지 않았는데도 S1 passed였다.

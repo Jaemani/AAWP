@@ -53,3 +53,19 @@ it("records a passing inspection without repair findings", () => {
     })
   ).toMatchObject({ status: "passed", findings: [] });
 });
+
+it("grants layout-only findings authority over styles.css only", () => {
+  const report = createFindingReport({
+    runId: "run-a",
+    workflowId: "spec-to-demo",
+    exitCode: 1,
+    stdout: "",
+    stderr:
+      "AssertionError [ERR_ASSERTION]: mobile:admin-roster-builder wrapped financial metrics\n\nfalse !== true"
+  });
+
+  expect(report.findings[0]).toMatchObject({
+    affectedPaths: ["artifacts/demo/styles.css"],
+    allowedRepairWrites: ["artifacts/demo/styles.css"]
+  });
+});

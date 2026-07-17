@@ -148,6 +148,18 @@ const affectedInteractions = sourceInteractions.flatMap((interaction, index) =>
 const sourceAcceptance = isRecord(sourceDocument.acceptance)
   ? sourceDocument.acceptance
   : undefined;
+const sourceScope = isRecord(sourceDocument.scope) ? sourceDocument.scope : undefined;
+const selectedDemoScreenIds = new Set(
+  Array.isArray(sourceScope?.selectedScreensForS1Evidence)
+    ? sourceScope.selectedScreensForS1Evidence.filter(
+        (value): value is string => typeof value === "string"
+      )
+    : []
+);
+const activeDemoJourneyId =
+  typeof sourceScope?.activeDemoJourneyId === "string"
+    ? sourceScope.activeDemoJourneyId
+    : undefined;
 const sourceAcceptanceScenarios = Array.isArray(sourceDocument.acceptance)
   ? sourceDocument.acceptance
   : Array.isArray(sourceAcceptance?.scenarios)
@@ -163,7 +175,8 @@ const affectedAcceptanceScenarios = sourceAcceptanceScenarios.flatMap((scenario,
     const screenId = typeof item.screenId === "string" ? item.screenId : undefined;
     return (
       (itemId !== undefined && feedbackText.includes(itemId)) ||
-      (screenId !== undefined && affectedScreenIds.includes(screenId))
+      (screenId !== undefined &&
+        (affectedScreenIds.includes(screenId) || selectedDemoScreenIds.has(screenId)))
     );
   });
   return mentioned ? [{ index, scenario }] : [];
@@ -176,6 +189,7 @@ const affectedStoryboards = sourceStoryboards.flatMap((storyboard, index) => {
   const screenId = typeof storyboard.screenId === "string" ? storyboard.screenId : undefined;
   const journeyId = typeof storyboard.journeyId === "string" ? storyboard.journeyId : undefined;
   return (screenId !== undefined && affectedScreenIds.includes(screenId)) ||
+    (journeyId !== undefined && journeyId === activeDemoJourneyId) ||
     (journeyId !== undefined && feedbackText.includes(journeyId))
     ? [{ index, storyboard }]
     : [];
@@ -190,7 +204,7 @@ const projection = {
   affectedInteractions,
   affectedAcceptanceScenarios,
   affectedStoryboards,
-  scope: sourceDocument.scope,
+  scope: sourceScope,
   navModel: sourceDocument.navModel,
   roleBasedConsole: sourceDocument.roleBasedConsole,
   componentNames: (Array.isArray(sourceDocument.components) ? sourceDocument.components : [])

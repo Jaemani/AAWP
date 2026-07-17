@@ -158,9 +158,7 @@ it("rejects deprecated role-entry screens and ambiguous legacy storyboards befor
   const source = {
     scope: {
       entryScreenId: "admin-work-area-entry",
-      deprecatedCompatibilityScreens: [
-        { id: "admin-work-area-entry", status: "deprecated" }
-      ]
+      deprecatedCompatibilityScreens: [{ id: "admin-work-area-entry", status: "deprecated" }]
     },
     screens: [
       { id: "admin-work-area-entry" },
@@ -210,9 +208,7 @@ it("uses an explicit canonical entry and projects only the active Demo journey",
     scope: {
       entryScreenId: "admin-policy-list",
       activeDemoJourneyId: "youth-basic-income-shared-console",
-      deprecatedCompatibilityScreens: [
-        { id: "admin-work-area-entry", status: "deprecated" }
-      ]
+      deprecatedCompatibilityScreens: [{ id: "admin-work-area-entry", status: "deprecated" }]
     },
     screens: [{ id: "admin-policy-detail" }, { id: "admin-policy-list" }],
     demoStoryboard: [

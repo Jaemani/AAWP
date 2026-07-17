@@ -4,6 +4,16 @@
 
 ## 2026-07-17
 
+### Compiled Demo 실행 계약과 최대 2회 단조 수정
+
+- `spec-to-demo`를 0.7.3으로 올렸다. `compile-demo-scope`가 heavy canonical Spec을 builder에 직접 넘기지 않고 선택된 8개 화면의 flow, command, authority, state machine, API/data binding과 19개 executable browser evidence를 `demo-execution-contract.json`으로 고정한다.
+- Builder는 compiled execution contract만 제품 입력으로 읽는다. 원본 Spec 경로 탐색과 이전 Demo 참조는 금지하며 `DESIGN.md`만 시각 입력으로 사용한다.
+- 초기 검증 뒤 첫 bounded repair, 전체 acceptance 재검사, 조건부 두 번째 repair, 최종 독립 검증 순서로 workflow를 확장했다. 두 번째 repair는 이전 finding ID가 반복되지 않고 blocking finding 수가 감소할 때만 허용하며 세 번째 repair나 자동 전체 재생성은 없다.
+- Repair 전 Demo snapshot을 보존한다. 모델 실패, 허용 write-set 이탈 또는 public contract 실패 시 candidate를 자동 복원한다. Layout finding은 `styles.css`만 수정할 수 있다.
+- Browser verifier가 actor `<select>`의 option을 직접 클릭하던 오류, check마다 중복 navigation하던 구조와 assertion 메시지에 Playwright Locator를 직렬화해 메모리가 고갈되던 오류를 교정했다. 각 evidence check는 독립 Chromium context에서 실행하고 stable finding을 한 번에 수집한다.
+- 청년기본소득 Excel 시나리오 확장 run `run_8f200844-2786-4ae1-b09d-aca120c313b8`은 8개 canonical route와 19개 browser evidence를 통과했다. 초기 업무 finding 4건은 첫 repair에서 닫혔고 새 overflow finding 2건만 남아 `4 → 2` 단조 감소가 확인된 뒤 CSS-only 두 번째 repair를 수행했다. 최종 S1 verdict는 passed다.
+- 실제 측정은 13분 30.0초, model 3회, 총 2.68M tokens였다. 기능적 검증은 성공했지만 builder 비용은 여전히 높으므로 다음 최적화는 deterministic Demo shell/runtime과 모델 생성 데이터·행동 정의의 분리다.
+
 ### Canonical Demo 진입점과 legacy projection 차단
 
 - `spec-to-demo` 0.6.0 selection contract가 `entryScreenId`, `activeDemoJourneyId`, deprecated screen과 structured conflict를 기록한다. 요청 배열 첫 항목을 기본 route로 간주하지 않는다.

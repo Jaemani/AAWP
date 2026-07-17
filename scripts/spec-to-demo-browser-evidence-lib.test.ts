@@ -3,6 +3,7 @@ import { chromium, type Browser, type Page } from "playwright";
 // @ts-expect-error -- repository browser evidence helpers are plain ESM.
 import {
   executeAction,
+  hasAttributeValue,
   locatorByAttribute,
   requiresActionSurface,
   stateSnapshot,
@@ -67,5 +68,12 @@ describe("spec-to-demo browser evidence command execution", () => {
     expect(await page.evaluate(() => (window as Window & { clicked: string[] }).clicked)).toEqual([
       "inside"
     ]);
+  });
+
+  it("reports duplicate evidence as a boolean without exposing a Playwright Locator", async () => {
+    await page.setContent(`<div data-aawp-duplicate-blocked="submit"></div>`);
+
+    expect(await hasAttributeValue(page, "data-aawp-duplicate-blocked", "submit")).toBe(true);
+    expect(await hasAttributeValue(page, "data-aawp-duplicate-blocked", "other")).toBe(false);
   });
 });

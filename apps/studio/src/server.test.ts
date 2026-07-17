@@ -238,7 +238,7 @@ describe("Studio local server", () => {
     const executablePage = await fetch(`${base}/?workflow=spec-to-demo`).then(async (response) =>
       response.text()
     );
-    expect(executablePage).toContain("Project workspace · 5 local steps");
+    expect(executablePage).toContain("Project workspace · 7 local steps");
     expect(executablePage).toContain('id="source-spec-path"');
     expect(executablePage).toContain('id="screen-ids"');
     expect(executablePage).toContain('id="request-text"');

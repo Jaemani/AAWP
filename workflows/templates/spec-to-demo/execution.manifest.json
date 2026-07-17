@@ -14,6 +14,12 @@
           "source": "file",
           "path": "artifacts/selection/selection-contract.json",
           "base": "executionDirectory"
+        },
+        {
+          "port": "execution",
+          "source": "file",
+          "path": "artifacts/selection/demo-execution-contract.json",
+          "base": "executionDirectory"
         }
       ]
     },
@@ -35,7 +41,7 @@
         "model_reasoning_effort=\"medium\"",
         "--cd",
         ".",
-        "Execute the registered spec-to-demo build-demo node. Read $AAWP_INPUT_PATH and workflows/templates/spec-to-demo/WORKFLOW.md completely, then follow them exactly. DESIGN.md is the only design input. Do not inspect legacy design contracts or any previous demo. Write only inside $AAWP_EXECUTION_DIR/artifacts/demo. Do not merely describe the work."
+        "Execute the registered spec-to-demo build-demo node. Read workflows/templates/spec-to-demo/WORKFLOW.md, DESIGN.md, and $AAWP_EXECUTION_DIR/artifacts/selection/demo-execution-contract.json completely, then follow them exactly. The compiled Demo execution contract is the only product input for this node: do not open sourceSpec.path or inspect the heavy source Spec. DESIGN.md is the only design input. Do not inspect legacy design contracts or any previous demo. Write only inside $AAWP_EXECUTION_DIR/artifacts/demo. Start writing the four required files immediately after reading the three declared inputs; do not spend the run narrating or re-projecting the Spec."
       ],
       "timeoutSec": 1800,
       "tokenTracking": "required",
@@ -65,6 +71,39 @@
     {
       "nodeId": "repair-demo",
       "command": ["node", "scripts/repair-spec-to-demo-run.mjs"],
+      "timeoutSec": 900,
+      "tokenTracking": "optional",
+      "outputs": [
+        {
+          "port": "output",
+          "source": "file",
+          "path": "artifacts/demo/manifest.json",
+          "base": "executionDirectory"
+        }
+      ]
+    },
+    {
+      "nodeId": "inspect-repair",
+      "command": ["node", "scripts/inspect-spec-to-demo-run.mjs", "post-repair-findings.json"],
+      "timeoutSec": 120,
+      "tokenTracking": "none",
+      "outputs": [
+        {
+          "port": "output",
+          "source": "file",
+          "path": "artifacts/verification/post-repair-findings.json",
+          "base": "executionDirectory"
+        }
+      ]
+    },
+    {
+      "nodeId": "repair-demo-2",
+      "command": [
+        "node",
+        "scripts/repair-spec-to-demo-run.mjs",
+        "post-repair-findings.json",
+        "initial-findings.json"
+      ],
       "timeoutSec": 900,
       "tokenTracking": "optional",
       "outputs": [
